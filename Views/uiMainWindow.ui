@@ -117,14 +117,7 @@
          </widget>
         </item>
         <item row="2" column="3" rowspan="2">
-         <layout class="QVBoxLayout" name="uiCalculationsLayout">
-          <item>
-           <widget class="QStackedWidget" name="uiStackedWidget">
-            <widget class="QWidget" name="page_3"/>
-            <widget class="QWidget" name="page_4"/>
-           </widget>
-          </item>
-         </layout>
+         <layout class="QVBoxLayout" name="uiCalculationsLayout"/>
         </item>
         <item row="1" column="4" rowspan="3">
          <widget class="Line" name="line">
