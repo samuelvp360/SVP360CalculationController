@@ -154,21 +154,21 @@ class MainWindow(qtw.QMainWindow):
             pass  # self.statusBar().showMessage(f'{self._selectedMolecule.GetName} is already in DB!')
 
     def SaveFiles(self):
-        pass
+        # pass
 
-        # nameSDFile, _ = qtw.QFileDialog.getSaveFileName(
-        #     self,
-        #     'Save the SDF file of your molecules',
-        #     options=qtw.QFileDialog.DontUseNativeDialog,
-        #     filter='SDF files(*.sdf)'
-        #     )
-        # name = nameSDFile.split('.')[0]
-        # sdMolFile = Chem.SDWriter(f'{name}.sdf')
-        # for index, mol in enumerate(self._filePathList):
-        #     name = self._molecules[index].GetName
-        #     exec(f'rdkitMol{index} = Chem.MolFromMol2File("{mol}")')
-        #     exec(f'rdkitMol{index}.SetProp("_Name", "{name}")')
-        #     exec(f'sdMolFile.write(rdkitMol{index})')
+        nameSDFile, _ = qtw.QFileDialog.getSaveFileName(
+            self,
+            'Save the SDF file of your molecules',
+            options=qtw.QFileDialog.DontUseNativeDialog,
+            filter='SDF files(*.sdf)'
+            )
+        name = nameSDFile.split('.')[0]
+        sdMolFile = Chem.SDWriter(f'{name}.sdf')
+        for index, mol in enumerate(self._filePathList):
+            name = self._molecules[index].GetName
+            exec(f'rdkitMol{index} = Chem.MolFromMol2File("{mol}")')
+            exec(f'rdkitMol{index}.SetProp("_Name", "{name}")')
+            exec(f'sdMolFile.write(rdkitMol{index})')
 
     def GetSelectedMoleculeAndWidgets(self, fetchedMolecule=None):
 
