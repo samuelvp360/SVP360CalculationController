@@ -1,0 +1,15 @@
+<RCC>
+	<qresource prefix="icons">
+		<file alias="openIcon.png">/icons4/png/030-folder-27.png</file>
+		<file alias="okIcon.png">/icons2/png/008-tick.png</file>
+		<file alias="okDB.png">/icons3/png/027-database-18.png</file>
+		<file alias="addDB.png">/icons3/png/009-database.png</file>
+		<file alias="cancelIcon.png">/icons2/png/032-cancel.png</file>
+		<file alias="trashIcon.png">/icons2/png/190-trash.png</file>
+		<file alias="startIcon.png">/icons/png/039-energy.png</file>
+		<file alias="loadIcon.png">/icons/png/044-inbox.png</file>
+		<file alias="saveIcon.png">/icons2/png/056-pendrive.png</file>
+		<file alias="newIcon.png">/icons2/png/086-paper.png</file>
+		<file alias="resetIcon.png">/icons2/png/188-recycle-3.png</file>
+	</qresource>
+</RCC>
