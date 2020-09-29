@@ -64,3 +64,8 @@ class CalculationsController(qtw.QWidget):
             ]
 
         # por aquí
+# if __name__ == '__main__':
+#     app = qtw.QApplication(sys.argv)
+#     window = CalculationsController()
+#     window.show()
+#     sys.exit(app.exec_())

@@ -25,7 +25,7 @@ class MainWindow(qtw.QMainWindow):
         self._filePathList = []
         self._molecules = []
         self.database = MyZODB()
-        self.calculationSetupController = CalculationsController
+        self.calculationSetupController = CalculationsController()
         self._propertiesWidgets = [
             self.uiName,
             self.uiNameLabel,
