@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>710</width>
-    <height>409</height>
+    <width>771</width>
+    <height>430</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -40,56 +40,10 @@
         <property name="verticalSpacing">
          <number>9</number>
         </property>
-        <item row="0" column="0">
-         <widget class="QLabel" name="label">
-          <property name="maximumSize">
-           <size>
-            <width>100</width>
-            <height>16777215</height>
-           </size>
-          </property>
-          <property name="text">
-           <string>Title:</string>
-          </property>
-         </widget>
-        </item>
         <item row="1" column="0">
          <widget class="QLabel" name="label_2">
           <property name="text">
            <string>Keywords:</string>
-          </property>
-         </widget>
-        </item>
-        <item row="1" column="1" colspan="2">
-         <widget class="QLabel" name="uiKeywordsLabel">
-          <property name="font">
-           <font>
-            <weight>75</weight>
-            <bold>true</bold>
-           </font>
-          </property>
-          <property name="text">
-           <string/>
-          </property>
-         </widget>
-        </item>
-        <item row="2" column="0">
-         <widget class="QLabel" name="label_3">
-          <property name="text">
-           <string>Charge/Mult:</string>
-          </property>
-         </widget>
-        </item>
-        <item row="2" column="1" colspan="2">
-         <widget class="QLabel" name="uiCargeMultLabel">
-          <property name="font">
-           <font>
-            <weight>75</weight>
-            <bold>true</bold>
-           </font>
-          </property>
-          <property name="text">
-           <string/>
           </property>
          </widget>
         </item>
@@ -112,7 +66,98 @@
           </property>
          </widget>
         </item>
+        <item row="1" column="1" colspan="2">
+         <widget class="QLabel" name="uiKeywordsLabel">
+          <property name="font">
+           <font>
+            <weight>75</weight>
+            <bold>true</bold>
+           </font>
+          </property>
+          <property name="text">
+           <string/>
+          </property>
+         </widget>
+        </item>
+        <item row="0" column="0">
+         <widget class="QLabel" name="label">
+          <property name="maximumSize">
+           <size>
+            <width>100</width>
+            <height>16777215</height>
+           </size>
+          </property>
+          <property name="text">
+           <string>Title:</string>
+          </property>
+         </widget>
+        </item>
+        <item row="2" column="1" colspan="2">
+         <widget class="QLabel" name="uiCargeMultLabel">
+          <property name="font">
+           <font>
+            <weight>75</weight>
+            <bold>true</bold>
+           </font>
+          </property>
+          <property name="text">
+           <string/>
+          </property>
+         </widget>
+        </item>
+        <item row="2" column="0">
+         <widget class="QLabel" name="label_3">
+          <property name="text">
+           <string>Charge/Mult:</string>
+          </property>
+         </widget>
+        </item>
        </layout>
+      </item>
+      <item row="2" column="0">
+       <widget class="QLabel" name="label_4">
+        <property name="text">
+         <string>Aditional Keywords: </string>
+        </property>
+       </widget>
+      </item>
+      <item row="2" column="1">
+       <widget class="QLineEdit" name="uiAditionalKeyLineEdit"/>
+      </item>
+      <item row="2" column="2">
+       <widget class="QPushButton" name="uiUpdateKeyButton">
+        <property name="text">
+         <string>Update</string>
+        </property>
+       </widget>
+      </item>
+      <item row="3" column="0" colspan="3">
+       <widget class="Line" name="line">
+        <property name="orientation">
+         <enum>Qt::Horizontal</enum>
+        </property>
+       </widget>
+      </item>
+      <item row="4" column="0">
+       <widget class="QPushButton" name="uiQueueCalcButton">
+        <property name="text">
+         <string>Queue Calc</string>
+        </property>
+       </widget>
+      </item>
+      <item row="4" column="1">
+       <widget class="QPushButton" name="uiCancelCalcButton">
+        <property name="text">
+         <string>Cancel</string>
+        </property>
+       </widget>
+      </item>
+      <item row="4" column="2">
+       <widget class="QPushButton" name="uiHelpButton">
+        <property name="text">
+         <string>Help</string>
+        </property>
+       </widget>
       </item>
       <item row="1" column="0" colspan="3">
        <widget class="QTabWidget" name="uiCalculationSetupTabs">
@@ -123,13 +168,13 @@
          </size>
         </property>
         <property name="currentIndex">
-         <number>0</number>
+         <number>1</number>
         </property>
         <widget class="QWidget" name="uiJobTypeTab">
          <attribute name="title">
           <string>Job Type</string>
          </attribute>
-         <widget class="QWidget" name="">
+         <widget class="QWidget" name="layoutWidget">
           <property name="geometry">
            <rect>
             <x>30</x>
@@ -175,131 +220,261 @@
          <widget class="QWidget" name="layoutWidget">
           <property name="geometry">
            <rect>
-            <x>50</x>
-            <y>10</y>
-            <width>479</width>
-            <height>121</height>
+            <x>21</x>
+            <y>21</y>
+            <width>716</width>
+            <height>151</height>
            </rect>
           </property>
-          <layout class="QGridLayout" name="gridLayout_4">
-           <item row="1" column="7">
-            <widget class="QLabel" name="label_17">
-             <property name="text">
-              <string>)</string>
+          <layout class="QVBoxLayout" name="verticalLayout_4">
+           <item>
+            <layout class="QHBoxLayout" name="horizontalLayout">
+             <item>
+              <widget class="QLabel" name="label_12">
+               <property name="text">
+                <string>Method:</string>
+               </property>
+              </widget>
+             </item>
+             <item>
+              <widget class="QComboBox" name="uiStateComboBox">
+               <property name="minimumSize">
+                <size>
+                 <width>120</width>
+                 <height>0</height>
+                </size>
+               </property>
+              </widget>
+             </item>
+             <item>
+              <widget class="QComboBox" name="uiMethodComboBox">
+               <property name="minimumSize">
+                <size>
+                 <width>120</width>
+                 <height>0</height>
+                </size>
+               </property>
+              </widget>
+             </item>
+             <item>
+              <widget class="QComboBox" name="uiShellTypeComboBox"/>
+             </item>
+             <item>
+              <widget class="QComboBox" name="uiDftFunctionalComboBox">
+               <property name="minimumSize">
+                <size>
+                 <width>100</width>
+                 <height>0</height>
+                </size>
+               </property>
+              </widget>
+             </item>
+             <item>
+              <widget class="QComboBox" name="uiSemiFunctionalComboBox">
+               <property name="minimumSize">
+                <size>
+                 <width>100</width>
+                 <height>0</height>
+                </size>
+               </property>
+              </widget>
+             </item>
+             <item>
+              <widget class="QComboBox" name="uiMechanicsComboBox"/>
+             </item>
+             <item>
+              <spacer name="horizontalSpacer">
+               <property name="orientation">
+                <enum>Qt::Horizontal</enum>
+               </property>
+               <property name="sizeHint" stdset="0">
+                <size>
+                 <width>40</width>
+                 <height>20</height>
+                </size>
+               </property>
+              </spacer>
+             </item>
+            </layout>
+           </item>
+           <item>
+            <layout class="QHBoxLayout" name="horizontalLayout_2">
+             <item>
+              <widget class="QLabel" name="uiBasisLabel">
+               <property name="text">
+                <string>Basis Set:</string>
+               </property>
+              </widget>
+             </item>
+             <item>
+              <widget class="QComboBox" name="uiAugmentedComboBox"/>
+             </item>
+             <item>
+              <widget class="QComboBox" name="uiBasisComboBox"/>
+             </item>
+             <item>
+              <widget class="QComboBox" name="uiDiffuseComboBox"/>
+             </item>
+             <item>
+              <widget class="QComboBox" name="uiAsteriskComboBox"/>
+             </item>
+             <item>
+              <widget class="QLabel" name="uiParentheses1">
+               <property name="text">
+                <string>(</string>
+               </property>
+              </widget>
+             </item>
+             <item>
+              <widget class="QComboBox" name="uiPolarizedComboBox"/>
+             </item>
+             <item>
+              <widget class="QLabel" name="uiComma1">
+               <property name="text">
+                <string>,</string>
+               </property>
+              </widget>
+             </item>
+             <item>
+              <widget class="QComboBox" name="uiSecondPolarizedComboBox"/>
+             </item>
+             <item>
+              <widget class="QLabel" name="uiParentheses2">
+               <property name="text">
+                <string>)</string>
+               </property>
+              </widget>
+             </item>
+             <item>
+              <spacer name="horizontalSpacer_2">
+               <property name="orientation">
+                <enum>Qt::Horizontal</enum>
+               </property>
+               <property name="sizeHint" stdset="0">
+                <size>
+                 <width>40</width>
+                 <height>20</height>
+                </size>
+               </property>
+              </spacer>
+             </item>
+            </layout>
+           </item>
+           <item>
+            <layout class="QHBoxLayout" name="horizontalLayout_3">
+             <item>
+              <widget class="QLabel" name="uiBasis2Label">
+               <property name="text">
+                <string>Basis Set 2:</string>
+               </property>
+              </widget>
+             </item>
+             <item>
+              <widget class="QComboBox" name="uiAugmented2ComboBox"/>
+             </item>
+             <item>
+              <widget class="QComboBox" name="uiBasis2ComboBox"/>
+             </item>
+             <item>
+              <widget class="QComboBox" name="uiDiffuse2ComboBox"/>
+             </item>
+             <item>
+              <widget class="QComboBox" name="uiAsterisk2ComboBox"/>
+             </item>
+             <item>
+              <widget class="QLabel" name="uiParentheses3">
+               <property name="text">
+                <string>(</string>
+               </property>
+              </widget>
+             </item>
+             <item>
+              <widget class="QComboBox" name="uiPolarized2ComboBox"/>
+             </item>
+             <item>
+              <widget class="QLabel" name="uiComma2">
+               <property name="text">
+                <string>,</string>
+               </property>
+              </widget>
+             </item>
+             <item>
+              <widget class="QComboBox" name="uiSecondPolarized2ComboBox"/>
+             </item>
+             <item>
+              <widget class="QLabel" name="uiParentheses4">
+               <property name="text">
+                <string>)</string>
+               </property>
+              </widget>
+             </item>
+             <item>
+              <spacer name="horizontalSpacer_3">
+               <property name="orientation">
+                <enum>Qt::Horizontal</enum>
+               </property>
+               <property name="sizeHint" stdset="0">
+                <size>
+                 <width>40</width>
+                 <height>20</height>
+                </size>
+               </property>
+              </spacer>
+             </item>
+            </layout>
+           </item>
+           <item>
+            <layout class="QHBoxLayout" name="horizontalLayout_4">
+             <item>
+              <widget class="QLabel" name="label_14">
+               <property name="text">
+                <string>Charge:</string>
+               </property>
+              </widget>
+             </item>
+             <item>
+              <widget class="QSpinBox" name="uiChargeSpinBox"/>
+             </item>
+             <item>
+              <widget class="QLabel" name="label_15">
+               <property name="text">
+                <string>Spin:</string>
+               </property>
+              </widget>
+             </item>
+             <item>
+              <widget class="QComboBox" name="uiEvenSpinComboBox"/>
+             </item>
+             <item>
+              <widget class="QComboBox" name="uiOddSpinComboBox"/>
+             </item>
+             <item>
+              <spacer name="horizontalSpacer_4">
+               <property name="orientation">
+                <enum>Qt::Horizontal</enum>
+               </property>
+               <property name="sizeHint" stdset="0">
+                <size>
+                 <width>40</width>
+                 <height>20</height>
+                </size>
+               </property>
+              </spacer>
+             </item>
+            </layout>
+           </item>
+           <item>
+            <spacer name="verticalSpacer_2">
+             <property name="orientation">
+              <enum>Qt::Vertical</enum>
              </property>
-            </widget>
-           </item>
-           <item row="1" column="4">
-            <widget class="QComboBox" name="uiPolarizedComboBox"/>
-           </item>
-           <item row="0" column="2">
-            <widget class="QComboBox" name="uiMethodComboBox"/>
-           </item>
-           <item row="2" column="5">
-            <widget class="QLabel" name="label_21">
-             <property name="text">
-              <string>,</string>
+             <property name="sizeHint" stdset="0">
+              <size>
+               <width>20</width>
+               <height>40</height>
+              </size>
              </property>
-            </widget>
-           </item>
-           <item row="2" column="1">
-            <widget class="QComboBox" name="uiBasis2ComboBox"/>
-           </item>
-           <item row="3" column="4">
-            <widget class="QComboBox" name="uiSpinComboBox"/>
-           </item>
-           <item row="3" column="0">
-            <widget class="QLabel" name="label_14">
-             <property name="text">
-              <string>Charge:</string>
-             </property>
-            </widget>
-           </item>
-           <item row="2" column="3">
-            <widget class="QLabel" name="label_20">
-             <property name="text">
-              <string>(</string>
-             </property>
-            </widget>
-           </item>
-           <item row="0" column="6">
-            <widget class="QComboBox" name="uiFunctionalComboBox"/>
-           </item>
-           <item row="1" column="1">
-            <widget class="QComboBox" name="uiBasisComboBox"/>
-           </item>
-           <item row="0" column="3" colspan="2">
-            <widget class="QComboBox" name="uiShellTypeComboBox"/>
-           </item>
-           <item row="0" column="1">
-            <widget class="QComboBox" name="uiStateComboBox"/>
-           </item>
-           <item row="2" column="2">
-            <widget class="QComboBox" name="uiDiffuse2ComboBox"/>
-           </item>
-           <item row="2" column="7">
-            <widget class="QLabel" name="label_22">
-             <property name="text">
-              <string>)</string>
-             </property>
-            </widget>
-           </item>
-           <item row="1" column="5">
-            <widget class="QLabel" name="label_18">
-             <property name="text">
-              <string>,</string>
-             </property>
-            </widget>
-           </item>
-           <item row="1" column="6">
-            <widget class="QComboBox" name="uiSecondPolarizedComboBox"/>
-           </item>
-           <item row="1" column="3">
-            <widget class="QLabel" name="label_16">
-             <property name="text">
-              <string>(</string>
-             </property>
-            </widget>
-           </item>
-           <item row="1" column="2">
-            <widget class="QComboBox" name="uiDiffuseComboBox"/>
-           </item>
-           <item row="0" column="0">
-            <widget class="QLabel" name="label_12">
-             <property name="text">
-              <string>Method:</string>
-             </property>
-            </widget>
-           </item>
-           <item row="3" column="1">
-            <widget class="QSpinBox" name="uiChargeSpinBox"/>
-           </item>
-           <item row="1" column="0">
-            <widget class="QLabel" name="label_13">
-             <property name="text">
-              <string>Basis Set:</string>
-             </property>
-            </widget>
-           </item>
-           <item row="3" column="2">
-            <widget class="QLabel" name="label_15">
-             <property name="text">
-              <string>Spin:</string>
-             </property>
-            </widget>
-           </item>
-           <item row="2" column="0">
-            <widget class="QLabel" name="label_19">
-             <property name="text">
-              <string>Basis Set 2:</string>
-             </property>
-            </widget>
-           </item>
-           <item row="2" column="4">
-            <widget class="QComboBox" name="uiPolarized2ComboBox"/>
-           </item>
-           <item row="2" column="6">
-            <widget class="QComboBox" name="uiSecondPolarized2ComboBox"/>
+            </spacer>
            </item>
           </layout>
          </widget>
@@ -557,51 +732,6 @@
           </property>
          </widget>
         </widget>
-       </widget>
-      </item>
-      <item row="2" column="0">
-       <widget class="QLabel" name="label_4">
-        <property name="text">
-         <string>Aditional Keywords: </string>
-        </property>
-       </widget>
-      </item>
-      <item row="2" column="1">
-       <widget class="QLineEdit" name="uiAditionalKeyLineEdit"/>
-      </item>
-      <item row="2" column="2">
-       <widget class="QPushButton" name="uiUpdateKeyButton">
-        <property name="text">
-         <string>Update</string>
-        </property>
-       </widget>
-      </item>
-      <item row="3" column="0" colspan="3">
-       <widget class="Line" name="line">
-        <property name="orientation">
-         <enum>Qt::Horizontal</enum>
-        </property>
-       </widget>
-      </item>
-      <item row="4" column="0">
-       <widget class="QPushButton" name="uiQueueCalcButton">
-        <property name="text">
-         <string>Queue Calc</string>
-        </property>
-       </widget>
-      </item>
-      <item row="4" column="1">
-       <widget class="QPushButton" name="uiCancelCalcButton">
-        <property name="text">
-         <string>Cancel</string>
-        </property>
-       </widget>
-      </item>
-      <item row="4" column="2">
-       <widget class="QPushButton" name="uiHelpButton">
-        <property name="text">
-         <string>Help</string>
-        </property>
        </widget>
       </item>
      </layout>

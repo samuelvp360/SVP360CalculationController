@@ -40,7 +40,7 @@ class MainWindow(qtw.QMainWindow):
             self.uiDisplayAvailableCalcButton,
             self.uiSubmitCalcButton,
             self.ui2DImage
-            ]
+        ]
     # --------------------------------------------------STYLE--------------------------------------------------
         self.uiCalculationsLayout.addWidget(self.calculationSetupController)
         self.uiOpen.setIcon(qtg.QIcon(':/icons/openIcon.png'))
@@ -90,7 +90,7 @@ class MainWindow(qtw.QMainWindow):
             'Select your molecule(s)',
             options=qtw.QFileDialog.DontUseNativeDialog,
             filter='Mol files(*.mol2)'
-            )
+        )
 
         key_names_loaded = []
         if len([i for i in filePathList if i in self._filePathList]) == 0:
@@ -151,7 +151,7 @@ class MainWindow(qtw.QMainWindow):
             'Save the SDF file of your molecules',
             options=qtw.QFileDialog.DontUseNativeDialog,
             filter='SDF files(*.sdf)'
-            )
+        )
         name = nameSDFile.split('.')[0]
         sdMolFile = Chem.SDWriter(f'{name}.sdf')
         for index, mol in enumerate(self._filePathList):
@@ -191,7 +191,7 @@ class MainWindow(qtw.QMainWindow):
         self._dataMapper.addMapping(self.uiSmiles, 4)
         self.ui2DImage.setPixmap(
             qtg.QPixmap.fromImage(ImageQt.ImageQt(self._selectedMolecule.Get2DImage))
-            )
+        )
         self._dataMapper.toFirst()
 
     def DeleteMolecule(self):
@@ -204,7 +204,6 @@ class MainWindow(qtw.QMainWindow):
             thisIndex = indexes[0]
             del self._molecules[thisIndex.row()]
             del self._filePathList[thisIndex.row()]
-            del self._calcWidgets[thisIndex.row()]
             newIndex = thisIndex.row() - 1
             self.listModel.layoutChanged.emit()
             if newIndex >= 0:
@@ -287,7 +286,7 @@ class MainWindow(qtw.QMainWindow):
         self.thread.quit()
         self.statusBar().showMessage(
             f'Something get wrong with {errorMol.GetName} with index: {index}. Please check the log file'
-            )
+        )
         self.masterQueue[index][1][6] = 'Failed'
         self.statusModel.layoutChanged.emit()
         if index != (len(self.masterQueue) - 1):
@@ -309,7 +308,7 @@ class MainWindow(qtw.QMainWindow):
         reply = qtw.QMessageBox.question(
             self, 'Window Close', 'Are you sure you want to close the window?',
             qtw.QMessageBox.Yes | qtw.QMessageBox.No, qtw.QMessageBox.No
-            )
+        )
 
         if reply == qtw.QMessageBox.Yes:
             self.database.Close()
