@@ -142,5 +142,5 @@ class CalculationsController(qtw.QWidget):
                 [self._methodWidgets[i].setVisible(True) for i in range(3, 11) if i not in (4, 5, 7, 9)]
 
         self._parametersList = [self._methodWidgets[i].currentIndex() for i in range(0, 25) if i not in (6, 11, 13, 15, 16, 21, 23)]
-        print(self._parametersList)
+        # print(self._parametersList)
         # por aquí
