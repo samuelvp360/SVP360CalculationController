@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>771</width>
-    <height>430</height>
+    <width>637</width>
+    <height>798</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -15,726 +15,1131 @@
   </property>
   <layout class="QVBoxLayout" name="verticalLayout_2">
    <item>
-    <widget class="QGroupBox" name="uiSetupCalculationGroupBox">
-     <property name="title">
-      <string>Setup Calculation</string>
+    <widget class="QScrollArea" name="scrollArea">
+     <property name="widgetResizable">
+      <bool>true</bool>
      </property>
-     <layout class="QGridLayout" name="gridLayout">
-      <property name="leftMargin">
-       <number>0</number>
+     <widget class="QWidget" name="scrollAreaWidgetContents">
+      <property name="geometry">
+       <rect>
+        <x>0</x>
+        <y>0</y>
+        <width>617</width>
+        <height>778</height>
+       </rect>
       </property>
-      <property name="topMargin">
-       <number>0</number>
-      </property>
-      <property name="rightMargin">
-       <number>0</number>
-      </property>
-      <property name="bottomMargin">
-       <number>0</number>
-      </property>
-      <property name="horizontalSpacing">
-       <number>5</number>
-      </property>
-      <item row="0" column="0" colspan="3">
-       <layout class="QGridLayout" name="gridLayout_5">
-        <property name="verticalSpacing">
-         <number>9</number>
-        </property>
-        <item row="1" column="0">
-         <widget class="QLabel" name="label_2">
-          <property name="text">
-           <string>Keywords:</string>
-          </property>
-         </widget>
-        </item>
-        <item row="0" column="1" colspan="2">
-         <widget class="QLabel" name="uiTitleLabel">
-          <property name="minimumSize">
-           <size>
-            <width>0</width>
-            <height>0</height>
-           </size>
-          </property>
-          <property name="font">
-           <font>
-            <weight>75</weight>
-            <bold>true</bold>
-           </font>
-          </property>
-          <property name="text">
-           <string/>
-          </property>
-         </widget>
-        </item>
-        <item row="1" column="1" colspan="2">
-         <widget class="QLabel" name="uiKeywordsLabel">
-          <property name="font">
-           <font>
-            <weight>75</weight>
-            <bold>true</bold>
-           </font>
-          </property>
-          <property name="text">
-           <string/>
-          </property>
-         </widget>
-        </item>
-        <item row="0" column="0">
-         <widget class="QLabel" name="label">
-          <property name="maximumSize">
-           <size>
-            <width>100</width>
-            <height>16777215</height>
-           </size>
-          </property>
-          <property name="text">
-           <string>Title:</string>
-          </property>
-         </widget>
-        </item>
-        <item row="2" column="1" colspan="2">
-         <widget class="QLabel" name="uiCargeMultLabel">
-          <property name="font">
-           <font>
-            <weight>75</weight>
-            <bold>true</bold>
-           </font>
-          </property>
-          <property name="text">
-           <string/>
-          </property>
-         </widget>
-        </item>
-        <item row="2" column="0">
-         <widget class="QLabel" name="label_3">
-          <property name="text">
-           <string>Charge/Mult:</string>
-          </property>
-         </widget>
-        </item>
-       </layout>
-      </item>
-      <item row="2" column="0">
-       <widget class="QLabel" name="label_4">
-        <property name="text">
-         <string>Aditional Keywords: </string>
-        </property>
-       </widget>
-      </item>
-      <item row="2" column="1">
-       <widget class="QLineEdit" name="uiAditionalKeyLineEdit"/>
-      </item>
-      <item row="2" column="2">
-       <widget class="QPushButton" name="uiUpdateKeyButton">
-        <property name="text">
-         <string>Update</string>
-        </property>
-       </widget>
-      </item>
-      <item row="3" column="0" colspan="3">
-       <widget class="Line" name="line">
-        <property name="orientation">
-         <enum>Qt::Horizontal</enum>
-        </property>
-       </widget>
-      </item>
-      <item row="4" column="0">
-       <widget class="QPushButton" name="uiQueueCalcButton">
-        <property name="text">
-         <string>Queue Calc</string>
-        </property>
-       </widget>
-      </item>
-      <item row="4" column="1">
-       <widget class="QPushButton" name="uiCancelCalcButton">
-        <property name="text">
-         <string>Cancel</string>
-        </property>
-       </widget>
-      </item>
-      <item row="4" column="2">
-       <widget class="QPushButton" name="uiHelpButton">
-        <property name="text">
-         <string>Help</string>
-        </property>
-       </widget>
-      </item>
-      <item row="1" column="0" colspan="3">
-       <widget class="QTabWidget" name="uiCalculationSetupTabs">
-        <property name="minimumSize">
-         <size>
-          <width>0</width>
-          <height>200</height>
-         </size>
-        </property>
-        <property name="currentIndex">
-         <number>1</number>
-        </property>
-        <widget class="QWidget" name="uiJobTypeTab">
-         <attribute name="title">
-          <string>Job Type</string>
-         </attribute>
-         <widget class="QWidget" name="layoutWidget">
-          <property name="geometry">
-           <rect>
-            <x>30</x>
-            <y>10</y>
-            <width>601</width>
-            <height>151</height>
-           </rect>
-          </property>
-          <layout class="QVBoxLayout" name="verticalLayout_3">
-           <item>
-            <widget class="QComboBox" name="uiJobTypeComboBox">
-             <property name="maximumSize">
-              <size>
-               <width>150</width>
-               <height>16777215</height>
-              </size>
-             </property>
-            </widget>
-           </item>
-           <item>
-            <layout class="QVBoxLayout" name="uiJobTypeLayout"/>
-           </item>
-           <item>
-            <spacer name="verticalSpacer">
-             <property name="orientation">
-              <enum>Qt::Vertical</enum>
-             </property>
-             <property name="sizeHint" stdset="0">
-              <size>
-               <width>20</width>
-               <height>40</height>
-              </size>
-             </property>
-            </spacer>
-           </item>
-          </layout>
-         </widget>
-        </widget>
-        <widget class="QWidget" name="uiMethodTab">
-         <attribute name="title">
-          <string>Method</string>
-         </attribute>
-         <widget class="QWidget" name="layoutWidget">
-          <property name="geometry">
-           <rect>
-            <x>21</x>
-            <y>21</y>
-            <width>716</width>
-            <height>151</height>
-           </rect>
-          </property>
-          <layout class="QVBoxLayout" name="verticalLayout_4">
-           <item>
-            <layout class="QHBoxLayout" name="horizontalLayout">
-             <item>
-              <widget class="QLabel" name="label_12">
-               <property name="text">
-                <string>Method:</string>
-               </property>
-              </widget>
-             </item>
-             <item>
-              <widget class="QComboBox" name="uiStateComboBox">
-               <property name="minimumSize">
-                <size>
-                 <width>120</width>
-                 <height>0</height>
-                </size>
-               </property>
-              </widget>
-             </item>
-             <item>
-              <widget class="QComboBox" name="uiMethodComboBox">
-               <property name="minimumSize">
-                <size>
-                 <width>120</width>
-                 <height>0</height>
-                </size>
-               </property>
-              </widget>
-             </item>
-             <item>
-              <widget class="QComboBox" name="uiShellTypeComboBox"/>
-             </item>
-             <item>
-              <widget class="QComboBox" name="uiDftFunctionalComboBox">
-               <property name="minimumSize">
-                <size>
-                 <width>100</width>
-                 <height>0</height>
-                </size>
-               </property>
-              </widget>
-             </item>
-             <item>
-              <widget class="QComboBox" name="uiSemiFunctionalComboBox">
-               <property name="minimumSize">
-                <size>
-                 <width>100</width>
-                 <height>0</height>
-                </size>
-               </property>
-              </widget>
-             </item>
-             <item>
-              <widget class="QComboBox" name="uiMechanicsComboBox"/>
-             </item>
-             <item>
-              <spacer name="horizontalSpacer">
-               <property name="orientation">
-                <enum>Qt::Horizontal</enum>
-               </property>
-               <property name="sizeHint" stdset="0">
-                <size>
-                 <width>40</width>
-                 <height>20</height>
-                </size>
-               </property>
-              </spacer>
-             </item>
-            </layout>
-           </item>
-           <item>
-            <layout class="QHBoxLayout" name="horizontalLayout_2">
-             <item>
-              <widget class="QLabel" name="uiBasisLabel">
-               <property name="text">
-                <string>Basis Set:</string>
-               </property>
-              </widget>
-             </item>
-             <item>
-              <widget class="QComboBox" name="uiAugmentedComboBox"/>
-             </item>
-             <item>
-              <widget class="QComboBox" name="uiBasisComboBox"/>
-             </item>
-             <item>
-              <widget class="QComboBox" name="uiDiffuseComboBox"/>
-             </item>
-             <item>
-              <widget class="QComboBox" name="uiAsteriskComboBox"/>
-             </item>
-             <item>
-              <widget class="QLabel" name="uiParentheses1">
-               <property name="text">
-                <string>(</string>
-               </property>
-              </widget>
-             </item>
-             <item>
-              <widget class="QComboBox" name="uiPolarizedComboBox"/>
-             </item>
-             <item>
-              <widget class="QLabel" name="uiComma1">
-               <property name="text">
-                <string>,</string>
-               </property>
-              </widget>
-             </item>
-             <item>
-              <widget class="QComboBox" name="uiSecondPolarizedComboBox"/>
-             </item>
-             <item>
-              <widget class="QLabel" name="uiParentheses2">
-               <property name="text">
-                <string>)</string>
-               </property>
-              </widget>
-             </item>
-             <item>
-              <spacer name="horizontalSpacer_2">
-               <property name="orientation">
-                <enum>Qt::Horizontal</enum>
-               </property>
-               <property name="sizeHint" stdset="0">
-                <size>
-                 <width>40</width>
-                 <height>20</height>
-                </size>
-               </property>
-              </spacer>
-             </item>
-            </layout>
-           </item>
-           <item>
-            <layout class="QHBoxLayout" name="horizontalLayout_3">
-             <item>
-              <widget class="QLabel" name="uiBasis2Label">
-               <property name="text">
-                <string>Basis Set 2:</string>
-               </property>
-              </widget>
-             </item>
-             <item>
-              <widget class="QComboBox" name="uiAugmented2ComboBox"/>
-             </item>
-             <item>
-              <widget class="QComboBox" name="uiBasis2ComboBox"/>
-             </item>
-             <item>
-              <widget class="QComboBox" name="uiDiffuse2ComboBox"/>
-             </item>
-             <item>
-              <widget class="QComboBox" name="uiAsterisk2ComboBox"/>
-             </item>
-             <item>
-              <widget class="QLabel" name="uiParentheses3">
-               <property name="text">
-                <string>(</string>
-               </property>
-              </widget>
-             </item>
-             <item>
-              <widget class="QComboBox" name="uiPolarized2ComboBox"/>
-             </item>
-             <item>
-              <widget class="QLabel" name="uiComma2">
-               <property name="text">
-                <string>,</string>
-               </property>
-              </widget>
-             </item>
-             <item>
-              <widget class="QComboBox" name="uiSecondPolarized2ComboBox"/>
-             </item>
-             <item>
-              <widget class="QLabel" name="uiParentheses4">
-               <property name="text">
-                <string>)</string>
-               </property>
-              </widget>
-             </item>
-             <item>
-              <spacer name="horizontalSpacer_3">
-               <property name="orientation">
-                <enum>Qt::Horizontal</enum>
-               </property>
-               <property name="sizeHint" stdset="0">
-                <size>
-                 <width>40</width>
-                 <height>20</height>
-                </size>
-               </property>
-              </spacer>
-             </item>
-            </layout>
-           </item>
-           <item>
-            <layout class="QHBoxLayout" name="horizontalLayout_4">
-             <item>
-              <widget class="QLabel" name="label_14">
-               <property name="text">
-                <string>Charge:</string>
-               </property>
-              </widget>
-             </item>
-             <item>
-              <widget class="QSpinBox" name="uiChargeSpinBox"/>
-             </item>
-             <item>
-              <widget class="QLabel" name="label_15">
-               <property name="text">
-                <string>Spin:</string>
-               </property>
-              </widget>
-             </item>
-             <item>
-              <widget class="QComboBox" name="uiEvenSpinComboBox"/>
-             </item>
-             <item>
-              <widget class="QComboBox" name="uiOddSpinComboBox"/>
-             </item>
-             <item>
-              <spacer name="horizontalSpacer_4">
-               <property name="orientation">
-                <enum>Qt::Horizontal</enum>
-               </property>
-               <property name="sizeHint" stdset="0">
-                <size>
-                 <width>40</width>
-                 <height>20</height>
-                </size>
-               </property>
-              </spacer>
-             </item>
-            </layout>
-           </item>
-           <item>
-            <spacer name="verticalSpacer_2">
-             <property name="orientation">
-              <enum>Qt::Vertical</enum>
-             </property>
-             <property name="sizeHint" stdset="0">
-              <size>
-               <width>20</width>
-               <height>40</height>
-              </size>
-             </property>
-            </spacer>
-           </item>
-          </layout>
-         </widget>
-        </widget>
-        <widget class="QWidget" name="uiTitleTab">
-         <attribute name="title">
-          <string>Title</string>
-         </attribute>
-         <widget class="QLineEdit" name="uiTitleLineEdit">
-          <property name="geometry">
-           <rect>
-            <x>20</x>
-            <y>10</y>
-            <width>561</width>
-            <height>25</height>
-           </rect>
-          </property>
-         </widget>
-        </widget>
-        <widget class="QWidget" name="uiLink0Tab">
-         <attribute name="title">
-          <string>Link 0</string>
-         </attribute>
-         <widget class="QTabWidget" name="uiLin0OptionsEditTab">
-          <property name="geometry">
-           <rect>
-            <x>10</x>
-            <y>10</y>
-            <width>601</width>
-            <height>230</height>
-           </rect>
-          </property>
-          <property name="minimumSize">
-           <size>
-            <width>0</width>
-            <height>230</height>
-           </size>
-          </property>
-          <property name="currentIndex">
+      <layout class="QVBoxLayout" name="verticalLayout_7">
+       <item>
+        <widget class="QGroupBox" name="uiSetupCalculationGroupBox">
+         <property name="title">
+          <string>Setup Calculation</string>
+         </property>
+         <layout class="QGridLayout" name="gridLayout">
+          <property name="leftMargin">
            <number>0</number>
           </property>
-          <widget class="QWidget" name="uiLink0OptionTab">
-           <attribute name="title">
-            <string>Options</string>
-           </attribute>
-           <widget class="QWidget" name="layoutWidget_2">
-            <property name="geometry">
-             <rect>
-              <x>10</x>
-              <y>0</y>
-              <width>571</width>
-              <height>122</height>
-             </rect>
-            </property>
-            <layout class="QGridLayout" name="gridLayout_2">
-             <item row="3" column="0">
-              <widget class="QLabel" name="label_8">
-               <property name="text">
-                <string>Old Chkpoint File:</string>
-               </property>
-              </widget>
-             </item>
-             <item row="3" column="1">
-              <widget class="QComboBox" name="uiOldChkComboBox"/>
-             </item>
-             <item row="2" column="0">
-              <widget class="QLabel" name="label_7">
-               <property name="text">
-                <string>Chkpoint File:</string>
-               </property>
-              </widget>
-             </item>
-             <item row="2" column="2">
-              <widget class="QLineEdit" name="uiChkLineEdit"/>
-             </item>
-             <item row="3" column="2">
-              <widget class="QLineEdit" name="uiOldChkLineEdit"/>
-             </item>
-             <item row="1" column="0">
-              <widget class="QLabel" name="label_6">
-               <property name="text">
-                <string>Shared Processors:</string>
-               </property>
-              </widget>
-             </item>
-             <item row="0" column="2">
-              <widget class="QLabel" name="label_9">
-               <property name="text">
-                <string>MB</string>
-               </property>
-              </widget>
-             </item>
-             <item row="0" column="1">
-              <widget class="QSpinBox" name="uiMemorySpinBox"/>
-             </item>
-             <item row="2" column="1">
-              <widget class="QComboBox" name="uiChkComboBox"/>
-             </item>
-             <item row="0" column="0">
-              <widget class="QLabel" name="label_5">
-               <property name="text">
-                <string>Memory Limit:</string>
-               </property>
-              </widget>
-             </item>
-             <item row="1" column="1">
-              <widget class="QSpinBox" name="uiProcessorsSpinBox"/>
-             </item>
-             <item row="2" column="3">
-              <widget class="QPushButton" name="uiSaveChkButton">
-               <property name="maximumSize">
-                <size>
-                 <width>20</width>
-                 <height>16777215</height>
-                </size>
-               </property>
-               <property name="text">
-                <string>...</string>
-               </property>
-              </widget>
-             </item>
-             <item row="3" column="3">
-              <widget class="QPushButton" name="uiSelectOldChkButton">
-               <property name="minimumSize">
-                <size>
-                 <width>0</width>
-                 <height>0</height>
-                </size>
-               </property>
-               <property name="maximumSize">
-                <size>
-                 <width>20</width>
-                 <height>16777215</height>
-                </size>
-               </property>
-               <property name="text">
-                <string>...</string>
-               </property>
-              </widget>
-             </item>
-            </layout>
-           </widget>
-          </widget>
-          <widget class="QWidget" name="uiLink0EditTab">
-           <attribute name="title">
-            <string>Edit</string>
-           </attribute>
-           <widget class="QPlainTextEdit" name="uiLink0EditPlainText">
-            <property name="geometry">
-             <rect>
-              <x>0</x>
-              <y>0</y>
-              <width>591</width>
-              <height>111</height>
-             </rect>
+          <property name="topMargin">
+           <number>0</number>
+          </property>
+          <property name="rightMargin">
+           <number>0</number>
+          </property>
+          <property name="bottomMargin">
+           <number>0</number>
+          </property>
+          <property name="horizontalSpacing">
+           <number>0</number>
+          </property>
+          <item row="3" column="0" colspan="3">
+           <widget class="Line" name="line">
+            <property name="orientation">
+             <enum>Qt::Horizontal</enum>
             </property>
            </widget>
-          </widget>
-         </widget>
-        </widget>
-        <widget class="QWidget" name="uiGeneralTab">
-         <property name="accessibleName">
-          <string/>
-         </property>
-         <attribute name="title">
-          <string>General</string>
-         </attribute>
-        </widget>
-        <widget class="QWidget" name="uiGessTab">
-         <attribute name="title">
-          <string>Guess</string>
-         </attribute>
-        </widget>
-        <widget class="QWidget" name="uiPopTab">
-         <attribute name="title">
-          <string>Pop.</string>
-         </attribute>
-         <widget class="QWidget" name="layoutWidget_3">
-          <property name="geometry">
-           <rect>
-            <x>20</x>
-            <y>20</y>
-            <width>281</width>
-            <height>58</height>
-           </rect>
-          </property>
-          <layout class="QGridLayout" name="gridLayout_3">
-           <item row="0" column="0">
-            <widget class="QLabel" name="label_10">
-             <property name="text">
-              <string>Level of output:</string>
-             </property>
+          </item>
+          <item row="0" column="0" colspan="3">
+           <layout class="QGridLayout" name="gridLayout_5">
+            <property name="verticalSpacing">
+             <number>9</number>
+            </property>
+            <item row="0" column="0">
+             <widget class="QLabel" name="label">
+              <property name="maximumSize">
+               <size>
+                <width>100</width>
+                <height>16777215</height>
+               </size>
+              </property>
+              <property name="text">
+               <string>Title:</string>
+              </property>
+             </widget>
+            </item>
+            <item row="2" column="0">
+             <widget class="QLabel" name="label_3">
+              <property name="text">
+               <string>Charge/Mult:</string>
+              </property>
+             </widget>
+            </item>
+            <item row="1" column="1" colspan="2">
+             <widget class="QLabel" name="uiKeywordsLabel">
+              <property name="font">
+               <font>
+                <weight>75</weight>
+                <bold>true</bold>
+               </font>
+              </property>
+              <property name="text">
+               <string/>
+              </property>
+             </widget>
+            </item>
+            <item row="2" column="1" colspan="2">
+             <widget class="QLabel" name="uiChargeMultLabel">
+              <property name="font">
+               <font>
+                <weight>75</weight>
+                <bold>true</bold>
+               </font>
+              </property>
+              <property name="text">
+               <string/>
+              </property>
+             </widget>
+            </item>
+            <item row="1" column="0">
+             <widget class="QLabel" name="label_2">
+              <property name="text">
+               <string>Keywords:</string>
+              </property>
+             </widget>
+            </item>
+            <item row="0" column="1" colspan="2">
+             <widget class="QLabel" name="uiTitleLabel">
+              <property name="minimumSize">
+               <size>
+                <width>0</width>
+                <height>0</height>
+               </size>
+              </property>
+              <property name="font">
+               <font>
+                <weight>75</weight>
+                <bold>true</bold>
+               </font>
+              </property>
+              <property name="text">
+               <string/>
+              </property>
+             </widget>
+            </item>
+           </layout>
+          </item>
+          <item row="1" column="0" colspan="3">
+           <widget class="QTabWidget" name="uiCalculationSetupTabs">
+            <property name="minimumSize">
+             <size>
+              <width>0</width>
+              <height>380</height>
+             </size>
+            </property>
+            <property name="currentIndex">
+             <number>1</number>
+            </property>
+            <widget class="QWidget" name="uiJobTypeTab">
+             <attribute name="title">
+              <string>Job Type</string>
+             </attribute>
+             <widget class="QWidget" name="layoutWidget">
+              <property name="geometry">
+               <rect>
+                <x>10</x>
+                <y>20</y>
+                <width>541</width>
+                <height>508</height>
+               </rect>
+              </property>
+              <layout class="QVBoxLayout" name="uiJobTypeLayout">
+               <item>
+                <widget class="QComboBox" name="uiJobTypeComboBox">
+                 <property name="maximumSize">
+                  <size>
+                   <width>150</width>
+                   <height>16777215</height>
+                  </size>
+                 </property>
+                </widget>
+               </item>
+               <item>
+                <widget class="QGroupBox" name="uiOptGroupBox">
+                 <property name="title">
+                  <string/>
+                 </property>
+                 <property name="flat">
+                  <bool>false</bool>
+                 </property>
+                 <layout class="QVBoxLayout" name="verticalLayout_3" stretch="0">
+                  <property name="spacing">
+                   <number>6</number>
+                  </property>
+                  <property name="sizeConstraint">
+                   <enum>QLayout::SetNoConstraint</enum>
+                  </property>
+                  <property name="leftMargin">
+                   <number>0</number>
+                  </property>
+                  <property name="topMargin">
+                   <number>0</number>
+                  </property>
+                  <property name="rightMargin">
+                   <number>0</number>
+                  </property>
+                  <property name="bottomMargin">
+                   <number>0</number>
+                  </property>
+                  <item>
+                   <layout class="QGridLayout" name="uiOptimizationLayout">
+                    <property name="bottomMargin">
+                     <number>0</number>
+                    </property>
+                    <item row="0" column="1">
+                     <widget class="QComboBox" name="uiOptimizeToAComboBox">
+                      <property name="minimumSize">
+                       <size>
+                        <width>150</width>
+                        <height>0</height>
+                       </size>
+                      </property>
+                      <property name="maximumSize">
+                       <size>
+                        <width>15</width>
+                        <height>16777215</height>
+                       </size>
+                      </property>
+                     </widget>
+                    </item>
+                    <item row="1" column="0">
+                     <widget class="QLabel" name="label_24">
+                      <property name="text">
+                       <string>Force Constants</string>
+                      </property>
+                     </widget>
+                    </item>
+                    <item row="1" column="2">
+                     <widget class="QCheckBox" name="uiTightCheckBox">
+                      <property name="text">
+                       <string>Use tight convergence criteria</string>
+                      </property>
+                     </widget>
+                    </item>
+                    <item row="1" column="1">
+                     <widget class="QComboBox" name="uiForceConstComboBox"/>
+                    </item>
+                    <item row="0" column="2">
+                     <widget class="QCheckBox" name="uiUseRFOStepsCheckBox">
+                      <property name="text">
+                       <string>Use RFO steps</string>
+                      </property>
+                     </widget>
+                    </item>
+                    <item row="0" column="0">
+                     <widget class="QLabel" name="label_23">
+                      <property name="maximumSize">
+                       <size>
+                        <width>100</width>
+                        <height>16777215</height>
+                       </size>
+                      </property>
+                      <property name="text">
+                       <string>Optimize to a</string>
+                      </property>
+                     </widget>
+                    </item>
+                   </layout>
+                  </item>
+                 </layout>
+                </widget>
+               </item>
+               <item>
+                <widget class="QGroupBox" name="uiFreqGroupBox">
+                 <property name="title">
+                  <string/>
+                 </property>
+                 <layout class="QVBoxLayout" name="verticalLayout_5">
+                  <property name="spacing">
+                   <number>6</number>
+                  </property>
+                  <property name="sizeConstraint">
+                   <enum>QLayout::SetNoConstraint</enum>
+                  </property>
+                  <property name="leftMargin">
+                   <number>0</number>
+                  </property>
+                  <property name="topMargin">
+                   <number>0</number>
+                  </property>
+                  <property name="rightMargin">
+                   <number>0</number>
+                  </property>
+                  <property name="bottomMargin">
+                   <number>0</number>
+                  </property>
+                  <item>
+                   <layout class="QGridLayout" name="uiFreqLayout">
+                    <property name="horizontalSpacing">
+                     <number>6</number>
+                    </property>
+                    <item row="1" column="0">
+                     <widget class="QLabel" name="label_17">
+                      <property name="text">
+                       <string>Compute ROA</string>
+                      </property>
+                     </widget>
+                    </item>
+                    <item row="3" column="0" colspan="3">
+                     <widget class="QCheckBox" name="uiProjectedFreqCheckBox">
+                      <property name="text">
+                       <string>Compute projected frequencies</string>
+                      </property>
+                     </widget>
+                    </item>
+                    <item row="0" column="3">
+                     <widget class="QComboBox" name="uiNormalModeComboBox">
+                      <property name="maximumSize">
+                       <size>
+                        <width>70</width>
+                        <height>16777215</height>
+                       </size>
+                      </property>
+                     </widget>
+                    </item>
+                    <item row="1" column="2">
+                     <widget class="QLabel" name="label_18">
+                      <property name="text">
+                       <string>Read Incident
+Light Freqs.</string>
+                      </property>
+                      <property name="alignment">
+                       <set>Qt::AlignCenter</set>
+                      </property>
+                     </widget>
+                    </item>
+                    <item row="1" column="3">
+                     <widget class="QComboBox" name="uiIncidentLightComboBox">
+                      <property name="maximumSize">
+                       <size>
+                        <width>70</width>
+                        <height>16777215</height>
+                       </size>
+                      </property>
+                     </widget>
+                    </item>
+                    <item row="0" column="2">
+                     <widget class="QLabel" name="label_16">
+                      <property name="layoutDirection">
+                       <enum>Qt::LeftToRight</enum>
+                      </property>
+                      <property name="text">
+                       <string>Save Normal
+Mode Options</string>
+                      </property>
+                      <property name="alignment">
+                       <set>Qt::AlignCenter</set>
+                      </property>
+                      <property name="margin">
+                       <number>2</number>
+                      </property>
+                     </widget>
+                    </item>
+                    <item row="1" column="1">
+                     <widget class="QComboBox" name="uiROAComboBox">
+                      <property name="maximumSize">
+                       <size>
+                        <width>70</width>
+                        <height>16777215</height>
+                       </size>
+                      </property>
+                     </widget>
+                    </item>
+                    <item row="2" column="3" colspan="2">
+                     <widget class="QLineEdit" name="uiAnharmonicLine"/>
+                    </item>
+                    <item row="0" column="0">
+                     <widget class="QLabel" name="label_13">
+                      <property name="maximumSize">
+                       <size>
+                        <width>120</width>
+                        <height>16777215</height>
+                       </size>
+                      </property>
+                      <property name="text">
+                       <string>Compute Raman</string>
+                      </property>
+                     </widget>
+                    </item>
+                    <item row="1" column="4">
+                     <widget class="QCheckBox" name="uiSkipCheckBox">
+                      <property name="text">
+                       <string>Skip dial. of
+full matrix</string>
+                      </property>
+                     </widget>
+                    </item>
+                    <item row="0" column="4">
+                     <widget class="QCheckBox" name="uiVCDCheckBox">
+                      <property name="text">
+                       <string>Compute VCD</string>
+                      </property>
+                     </widget>
+                    </item>
+                    <item row="2" column="0">
+                     <widget class="QCheckBox" name="uiAnharmonicCheckBox">
+                      <property name="text">
+                       <string>Anharmonic
+Corrections</string>
+                      </property>
+                     </widget>
+                    </item>
+                    <item row="0" column="1">
+                     <widget class="QComboBox" name="uiRamanComboBox">
+                      <property name="maximumSize">
+                       <size>
+                        <width>70</width>
+                        <height>16777215</height>
+                       </size>
+                      </property>
+                     </widget>
+                    </item>
+                    <item row="2" column="1" colspan="2">
+                     <widget class="QCheckBox" name="uiAnharmonicModesCheckBox">
+                      <property name="text">
+                       <string>Specify Anharmonic Modes</string>
+                      </property>
+                     </widget>
+                    </item>
+                   </layout>
+                  </item>
+                 </layout>
+                </widget>
+               </item>
+               <item>
+                <widget class="QGroupBox" name="uiIRCGroupBox">
+                 <property name="title">
+                  <string/>
+                 </property>
+                 <layout class="QVBoxLayout" name="verticalLayout_6">
+                  <property name="spacing">
+                   <number>3</number>
+                  </property>
+                  <property name="sizeConstraint">
+                   <enum>QLayout::SetNoConstraint</enum>
+                  </property>
+                  <property name="leftMargin">
+                   <number>0</number>
+                  </property>
+                  <property name="topMargin">
+                   <number>0</number>
+                  </property>
+                  <property name="rightMargin">
+                   <number>0</number>
+                  </property>
+                  <property name="bottomMargin">
+                   <number>0</number>
+                  </property>
+                  <item>
+                   <layout class="QGridLayout" name="uiIRCLayout">
+                    <item row="1" column="4">
+                     <widget class="QLineEdit" name="uiMorePointsLine">
+                      <property name="maximumSize">
+                       <size>
+                        <width>50</width>
+                        <height>16777215</height>
+                       </size>
+                      </property>
+                     </widget>
+                    </item>
+                    <item row="3" column="0">
+                     <widget class="QLabel" name="label_19">
+                      <property name="text">
+                       <string>Recorrect Steps:</string>
+                      </property>
+                     </widget>
+                    </item>
+                    <item row="2" column="3">
+                     <widget class="QLineEdit" name="uiRecalculateLine">
+                      <property name="maximumSize">
+                       <size>
+                        <width>50</width>
+                        <height>16777215</height>
+                       </size>
+                      </property>
+                     </widget>
+                    </item>
+                    <item row="0" column="0">
+                     <widget class="QLabel" name="label_21">
+                      <property name="text">
+                       <string>Follow IRC</string>
+                      </property>
+                     </widget>
+                    </item>
+                    <item row="1" column="0">
+                     <widget class="QLabel" name="label_20">
+                      <property name="maximumSize">
+                       <size>
+                        <width>120</width>
+                        <height>16777215</height>
+                       </size>
+                      </property>
+                      <property name="text">
+                       <string>Force Constants</string>
+                      </property>
+                     </widget>
+                    </item>
+                    <item row="1" column="2" colspan="2">
+                     <widget class="QCheckBox" name="uiMorePointsCheckBox">
+                      <property name="maximumSize">
+                       <size>
+                        <width>200</width>
+                        <height>16777215</height>
+                       </size>
+                      </property>
+                      <property name="text">
+                       <string>Compute more points, N=</string>
+                      </property>
+                     </widget>
+                    </item>
+                    <item row="2" column="0" colspan="3">
+                     <widget class="QCheckBox" name="uiRecalculateCheckBox">
+                      <property name="maximumSize">
+                       <size>
+                        <width>350</width>
+                        <height>16777215</height>
+                       </size>
+                      </property>
+                      <property name="text">
+                       <string>Recalculate Force Constants Every nth Point, n=</string>
+                      </property>
+                     </widget>
+                    </item>
+                    <item row="0" column="1">
+                     <widget class="QComboBox" name="uiFollowIRCComboBox">
+                      <property name="maximumSize">
+                       <size>
+                        <width>140</width>
+                        <height>16777215</height>
+                       </size>
+                      </property>
+                     </widget>
+                    </item>
+                    <item row="1" column="1">
+                     <widget class="QComboBox" name="uiForceConst2ComboBox"/>
+                    </item>
+                    <item row="0" column="2" colspan="2">
+                     <widget class="QCheckBox" name="uiIRCMaxCheckBox">
+                      <property name="maximumSize">
+                       <size>
+                        <width>200</width>
+                        <height>16777215</height>
+                       </size>
+                      </property>
+                      <property name="text">
+                       <string>Do IRCMax calculation</string>
+                      </property>
+                     </widget>
+                    </item>
+                    <item row="3" column="1">
+                     <widget class="QComboBox" name="uiRecorrectComboBox"/>
+                    </item>
+                   </layout>
+                  </item>
+                 </layout>
+                </widget>
+               </item>
+               <item>
+                <spacer name="verticalSpacer">
+                 <property name="orientation">
+                  <enum>Qt::Vertical</enum>
+                 </property>
+                 <property name="sizeHint" stdset="0">
+                  <size>
+                   <width>20</width>
+                   <height>40</height>
+                  </size>
+                 </property>
+                </spacer>
+               </item>
+              </layout>
+             </widget>
             </widget>
-           </item>
-           <item row="0" column="1">
-            <widget class="QComboBox" name="uiLevelOfOutputComboBox"/>
-           </item>
-           <item row="1" column="0">
-            <widget class="QLabel" name="label_11">
-             <property name="text">
-              <string>Perform NBO calc.:</string>
-             </property>
+            <widget class="QWidget" name="uiMethodTab">
+             <attribute name="title">
+              <string>Method</string>
+             </attribute>
+             <widget class="QWidget" name="layoutWidget">
+              <property name="geometry">
+               <rect>
+                <x>21</x>
+                <y>21</y>
+                <width>716</width>
+                <height>151</height>
+               </rect>
+              </property>
+              <layout class="QVBoxLayout" name="verticalLayout_4">
+               <item>
+                <layout class="QHBoxLayout" name="horizontalLayout">
+                 <item>
+                  <widget class="QLabel" name="label_12">
+                   <property name="text">
+                    <string>Method:</string>
+                   </property>
+                  </widget>
+                 </item>
+                 <item>
+                  <widget class="QComboBox" name="uiStateComboBox">
+                   <property name="minimumSize">
+                    <size>
+                     <width>120</width>
+                     <height>0</height>
+                    </size>
+                   </property>
+                  </widget>
+                 </item>
+                 <item>
+                  <widget class="QComboBox" name="uiMethodComboBox">
+                   <property name="minimumSize">
+                    <size>
+                     <width>120</width>
+                     <height>0</height>
+                    </size>
+                   </property>
+                  </widget>
+                 </item>
+                 <item>
+                  <widget class="QComboBox" name="uiShellTypeComboBox"/>
+                 </item>
+                 <item>
+                  <widget class="QComboBox" name="uiDftFunctionalComboBox">
+                   <property name="minimumSize">
+                    <size>
+                     <width>100</width>
+                     <height>0</height>
+                    </size>
+                   </property>
+                  </widget>
+                 </item>
+                 <item>
+                  <widget class="QComboBox" name="uiSemiFunctionalComboBox">
+                   <property name="minimumSize">
+                    <size>
+                     <width>100</width>
+                     <height>0</height>
+                    </size>
+                   </property>
+                  </widget>
+                 </item>
+                 <item>
+                  <widget class="QComboBox" name="uiMechanicsComboBox"/>
+                 </item>
+                 <item>
+                  <spacer name="horizontalSpacer">
+                   <property name="orientation">
+                    <enum>Qt::Horizontal</enum>
+                   </property>
+                   <property name="sizeHint" stdset="0">
+                    <size>
+                     <width>40</width>
+                     <height>20</height>
+                    </size>
+                   </property>
+                  </spacer>
+                 </item>
+                </layout>
+               </item>
+               <item>
+                <layout class="QHBoxLayout" name="horizontalLayout_2">
+                 <item>
+                  <widget class="QLabel" name="uiBasisLabel">
+                   <property name="text">
+                    <string>Basis Set:</string>
+                   </property>
+                  </widget>
+                 </item>
+                 <item>
+                  <widget class="QComboBox" name="uiAugmentedComboBox"/>
+                 </item>
+                 <item>
+                  <widget class="QComboBox" name="uiBasisComboBox"/>
+                 </item>
+                 <item>
+                  <widget class="QComboBox" name="uiDiffuseComboBox"/>
+                 </item>
+                 <item>
+                  <widget class="QComboBox" name="uiAsteriskComboBox"/>
+                 </item>
+                 <item>
+                  <widget class="QLabel" name="uiParentheses1">
+                   <property name="text">
+                    <string>(</string>
+                   </property>
+                  </widget>
+                 </item>
+                 <item>
+                  <widget class="QComboBox" name="uiPolarizedComboBox"/>
+                 </item>
+                 <item>
+                  <widget class="QLabel" name="uiComma1">
+                   <property name="text">
+                    <string>,</string>
+                   </property>
+                  </widget>
+                 </item>
+                 <item>
+                  <widget class="QComboBox" name="uiSecondPolarizedComboBox"/>
+                 </item>
+                 <item>
+                  <widget class="QLabel" name="uiParentheses2">
+                   <property name="text">
+                    <string>)</string>
+                   </property>
+                  </widget>
+                 </item>
+                 <item>
+                  <spacer name="horizontalSpacer_2">
+                   <property name="orientation">
+                    <enum>Qt::Horizontal</enum>
+                   </property>
+                   <property name="sizeHint" stdset="0">
+                    <size>
+                     <width>40</width>
+                     <height>20</height>
+                    </size>
+                   </property>
+                  </spacer>
+                 </item>
+                </layout>
+               </item>
+               <item>
+                <layout class="QHBoxLayout" name="horizontalLayout_3">
+                 <item>
+                  <widget class="QLabel" name="uiBasis2Label">
+                   <property name="text">
+                    <string>Basis Set 2:</string>
+                   </property>
+                  </widget>
+                 </item>
+                 <item>
+                  <widget class="QComboBox" name="uiAugmented2ComboBox"/>
+                 </item>
+                 <item>
+                  <widget class="QComboBox" name="uiBasis2ComboBox"/>
+                 </item>
+                 <item>
+                  <widget class="QComboBox" name="uiDiffuse2ComboBox"/>
+                 </item>
+                 <item>
+                  <widget class="QComboBox" name="uiAsterisk2ComboBox"/>
+                 </item>
+                 <item>
+                  <widget class="QLabel" name="uiParentheses3">
+                   <property name="text">
+                    <string>(</string>
+                   </property>
+                  </widget>
+                 </item>
+                 <item>
+                  <widget class="QComboBox" name="uiPolarized2ComboBox"/>
+                 </item>
+                 <item>
+                  <widget class="QLabel" name="uiComma2">
+                   <property name="text">
+                    <string>,</string>
+                   </property>
+                  </widget>
+                 </item>
+                 <item>
+                  <widget class="QComboBox" name="uiSecondPolarized2ComboBox"/>
+                 </item>
+                 <item>
+                  <widget class="QLabel" name="uiParentheses4">
+                   <property name="text">
+                    <string>)</string>
+                   </property>
+                  </widget>
+                 </item>
+                 <item>
+                  <spacer name="horizontalSpacer_3">
+                   <property name="orientation">
+                    <enum>Qt::Horizontal</enum>
+                   </property>
+                   <property name="sizeHint" stdset="0">
+                    <size>
+                     <width>40</width>
+                     <height>20</height>
+                    </size>
+                   </property>
+                  </spacer>
+                 </item>
+                </layout>
+               </item>
+               <item>
+                <layout class="QHBoxLayout" name="horizontalLayout_4">
+                 <item>
+                  <widget class="QLabel" name="label_14">
+                   <property name="text">
+                    <string>Charge:</string>
+                   </property>
+                  </widget>
+                 </item>
+                 <item>
+                  <widget class="QSpinBox" name="uiChargeSpinBox">
+                   <property name="minimum">
+                    <number>-99</number>
+                   </property>
+                  </widget>
+                 </item>
+                 <item>
+                  <widget class="QLabel" name="label_15">
+                   <property name="text">
+                    <string>Spin:</string>
+                   </property>
+                  </widget>
+                 </item>
+                 <item>
+                  <widget class="QComboBox" name="uiEvenSpinComboBox"/>
+                 </item>
+                 <item>
+                  <widget class="QComboBox" name="uiOddSpinComboBox"/>
+                 </item>
+                 <item>
+                  <spacer name="horizontalSpacer_4">
+                   <property name="orientation">
+                    <enum>Qt::Horizontal</enum>
+                   </property>
+                   <property name="sizeHint" stdset="0">
+                    <size>
+                     <width>40</width>
+                     <height>20</height>
+                    </size>
+                   </property>
+                  </spacer>
+                 </item>
+                </layout>
+               </item>
+               <item>
+                <spacer name="verticalSpacer_2">
+                 <property name="orientation">
+                  <enum>Qt::Vertical</enum>
+                 </property>
+                 <property name="sizeHint" stdset="0">
+                  <size>
+                   <width>20</width>
+                   <height>40</height>
+                  </size>
+                 </property>
+                </spacer>
+               </item>
+              </layout>
+             </widget>
             </widget>
-           </item>
-           <item row="1" column="1">
-            <widget class="QComboBox" name="uiNBOComboBox"/>
-           </item>
-          </layout>
-         </widget>
-        </widget>
-        <widget class="QWidget" name="uiSolvationTab">
-         <attribute name="title">
-          <string>Solvation</string>
-         </attribute>
-        </widget>
-        <widget class="QWidget" name="uiAddInpTab">
-         <attribute name="title">
-          <string>Add. Inp.</string>
-         </attribute>
-         <widget class="QWidget" name="layoutWidget_4">
-          <property name="geometry">
-           <rect>
-            <x>20</x>
-            <y>10</y>
-            <width>561</width>
-            <height>151</height>
-           </rect>
-          </property>
-          <layout class="QVBoxLayout" name="verticalLayout">
-           <item>
-            <widget class="QPlainTextEdit" name="uiAddInpPlainText"/>
-           </item>
-           <item>
-            <widget class="QCheckBox" name="checkBox">
-             <property name="text">
-              <string>Write Additional Input</string>
-             </property>
+            <widget class="QWidget" name="uiTitleTab">
+             <attribute name="title">
+              <string>Title</string>
+             </attribute>
+             <widget class="QLineEdit" name="uiTitleLineEdit">
+              <property name="geometry">
+               <rect>
+                <x>20</x>
+                <y>10</y>
+                <width>561</width>
+                <height>25</height>
+               </rect>
+              </property>
+             </widget>
             </widget>
-           </item>
-          </layout>
-         </widget>
+            <widget class="QWidget" name="uiLink0Tab">
+             <attribute name="title">
+              <string>Link 0</string>
+             </attribute>
+             <widget class="QTabWidget" name="uiLin0OptionsEditTab">
+              <property name="geometry">
+               <rect>
+                <x>10</x>
+                <y>10</y>
+                <width>601</width>
+                <height>230</height>
+               </rect>
+              </property>
+              <property name="minimumSize">
+               <size>
+                <width>0</width>
+                <height>230</height>
+               </size>
+              </property>
+              <property name="currentIndex">
+               <number>0</number>
+              </property>
+              <widget class="QWidget" name="uiLink0OptionTab">
+               <attribute name="title">
+                <string>Options</string>
+               </attribute>
+               <widget class="QWidget" name="layoutWidget_2">
+                <property name="geometry">
+                 <rect>
+                  <x>10</x>
+                  <y>0</y>
+                  <width>571</width>
+                  <height>122</height>
+                 </rect>
+                </property>
+                <layout class="QGridLayout" name="gridLayout_2">
+                 <item row="3" column="0">
+                  <widget class="QLabel" name="label_8">
+                   <property name="text">
+                    <string>Old Chkpoint File:</string>
+                   </property>
+                  </widget>
+                 </item>
+                 <item row="3" column="1">
+                  <widget class="QComboBox" name="uiOldChkComboBox"/>
+                 </item>
+                 <item row="2" column="0">
+                  <widget class="QLabel" name="label_7">
+                   <property name="text">
+                    <string>Chkpoint File:</string>
+                   </property>
+                  </widget>
+                 </item>
+                 <item row="2" column="2">
+                  <widget class="QLineEdit" name="uiChkLineEdit"/>
+                 </item>
+                 <item row="3" column="2">
+                  <widget class="QLineEdit" name="uiOldChkLineEdit"/>
+                 </item>
+                 <item row="1" column="0">
+                  <widget class="QLabel" name="label_6">
+                   <property name="text">
+                    <string>Shared Processors:</string>
+                   </property>
+                  </widget>
+                 </item>
+                 <item row="0" column="2">
+                  <widget class="QLabel" name="label_9">
+                   <property name="text">
+                    <string>MB</string>
+                   </property>
+                  </widget>
+                 </item>
+                 <item row="0" column="1">
+                  <widget class="QSpinBox" name="uiMemorySpinBox"/>
+                 </item>
+                 <item row="2" column="1">
+                  <widget class="QComboBox" name="uiChkComboBox"/>
+                 </item>
+                 <item row="0" column="0">
+                  <widget class="QLabel" name="label_5">
+                   <property name="text">
+                    <string>Memory Limit:</string>
+                   </property>
+                  </widget>
+                 </item>
+                 <item row="1" column="1">
+                  <widget class="QSpinBox" name="uiProcessorsSpinBox"/>
+                 </item>
+                 <item row="2" column="3">
+                  <widget class="QPushButton" name="uiSaveChkButton">
+                   <property name="maximumSize">
+                    <size>
+                     <width>20</width>
+                     <height>16777215</height>
+                    </size>
+                   </property>
+                   <property name="text">
+                    <string>...</string>
+                   </property>
+                  </widget>
+                 </item>
+                 <item row="3" column="3">
+                  <widget class="QPushButton" name="uiSelectOldChkButton">
+                   <property name="minimumSize">
+                    <size>
+                     <width>0</width>
+                     <height>0</height>
+                    </size>
+                   </property>
+                   <property name="maximumSize">
+                    <size>
+                     <width>20</width>
+                     <height>16777215</height>
+                    </size>
+                   </property>
+                   <property name="text">
+                    <string>...</string>
+                   </property>
+                  </widget>
+                 </item>
+                </layout>
+               </widget>
+              </widget>
+              <widget class="QWidget" name="uiLink0EditTab">
+               <attribute name="title">
+                <string>Edit</string>
+               </attribute>
+               <widget class="QPlainTextEdit" name="uiLink0EditPlainText">
+                <property name="geometry">
+                 <rect>
+                  <x>0</x>
+                  <y>0</y>
+                  <width>591</width>
+                  <height>111</height>
+                 </rect>
+                </property>
+               </widget>
+              </widget>
+             </widget>
+            </widget>
+            <widget class="QWidget" name="uiGeneralTab">
+             <property name="accessibleName">
+              <string/>
+             </property>
+             <attribute name="title">
+              <string>General</string>
+             </attribute>
+            </widget>
+            <widget class="QWidget" name="uiGessTab">
+             <attribute name="title">
+              <string>Guess</string>
+             </attribute>
+            </widget>
+            <widget class="QWidget" name="uiPopTab">
+             <attribute name="title">
+              <string>Pop.</string>
+             </attribute>
+             <widget class="QWidget" name="layoutWidget_3">
+              <property name="geometry">
+               <rect>
+                <x>20</x>
+                <y>20</y>
+                <width>281</width>
+                <height>58</height>
+               </rect>
+              </property>
+              <layout class="QGridLayout" name="gridLayout_3">
+               <item row="0" column="0">
+                <widget class="QLabel" name="label_10">
+                 <property name="text">
+                  <string>Level of output:</string>
+                 </property>
+                </widget>
+               </item>
+               <item row="0" column="1">
+                <widget class="QComboBox" name="uiLevelOfOutputComboBox"/>
+               </item>
+               <item row="1" column="0">
+                <widget class="QLabel" name="label_11">
+                 <property name="text">
+                  <string>Perform NBO calc.:</string>
+                 </property>
+                </widget>
+               </item>
+               <item row="1" column="1">
+                <widget class="QComboBox" name="uiNBOComboBox"/>
+               </item>
+              </layout>
+             </widget>
+            </widget>
+            <widget class="QWidget" name="uiSolvationTab">
+             <attribute name="title">
+              <string>Solvation</string>
+             </attribute>
+            </widget>
+            <widget class="QWidget" name="uiAddInpTab">
+             <attribute name="title">
+              <string>Add. Inp.</string>
+             </attribute>
+             <widget class="QWidget" name="layoutWidget_4">
+              <property name="geometry">
+               <rect>
+                <x>20</x>
+                <y>10</y>
+                <width>561</width>
+                <height>151</height>
+               </rect>
+              </property>
+              <layout class="QVBoxLayout" name="verticalLayout">
+               <item>
+                <widget class="QPlainTextEdit" name="uiAddInpPlainText"/>
+               </item>
+               <item>
+                <widget class="QCheckBox" name="checkBox">
+                 <property name="text">
+                  <string>Write Additional Input</string>
+                 </property>
+                </widget>
+               </item>
+              </layout>
+             </widget>
+            </widget>
+            <widget class="QWidget" name="uiPreviewTab">
+             <attribute name="title">
+              <string>Preview</string>
+             </attribute>
+             <widget class="QPlainTextEdit" name="uiPreviewPlainText">
+              <property name="geometry">
+               <rect>
+                <x>20</x>
+                <y>9</y>
+                <width>561</width>
+                <height>141</height>
+               </rect>
+              </property>
+             </widget>
+            </widget>
+           </widget>
+          </item>
+          <item row="4" column="1">
+           <widget class="QPushButton" name="uiCancelCalcButton">
+            <property name="text">
+             <string>Cancel</string>
+            </property>
+           </widget>
+          </item>
+          <item row="4" column="0">
+           <widget class="QPushButton" name="uiQueueCalcButton">
+            <property name="text">
+             <string>Queue Calc</string>
+            </property>
+           </widget>
+          </item>
+          <item row="2" column="1">
+           <widget class="QLineEdit" name="uiAditionalKeyLineEdit"/>
+          </item>
+          <item row="2" column="2">
+           <widget class="QPushButton" name="uiUpdateKeyButton">
+            <property name="text">
+             <string>Update</string>
+            </property>
+           </widget>
+          </item>
+          <item row="4" column="2">
+           <widget class="QPushButton" name="uiHelpButton">
+            <property name="text">
+             <string>Help</string>
+            </property>
+           </widget>
+          </item>
+          <item row="2" column="0">
+           <widget class="QLabel" name="label_4">
+            <property name="text">
+             <string>Aditional Keywords: </string>
+            </property>
+           </widget>
+          </item>
+         </layout>
         </widget>
-        <widget class="QWidget" name="uiPreviewTab">
-         <attribute name="title">
-          <string>Preview</string>
-         </attribute>
-         <widget class="QPlainTextEdit" name="uiPreviewPlainText">
-          <property name="geometry">
-           <rect>
-            <x>20</x>
-            <y>9</y>
-            <width>561</width>
-            <height>141</height>
-           </rect>
-          </property>
-         </widget>
-        </widget>
-       </widget>
-      </item>
-     </layout>
+       </item>
+      </layout>
+     </widget>
     </widget>
    </item>
   </layout>

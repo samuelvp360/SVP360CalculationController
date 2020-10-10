@@ -21,23 +21,38 @@ class Gaussian(Persistent):
 
         RDLogger.DisableLog('rdApp.*')  # evita los mensajes adicionales no cruciales
         self.path = moleculePath.replace(' ', '\ ')
-        self.mol = Chem.MolFromMol2File(moleculePath)
         self.__properties = {}
+        exec(
+            f"""self.smiles = subprocess.run(
+                'obabel {self.path} -osmi',
+                shell=True,
+                capture_output=True,
+                text=True
+            ).stdout.split()[0]"""
+        )
+        self.__properties['SMILES'] = self.smiles
+        if Chem.MolFromMol2File(moleculePath) is not None:
+            self.mol = Chem.MolFromMol2File(moleculePath)
+        else:
+            mol = Chem.MolFromSmiles(self.__properties['SMILES'])
+            self.mol = Chem.AddHs(mol)
+        
         self.__calculations = {
             'OPT': {}, 'SPEN': {}, 'SPERA': {}, 'SPERC': {}, 'REACTIVITY INDEX': {}
-            }
+        }
 
         self.stored = False
         self._p_changed = False
         self.lightAtoms = []
         self.heavyAtoms = []
         self.totalAtoms = []
-
         self.SetName()
+        self.SetCharges()
         self.SetLightAndHeavyAtoms()
+        self.__properties['NET CHARGE'] = int(round(np.sum(self.__properties['PARTIAL CHARGES'], axis=0, dtype=np.float32)[0]))
+        print(self.__properties['NET CHARGE'])
         self.__properties['FORMULA'] = ''.join(set((i+str(self.totalAtoms.count(i)) for i in self.totalAtoms)))
 #         self.__properties['INIT COORD'] = {}
-        self.__properties['SMILES'] = Chem.MolToSmiles(self.mol, isomericSmiles=False)
         self.__properties['MOLAR MASS'] = round(Descriptors.ExactMolWt(self.mol), 2)
         self.__properties['INCHIKEY'] = re.sub('\n', '', re.sub('-', '_', Chem.inchi.MolToInchiKey(self.mol)))
         self.Set2DImage()
@@ -68,6 +83,16 @@ class Gaussian(Persistent):
         else:
             self.heavyAtomsPresent = False
 
+    def SetCharges(self):
+
+        Chem.rdPartialCharges.ComputeGasteigerCharges(self.mol)
+        n = self.mol.GetNumAtoms()
+        self.__properties['PARTIAL CHARGES'] = np.zeros((n, 1), dtype=np.float32)
+        for i in range(n):
+            a = self.mol.GetAtomWithIdx(i)
+            self.__properties['PARTIAL CHARGES'][i, 0] = a.GetProp("_GasteigerCharge")
+        print(self.__properties['PARTIAL CHARGES'])
+
     def Set2DImage(self):
 
         self.mol2D = Chem.MolFromSmiles(self.__properties['SMILES'])
@@ -75,7 +100,7 @@ class Gaussian(Persistent):
 
     def SetCalculations(
             self, kind, method, functional, basis, basis2, saveFile, status, memory, cpu
-            ):
+    ):
 
         if kind == 'opt':
             position = len(self.__calculations['OPT']) + 1
@@ -106,6 +131,14 @@ class Gaussian(Persistent):
     @property
     def GetName(self):
         return self.__properties['NAME']
+
+    @property
+    def GetPartialCharges(self):
+        return self.__properties['PARTIAL CHARGES']
+
+    @property
+    def GetNetCharge(self):
+        return self.__properties['NET CHARGE']
 
     @property
     def GetMolarMass(self):
@@ -171,8 +204,8 @@ STORED: {self.stored}
                 'obabel {self.path} -ogzmat',
                 shell=True,
                 capture_output=True,
-                text=True)""")
-            self.gzmat = self.run.stdout.splitlines()
+                text=True).stdout""")
+            self.gzmat = self.run.splitlines()
             self.gzmat.insert(0, '%Mem='+str(memory)+'MB')
             self.gzmat[1] = '%NProcShared='+str(cpu)
 
@@ -201,14 +234,13 @@ STORED: {self.stored}
                     ' '.join(self.heavyAtoms) + ' 0\n' + basis2 + '\n****\n' +
                     ' '.join(self.lightAtoms) + ' 0\n' + basis + '\n****\n\n' +
                     ' '.join(self.heavyAtoms) + ' 0\n'+basis2
-                    )
+                )
 
             with open('Opt_'+self.__properties['NAME']+'.com', 'w') as optFile:
                 optFile.write('\n'.join(self.gzmat))
 
     def __Run(self, inputFile):
         """
-
         Parameters
         ----------
         inputFile : the .com file as Gaussian input
@@ -216,7 +248,6 @@ STORED: {self.stored}
         Returns
         -------
         log file corresponding to the output of required calculation
-
         """
 
         homeDir = '/home/'+subprocess.run(
@@ -295,7 +326,7 @@ STORED: {self.stored}
                     i += 1
                     optimizedMol2File.append(
                         '      {} {}          {}   {}   {} {}     {}  {}        {}\n'.format(*fields)
-                        )
+                    )
                 else:
                     optimizedMol2File.append(line)
 

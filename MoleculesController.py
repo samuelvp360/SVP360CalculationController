@@ -74,6 +74,7 @@ class MainWindow(qtw.QMainWindow):
         self.uiStopCalcButton.clicked.connect(lambda: self.uiStartCalcButton.setEnabled(True))
         self.uiRemoveButton.clicked.connect(self.RemoveFromQueue)
         self.uiSubmitCalcButton.pressed.connect(lambda: self.calculationSetupController.setVisible(True))
+        self.uiSubmitCalcButton.pressed.connect(lambda: self.calculationSetupController.DetectMolecule(self._selectedMolecule))
 
 #     --------------------------------------------------FUNCTIONS------------------------------------------------
     def LoadMolecules(self):
@@ -226,7 +227,6 @@ class MainWindow(qtw.QMainWindow):
         totalMolecules = len(self._molecules)
         del self._molecules[:]
         del self._filePathList[:]
-        del self._calcWidgets[:]
         self.listModel.layoutChanged.emit()
         for w in self._propertiesWidgets:
             w.setVisible(False)
