@@ -118,8 +118,8 @@ class CalculationsController(qtw.QWidget):
             self.uiSecondPolarized2ComboBox,  # 24
             self.uiParentheses4,  # 25
             self.uiChargeSpinBox,  # 26
-            self.uiEvenSpinComboBox,  # 27
-            self.uiOddSpinComboBox,  # 28
+            self.uiEvenSpinSpinBox,  # 27
+            self.uiOddSpinSpinBox,  # 28
         ]
 
         # ------------------------------------POPULATE WIDGETS------------------------------------------------------
@@ -157,13 +157,14 @@ class CalculationsController(qtw.QWidget):
         self._jobsWidgets[22].addItems(self._followIRC)
 
         self.MethodController(1, self._methodWidgets[1].currentIndex())
-        self.SetCahrgeMult()
 
         # ------------------------------------SIGNALS---------------------------------------------------------------
         self._methodWidgets[1].currentIndexChanged.connect(lambda: self.MethodController(1, self._methodWidgets[1].currentIndex()))
         self._jobsWidgets[0].currentIndexChanged.connect(lambda: self.JobTypeController(0, self._jobsWidgets[0].currentIndex()))
         self.uiTitleLineEdit.textChanged.connect(self.SetTitle)
         self._methodWidgets[26].valueChanged.connect(self.SetCahrgeMult)
+        self._methodWidgets[27].valueChanged.connect(self.SetCahrgeMult)
+        self._methodWidgets[28].valueChanged.connect(self.SetCahrgeMult)
         # ------------------------------------METHODS---------------------------------------------------------------
 
     def DetectMolecule(self, molecule):
@@ -173,6 +174,7 @@ class CalculationsController(qtw.QWidget):
         self._molecule = molecule
         self.uiTitleLineEdit.setText(self._molecule.GetName)
         self._methodWidgets[26].setValue(self._molecule.GetNetCharge)
+        self.SetCahrgeMult()
 
     def MethodController(self, widgetNumber, selection):
 
@@ -232,19 +234,29 @@ class CalculationsController(qtw.QWidget):
 
     def SetTitle(self):
 
-        # print(self._molecule.GetPartialCharges)
-        # print(self._molecule.GetNetCharge)
         self.uiTitleLabel.setText(self.uiTitleLineEdit.text())
 
     def SetKeywords(self):
 
         self.uiKeywordsLabel.setText(''.join(self._keywordsLine))
 
-    def SetCahrgeMult(self):
+    def SetCahrgeMult(self):  # mejorar
         """
         docstring
         """
         self._chargeMultiplicityLine[0] = str(self._methodWidgets[26].value())
-        self.uiChargeMultLabel.setText(''.join(self._chargeMultiplicityLine))
+
+        combination = (self._molecule.GetValenceElectrons - self._methodWidgets[26].value() + self._molecule.GetNetCharge) % 2
+        if combination == 0:
+            self._methodWidgets[28].setVisible(True)
+            self._methodWidgets[27].setVisible(False)
+            self._methodWidgets[27].setValue(2)
+            self._chargeMultiplicityLine[2] = str(self._methodWidgets[28].value())
+        else:
+            self._methodWidgets[28].setVisible(False)
+            self._methodWidgets[27].setVisible(True)
+            self._methodWidgets[28].setValue(1)
+            self._chargeMultiplicityLine[2] = str(self._methodWidgets[27].value())
         
+        self.uiChargeMultLabel.setText(''.join(self._chargeMultiplicityLine))        
 # por aquí

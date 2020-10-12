@@ -20,7 +20,8 @@ class Gaussian(Persistent):
     def __init__(self, moleculePath):
 
         RDLogger.DisableLog('rdApp.*')  # evita los mensajes adicionales no cruciales
-        self.path = moleculePath.replace(' ', '\ ')
+        self.moleculePath = moleculePath
+        self.path = self.moleculePath.replace(' ', '\ ')
         self.__properties = {}
         exec(
             f"""self.smiles = subprocess.run(
@@ -31,8 +32,8 @@ class Gaussian(Persistent):
             ).stdout.split()[0]"""
         )
         self.__properties['SMILES'] = self.smiles
-        if Chem.MolFromMol2File(moleculePath) is not None:
-            self.mol = Chem.MolFromMol2File(moleculePath)
+        if Chem.MolFromMol2File(self.moleculePath) is not None:
+            self.mol = Chem.MolFromMol2File(self.moleculePath)
         else:
             mol = Chem.MolFromSmiles(self.__properties['SMILES'])
             self.mol = Chem.AddHs(mol)
@@ -50,11 +51,13 @@ class Gaussian(Persistent):
         self.SetCharges()
         self.SetLightAndHeavyAtoms()
         self.__properties['NET CHARGE'] = int(round(np.sum(self.__properties['PARTIAL CHARGES'], axis=0, dtype=np.float32)[0]))
-        print(self.__properties['NET CHARGE'])
         self.__properties['FORMULA'] = ''.join(set((i+str(self.totalAtoms.count(i)) for i in self.totalAtoms)))
 #         self.__properties['INIT COORD'] = {}
         self.__properties['MOLAR MASS'] = round(Descriptors.ExactMolWt(self.mol), 2)
+        self.__properties['VALENCE ELECTRONS'] = Descriptors.NumValenceElectrons(self.mol)
+        self.__properties['RADICAL ELECTRONS'] = Descriptors.NumRadicalElectrons(self.mol)
         self.__properties['INCHIKEY'] = re.sub('\n', '', re.sub('-', '_', Chem.inchi.MolToInchiKey(self.mol)))
+        
         self.Set2DImage()
 
     def SetName(self, name=None):
@@ -91,11 +94,21 @@ class Gaussian(Persistent):
         for i in range(n):
             a = self.mol.GetAtomWithIdx(i)
             self.__properties['PARTIAL CHARGES'][i, 0] = a.GetProp("_GasteigerCharge")
-        print(self.__properties['PARTIAL CHARGES'])
+        if np.isnan(np.sum(self.__properties['PARTIAL CHARGES'])):
+            with open(self.moleculePath, 'r') as f:
+                lines = f.readlines()
+                n = self.mol.GetNumAtoms()
+                self.__properties['PARTIAL CHARGES'] = np.zeros((n, 1), dtype=np.float32)
+                charges = [i.split()[-1] for i in lines if len(i.split()) == 9]
+                for i in range(n):
+                    self.__properties['PARTIAL CHARGES'][i, 0] = charges[i]
 
     def Set2DImage(self):
 
         self.mol2D = Chem.MolFromSmiles(self.__properties['SMILES'])
+        if self.mol2D is None:
+            self.__properties['SMILES'] = Chem.MolToSmiles(self.mol)
+            self.mol2D = Chem.MolFromSmiles(self.__properties['SMILES'])
         self.__properties['2D IMAGE'] = Draw.MolToImage(self.mol2D, size=(500, 500))
 
     def SetCalculations(
@@ -139,6 +152,14 @@ class Gaussian(Persistent):
     @property
     def GetNetCharge(self):
         return self.__properties['NET CHARGE']
+
+    @property
+    def GetValenceElectrons(self):
+        return self.__properties['VALENCE ELECTRONS']
+
+    @property
+    def GetRadicalElectrons(self):
+        return self.__properties['RADICAL ELECTRONS']
 
     @property
     def GetMolarMass(self):

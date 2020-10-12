@@ -75,6 +75,7 @@ class MainWindow(qtw.QMainWindow):
         self.uiRemoveButton.clicked.connect(self.RemoveFromQueue)
         self.uiSubmitCalcButton.pressed.connect(lambda: self.calculationSetupController.setVisible(True))
         self.uiSubmitCalcButton.pressed.connect(lambda: self.calculationSetupController.DetectMolecule(self._selectedMolecule))
+        self.uiMoleculesList.clicked.connect(lambda: self.calculationSetupController.DetectMolecule(self._selectedMolecule))
 
 #     --------------------------------------------------FUNCTIONS------------------------------------------------
     def LoadMolecules(self):
