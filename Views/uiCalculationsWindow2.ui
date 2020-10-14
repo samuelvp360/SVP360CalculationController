@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>637</width>
+    <width>893</width>
     <height>798</height>
    </rect>
   </property>
@@ -24,7 +24,7 @@
        <rect>
         <x>0</x>
         <y>0</y>
-        <width>617</width>
+        <width>873</width>
         <height>778</height>
        </rect>
       </property>
@@ -581,8 +581,8 @@ Corrections</string>
                <rect>
                 <x>21</x>
                 <y>21</y>
-                <width>716</width>
-                <height>151</height>
+                <width>886</width>
+                <height>181</height>
                </rect>
               </property>
               <layout class="QVBoxLayout" name="verticalLayout_4">
@@ -705,6 +705,23 @@ Corrections</string>
                   </widget>
                  </item>
                  <item>
+                  <widget class="QLabel" name="uiFittingSetLabel">
+                   <property name="text">
+                    <string>Fitting Set:</string>
+                   </property>
+                  </widget>
+                 </item>
+                 <item>
+                  <widget class="QComboBox" name="uiFittingSetComboBox"/>
+                 </item>
+                 <item>
+                  <widget class="QSpinBox" name="uiAutoValueSpinBox">
+                   <property name="value">
+                    <number>1</number>
+                   </property>
+                  </widget>
+                 </item>
+                 <item>
                   <spacer name="horizontalSpacer_2">
                    <property name="orientation">
                     <enum>Qt::Horizontal</enum>
@@ -766,6 +783,16 @@ Corrections</string>
                     <string>)</string>
                    </property>
                   </widget>
+                 </item>
+                 <item>
+                  <widget class="QLabel" name="uiFittingSet2Label">
+                   <property name="text">
+                    <string>Fitting Set:</string>
+                   </property>
+                  </widget>
+                 </item>
+                 <item>
+                  <widget class="QComboBox" name="uiFittingSet2ComboBox"/>
                  </item>
                  <item>
                   <spacer name="horizontalSpacer_3">
@@ -848,6 +875,13 @@ Corrections</string>
                   </spacer>
                  </item>
                 </layout>
+               </item>
+               <item>
+                <widget class="QCheckBox" name="uiSparseCheckBox">
+                 <property name="text">
+                  <string>Use sparse matrices</string>
+                 </property>
+                </widget>
                </item>
                <item>
                 <spacer name="verticalSpacer_2">

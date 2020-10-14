@@ -132,11 +132,11 @@ class MainWindow(qtw.QMainWindow):
                 self.database.StoreMolecule(self._selectedMolecule)
                 self.GetSelectedMoleculeAndWidgets(
                     self.database.FetchMolecule(self._selectedMolecule.GetInchikey)
-                    )
+                )
                 self.listModel.layoutChanged.emit()
                 self.statusBar().showMessage(
                     f'{self._selectedMolecule.GetName} succesfully added to DB!'
-                    )
+                )
                 print(self.database.ShowAll())  # quitar
                 self.uiSubmitCalcButton.setChecked(False)
                 self.listModel = MoleculesModel(self._molecules)  # ojo
@@ -305,7 +305,7 @@ class MainWindow(qtw.QMainWindow):
             self.statusBar().showMessage(f'Already processed {procMol.GetName}')
 
     def closeEvent(self, event):
-        
+
         reply = qtw.QMessageBox.question(
             self, 'Window Close', 'Are you sure you want to close the window?',
             qtw.QMessageBox.Yes | qtw.QMessageBox.No, qtw.QMessageBox.No
