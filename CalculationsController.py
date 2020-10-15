@@ -33,7 +33,7 @@ class CalculationsController(qtw.QWidget):
         self._link0CPULine = ''
         self._link0ChkLine = ''
         self._chargeMultiplicityLine = ['', ' ', '']
-        self._addInputs = []
+        # self._addInputs = []
 
         # ------------------------------------WIDGETS------------------------------------------------------
         self._jobTypes = ('Energy', 'Optimization', 'Frequency', 'Opt+Freq', 'IRC',
@@ -69,10 +69,9 @@ class CalculationsController(qtw.QWidget):
             None, 'Default', 'AUTO', 'AUTO=N', 'AUTO=ALL', 'DEF2SV', 'DEF2TZV',
             'QZV', 'DGA1', 'DGA2', 'ASV', 'ATZ'
         )
-        # self.chosenParameters = {
-        #     'METHOD': None, 'FUNCTIONAL': None, 'BASIS': None,
-        #     'BASIS2': None, 'SAVE FILE': False, 'STATUS': 'Pending'
-        # }
+        self._qeqCharges = (
+            "Don't use", 'All atoms', 'Untyped atoms', 'Uncharged atoms'
+        )
         self._jobsWidgets = [
             self.uiJobTypeComboBox,  # 0
             self.uiTightCheckBox,  # 1
@@ -133,7 +132,9 @@ class CalculationsController(qtw.QWidget):
             self.uiEvenSpinSpinBox,  # 31
             self.uiOddSpinSpinBox,  # 32
             self.uiSparseCheckBox,  # 33
-            self.uiAutoValueSpinBox  # 34
+            self.uiAutoValueSpinBox,  # 34
+            self.uiQeqChargesLabel,  # 35
+            self.uiQeqChargesComboBox  # 36
         ]
 
         # ------------------------------------POPULATE WIDGETS------------------------------------------------------
@@ -159,7 +160,8 @@ class CalculationsController(qtw.QWidget):
         self._methodWidgets[24].addItems(self._secondPolarizedOrbitals)
         self._methodWidgets[27].addItems(self._fittingSet)
         self._methodWidgets[29].addItems(self._fittingSet)
-        [self._methodWidgets[i].setVisible(False) for i in range(3, 35) if i not in (6, 8, 10, 30, 31, 32)]
+        self._methodWidgets[36].addItems(self._qeqCharges)
+        [self._methodWidgets[i].setVisible(False) for i in range(3, 37) if i not in (6, 8, 10, 30, 31, 32)]
 
         self._jobsWidgets[0].addItems(self._jobTypes)
         self._jobsWidgets[2].addItems(self._optimizeToA)
@@ -210,36 +212,32 @@ class CalculationsController(qtw.QWidget):
 
         if widgetNumber == 1:
             if selection == 0:
-                [self._methodWidgets[i].setVisible(False) for i in range(3, 34) if i not in (5, 7, 30, 31, 32)]
-                self._methodWidgets[5].setVisible(True)
+                [self._methodWidgets[i].setVisible(False) for i in range(3, 37) if i not in range(30, 33)]
+                [self._methodWidgets[i].setVisible(True) for i in (5, 35, 36)]
                 method = self._mechanics[self._methodWidgets[5].currentIndex()]
+                for i in range(2, 12):
+                    self._keywordsLine[i] = ''
                 self._keywordsLine[2] = f'{method}'
-                for i in (3, 4, 9, 10, 11):
-                    self._keywordsLine[i] = ''
             elif selection == 1:
-                [self._methodWidgets[i].setVisible(False) for i in range(3, 34) if i not in (4, 7, 30, 31, 32)]
-                self._methodWidgets[4].setVisible(True)
+                [self._methodWidgets[i].setVisible(False) for i in range(3, 37) if i not in range(30, 33)]
+                [self._methodWidgets[i].setVisible(True) for i in (4, 33)]
+                self._methodWidgets[33].setEnabled(True)
                 functional = self._semiempiricalFunctionals[self._methodWidgets[4].currentIndex()]
+                for i in range(2, 12):
+                    self._keywordsLine[i] = ''
                 self._keywordsLine[2] = f'{functional}'
-                for i in (3, 4, 9, 10, 11):
-                    self._keywordsLine[i] = ''
+                self.SetKeywords(33, self._methodWidgets[33].isChecked())
             elif selection == 2:
-                [self._methodWidgets[i].setVisible(False) for i in range(3, 35) if i not in (6, 8, 10, 30, 31, 32)]
+                [self._methodWidgets[i].setVisible(False) for i in range(3, 37) if i not in range(30, 33)]
                 [self._methodWidgets[i].setVisible(True) for i in (6, 8, 10)]
-                self._methodWidgets[8].setCurrentIndex(0)
-                self._methodWidgets[10].setCurrentIndex(0)
-                self._keywordsLine[2] = 'HF/'
-                self._keywordsLine[4] = self._basisSet[self._methodWidgets[8].currentIndex()]
-                for i in range(9, 12):
+                for i in range(2, 12):
                     self._keywordsLine[i] = ''
+                self._keywordsLine[2] = 'HF/'
+                [self.SetKeywords(i, self._methodWidgets[i].currentIndex()) for i in (8, 10, 12, 14)]
             elif selection == 3:
-                [self._methodWidgets[i].setVisible(False) for i in range(4, 6)]
-                [self._methodWidgets[i].setVisible(True) for i in (3, 6, 8, 33)]
-                self._methodWidgets[33].setEnabled(False)
-                self._methodWidgets[3].setCurrentIndex(2)
-                functional = self._dftFunctionals[self._methodWidgets[3].currentIndex()]
-                self._keywordsLine[2] = f'{functional}/'
-                self._keywordsLine[4] = self._basisSet[self._methodWidgets[8].currentIndex()]
+                [self._methodWidgets[i].setVisible(False) for i in (4, 5, 35, 36)]
+                [self._methodWidgets[i].setVisible(True) for i in (3, 6, 8, 10, 33)]
+                [self.SetKeywords(i, self._methodWidgets[i].currentIndex()) for i in (3, 8, 10, 12, 14)]
         elif widgetNumber == 2:
             if selection == 0:
                 self._keywordsLine[1] = ''
@@ -249,7 +247,9 @@ class CalculationsController(qtw.QWidget):
                 self._keywordsLine[1] = 'U'
             else:
                 self._keywordsLine[1] = 'RO'
-        elif widgetNumber == 3:  # faltan los últimos dos, faltan los del fitting set
+        elif widgetNumber == 3:
+            for i in range(2, 12):
+                    self._keywordsLine[i] = ''
             functional = self._dftFunctionals[selection]
             self._keywordsLine[2] = f'{functional}/'
             if selection in (0, 1, 6, 8, 9):
@@ -260,8 +260,7 @@ class CalculationsController(qtw.QWidget):
                 [self._methodWidgets[i].setVisible(False) for i in (26, 27, 34)]
                 self._methodWidgets[33].setEnabled(False)
                 self._methodWidgets[27].setCurrentIndex(0)
-                for i in range(9, 12):
-                    self._keywordsLine[i] = ''
+            [self.SetKeywords(i, self._methodWidgets[i].currentIndex()) for i in (8, 10, 12, 14, 27)]
         elif widgetNumber == 4:
             functional = self._semiempiricalFunctionals[selection]
             self._keywordsLine[2] = f'{functional}'
@@ -299,6 +298,7 @@ class CalculationsController(qtw.QWidget):
             elif selection in (2, 3, 4):
                 [self._methodWidgets[i].setVisible(True) for i in range(9, 16) if i != 10]
                 self._methodWidgets[10].setVisible(False)
+                self._methodWidgets[10].setCurrentIndex(0)
                 self._methodWidgets[9].setCurrentIndex(1)
                 self._methodWidgets[9].model().item(2).setEnabled(True)
                 self._keywordsLine[4] = self._basisSet[selection].replace('G', '+G')

@@ -25,7 +25,7 @@ class Gaussian(Persistent):
         self.__properties = {}
         exec(
             f"""self.smiles = subprocess.run(
-                'obabel {self.path} -osmi',
+                'obabel {self.path} -ocan',
                 shell=True,
                 capture_output=True,
                 text=True
@@ -37,7 +37,7 @@ class Gaussian(Persistent):
         else:
             mol = Chem.MolFromSmiles(self.__properties['SMILES'])
             self.mol = Chem.AddHs(mol)
-        
+
         self.__calculations = {
             'OPT': {}, 'SPEN': {}, 'SPERA': {}, 'SPERC': {}, 'REACTIVITY INDEX': {}
         }
