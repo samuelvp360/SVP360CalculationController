@@ -915,6 +915,16 @@ Corrections</string>
                   </widget>
                  </item>
                  <item>
+                  <widget class="QCheckBox" name="uiIncludeAllElectronsCheckBox">
+                   <property name="text">
+                    <string>Include all electrons</string>
+                   </property>
+                  </widget>
+                 </item>
+                 <item>
+                  <widget class="QComboBox" name="uiIncludeExcludeComboBox"/>
+                 </item>
+                 <item>
                   <spacer name="horizontalSpacer_5">
                    <property name="orientation">
                     <enum>Qt::Horizontal</enum>

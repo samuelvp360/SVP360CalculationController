@@ -72,6 +72,7 @@ class CalculationsController(qtw.QWidget):
         self._qeqCharges = (
             "Don't use", 'All atoms', 'Untyped atoms', 'Uncharged atoms'
         )
+        self._includeExclude = ('Include Triples', 'Exclude Triples')
         self._jobsWidgets = [
             self.uiJobTypeComboBox,  # 0
             self.uiTightCheckBox,  # 1
@@ -134,8 +135,11 @@ class CalculationsController(qtw.QWidget):
             self.uiSparseCheckBox,  # 33
             self.uiAutoValueSpinBox,  # 34
             self.uiQeqChargesLabel,  # 35
-            self.uiQeqChargesComboBox  # 36
+            self.uiQeqChargesComboBox,  # 36
+            self.uiIncludeAllElectronsCheckBox,  # 37
+            self.uiIncludeExcludeComboBox  # 38
         ]
+        self.lastMethodWidget = len(self._methodWidgets)
 
         # ------------------------------------POPULATE WIDGETS------------------------------------------------------
         self._methodWidgets[0].addItems(self._state)
@@ -161,7 +165,8 @@ class CalculationsController(qtw.QWidget):
         self._methodWidgets[27].addItems(self._fittingSet)
         self._methodWidgets[29].addItems(self._fittingSet)
         self._methodWidgets[36].addItems(self._qeqCharges)
-        [self._methodWidgets[i].setVisible(False) for i in range(3, 37) if i not in (6, 8, 10, 30, 31, 32)]
+        self._methodWidgets[38].addItems(self._includeExclude)
+        [self._methodWidgets[i].setVisible(False) for i in range(3, self.lastMethodWidget) if i not in (6, 8, 10, 30, 31, 32)]
 
         self._jobsWidgets[0].addItems(self._jobTypes)
         self._jobsWidgets[2].addItems(self._optimizeToA)
@@ -189,12 +194,15 @@ class CalculationsController(qtw.QWidget):
         self._methodWidgets[27].currentIndexChanged.connect(lambda: self.SetKeywords(27, self._methodWidgets[27].currentIndex()))
         self._methodWidgets[33].stateChanged.connect(lambda: self.SetKeywords(33, self._methodWidgets[33].isChecked()))
         self._methodWidgets[34].valueChanged.connect(lambda: self.SetKeywords(34, self._methodWidgets[34].value()))
+        self._methodWidgets[36].currentIndexChanged.connect(lambda: self.SetKeywords(36, self._methodWidgets[36].currentIndex()))
+        self._methodWidgets[37].stateChanged.connect(lambda: self.SetKeywords(37, self._methodWidgets[37].isChecked()))
+        self._methodWidgets[38].currentIndexChanged.connect(lambda: self.SetKeywords(38, self._methodWidgets[38].currentIndex()))
         self._jobsWidgets[0].currentIndexChanged.connect(lambda: self.JobTypeController(0, self._jobsWidgets[0].currentIndex()))
         self.uiTitleLineEdit.textChanged.connect(self.SetTitle)
         self._methodWidgets[30].valueChanged.connect(self.SetCahrgeMult)
         self._methodWidgets[31].valueChanged.connect(self.SetCahrgeMult)
         self._methodWidgets[32].valueChanged.connect(self.SetCahrgeMult)
-        
+
         # ------------------------------------METHODS---------------------------------------------------------------
 
     def DetectMolecule(self, molecule):
@@ -212,32 +220,47 @@ class CalculationsController(qtw.QWidget):
 
         if widgetNumber == 1:
             if selection == 0:
-                [self._methodWidgets[i].setVisible(False) for i in range(3, 37) if i not in range(30, 33)]
+                for i in range(1, 12):
+                    self._keywordsLine[i] = ''
+                [self._methodWidgets[i].setVisible(False) for i in range(2, self.lastMethodWidget) if i not in range(30, 33)]
                 [self._methodWidgets[i].setVisible(True) for i in (5, 35, 36)]
-                method = self._mechanics[self._methodWidgets[5].currentIndex()]
-                for i in range(2, 12):
-                    self._keywordsLine[i] = ''
-                self._keywordsLine[2] = f'{method}'
+                self.SetKeywords(5, self._methodWidgets[5].currentIndex())
             elif selection == 1:
-                [self._methodWidgets[i].setVisible(False) for i in range(3, 37) if i not in range(30, 33)]
-                [self._methodWidgets[i].setVisible(True) for i in (4, 33)]
-                self._methodWidgets[33].setEnabled(True)
-                functional = self._semiempiricalFunctionals[self._methodWidgets[4].currentIndex()]
                 for i in range(2, 12):
                     self._keywordsLine[i] = ''
-                self._keywordsLine[2] = f'{functional}'
+                [self._methodWidgets[i].setVisible(False) for i in range(3, self.lastMethodWidget) if i not in range(30, 33)]
+                [self._methodWidgets[i].setVisible(True) for i in (2, 4, 33)]
+                self._methodWidgets[33].setEnabled(True)
+                # functional = self._semiempiricalFunctionals[self._methodWidgets[4].currentIndex()]
+                # self._keywordsLine[2] = f'{functional}'
+                self.SetKeywords(4, self._methodWidgets[4].currentIndex())
                 self.SetKeywords(33, self._methodWidgets[33].isChecked())
             elif selection == 2:
-                [self._methodWidgets[i].setVisible(False) for i in range(3, 37) if i not in range(30, 33)]
-                [self._methodWidgets[i].setVisible(True) for i in (6, 8, 10)]
+                [self._methodWidgets[i].setVisible(False) for i in range(3, self.lastMethodWidget) if i not in range(30, 33)]
+                [self._methodWidgets[i].setVisible(True) for i in (2, 6, 8, 10)]
                 for i in range(2, 12):
                     self._keywordsLine[i] = ''
                 self._keywordsLine[2] = 'HF/'
-                [self.SetKeywords(i, self._methodWidgets[i].currentIndex()) for i in (8, 10, 12, 14)]
+                self.SetKeywords(8, self._methodWidgets[8].currentIndex())
             elif selection == 3:
-                [self._methodWidgets[i].setVisible(False) for i in (4, 5, 35, 36)]
-                [self._methodWidgets[i].setVisible(True) for i in (3, 6, 8, 10, 33)]
-                [self.SetKeywords(i, self._methodWidgets[i].currentIndex()) for i in (3, 8, 10, 12, 14)]
+                [self._methodWidgets[i].setVisible(False) for i in range(3, self.lastMethodWidget) if i not in range(30, 33)]
+                [self._methodWidgets[i].setVisible(True) for i in (2, 3, 6, 8, 33)]
+                [self.SetKeywords(i, self._methodWidgets[i].currentIndex()) for i in (3, 8)]
+            elif selection == 4:
+                for i in range(2, 12):
+                    self._keywordsLine[i] = ''
+                self._keywordsLine[2] = 'MP2'
+                [self._methodWidgets[i].setVisible(False) for i in range(3, self.lastMethodWidget) if i not in range(30, 33)]
+                [self._methodWidgets[i].setVisible(True) for i in (2, 6, 8, 10, 37)]
+                self.SetKeywords(8, self._methodWidgets[8].currentIndex())
+                self.SetKeywords(37, self._methodWidgets[37].isChecked())
+            elif selection == 5:
+                for i in range(2, 12):
+                    self._keywordsLine[i] = ''
+                [self._methodWidgets[i].setVisible(False) for i in range(3, self.lastMethodWidget) if i not in range(30, 33)]
+                [self._methodWidgets[i].setVisible(True) for i in (2, 6, 8, 10, 37, 38)]
+                [self.SetKeywords(i, self._methodWidgets[i].currentIndex()) for i in (38, 8)]
+                self.SetKeywords(37, self._methodWidgets[37].isChecked())
         elif widgetNumber == 2:
             if selection == 0:
                 self._keywordsLine[1] = ''
@@ -249,96 +272,91 @@ class CalculationsController(qtw.QWidget):
                 self._keywordsLine[1] = 'RO'
         elif widgetNumber == 3:
             for i in range(2, 12):
-                    self._keywordsLine[i] = ''
+                self._keywordsLine[i] = ''
             functional = self._dftFunctionals[selection]
             self._keywordsLine[2] = f'{functional}/'
             if selection in (0, 1, 6, 8, 9):
                 [self._methodWidgets[i].setVisible(True) for i in (26, 27)]
                 self._methodWidgets[33].setEnabled(True)
                 self.SetKeywords(33, self._methodWidgets[33].isChecked())
+                self.SetKeywords(27, self._methodWidgets[27].currentIndex())
             else:
                 [self._methodWidgets[i].setVisible(False) for i in (26, 27, 34)]
                 self._methodWidgets[33].setEnabled(False)
-                self._methodWidgets[27].setCurrentIndex(0)
-            [self.SetKeywords(i, self._methodWidgets[i].currentIndex()) for i in (8, 10, 12, 14, 27)]
+            self.SetKeywords(8, self._methodWidgets[8].currentIndex())
         elif widgetNumber == 4:
             functional = self._semiempiricalFunctionals[selection]
             self._keywordsLine[2] = f'{functional}'
-            self._keywordsLine[3] = ''
+            # self._keywordsLine[3] = ''
         elif widgetNumber == 5:
             method = self._mechanics[selection]
             self._keywordsLine[2] = f'{method}'
-            self._keywordsLine[3] = ''
+            self.SetKeywords(36, self._methodWidgets[36].currentIndex())
         elif widgetNumber == 7:
             if selection == 1:
                 self._keywordsLine[3] = self._augmented[selection]
             else:
                 self._keywordsLine[3] = ''
         elif widgetNumber == 8:
+            for i in range(4, 9):
+                self._keywordsLine[i] = ''
             self._keywordsLine[4] = self._basisSet[selection]
 
             if selection == 0:
+                self._methodWidgets[7].setVisible(False)
                 self._methodWidgets[10].setVisible(True)
                 self._methodWidgets[9].setVisible(False)
-                [self._methodWidgets[i].setCurrentIndex(0) for i in (10, 12, 14)]
+                self._methodWidgets[10].setCurrentIndex(0)
                 self._methodWidgets[10].model().item(2).setEnabled(False)
-                for i in range(6, 12):
-                    self._keywordsLine[i] = ''
+                self.SetKeywords(10, self._methodWidgets[10].currentIndex())
             elif selection == 1:
-                self._methodWidgets[9].setVisible(True)
-                self._methodWidgets[10].setVisible(True)
-                self._methodWidgets[9].setCurrentIndex(1)
-                [self._methodWidgets[i].setCurrentIndex(0) for i in (10, 12, 14)]
+                self._methodWidgets[7].setVisible(False)
+                [self._methodWidgets[i].setVisible(True) for i in (9, 10)]
+                [self._methodWidgets[i].setVisible(False) for i in range(11, 16)]
+                self._methodWidgets[9].setCurrentIndex(0)
                 self._methodWidgets[9].model().item(2).setEnabled(False)
                 self._methodWidgets[10].model().item(2).setEnabled(True)
-                [self._methodWidgets[i].setVisible(False) for i in range(11, 16)]
-                self._keywordsLine[4] = self._basisSet[selection].replace('G', '+G')
-                for i in range(6, 9):
-                    self._keywordsLine[i] = ''
-            elif selection in (2, 3, 4):
+                [self.SetKeywords(i, self._methodWidgets[i].currentIndex()) for i in (9, 10)]
+            elif selection in range(2, 5):
+                self._methodWidgets[7].setVisible(False)
                 [self._methodWidgets[i].setVisible(True) for i in range(9, 16) if i != 10]
                 self._methodWidgets[10].setVisible(False)
-                self._methodWidgets[10].setCurrentIndex(0)
-                self._methodWidgets[9].setCurrentIndex(1)
                 self._methodWidgets[9].model().item(2).setEnabled(True)
-                self._keywordsLine[4] = self._basisSet[selection].replace('G', '+G')
-                for i in range(5, 9):
-                    self._keywordsLine[i] = ''
-            else:
+                [self.SetKeywords(i, self._methodWidgets[i].currentIndex()) for i in (9, 12)]
+            elif selection in range(5, 8):
                 [self._methodWidgets[i].setVisible(False) for i in range(9, 16)]
-
-            if selection in (5, 6, 7):
                 self._methodWidgets[7].setVisible(True)
-                [self._methodWidgets[i].setCurrentIndex(0) for i in (7, 12, 14)]
-                for i in range(5, 9):
-                    self._keywordsLine[i] = ''
+                self.SetKeywords(7, self._methodWidgets[7].currentIndex())
             else:
-                self._methodWidgets[7].setVisible(False)
-                self._keywordsLine[3] = ''
+                [self._methodWidgets[i].setVisible(False) for i in range(7, 16) if i != 8]
         elif widgetNumber == 9:
+            basis = self._basisSet[self._methodWidgets[8].currentIndex()]
             if selection == 1:
-                self._keywordsLine[4] = self._basisSet[self._methodWidgets[8].currentIndex()].replace('G', '+G')
+                self._keywordsLine[4] = basis.replace('G', '+G')
             elif selection == 2:
-                self._keywordsLine[4] = self._basisSet[self._methodWidgets[8].currentIndex()].replace('G', '++G')
+                self._keywordsLine[4] = basis.replace('G', '++G')
             else:
-                self._keywordsLine[4] = self._basisSet[self._methodWidgets[8].currentIndex()]
+                self._keywordsLine[4] = basis
         elif widgetNumber == 10:
             if selection in (1, 2):
                 self._keywordsLine[5] = self._asterisk[selection]
             else:
                 self._keywordsLine[5] = ''
-        elif widgetNumber == 12:
-            if selection != 0:
-                self._keywordsLine[6] = '(' + self._firstPolarizedOrbitals[selection]
+        elif widgetNumber == 12 or widgetNumber == 14:
+            first = self._methodWidgets[12].currentIndex()
+            second = self._methodWidgets[14].currentIndex()
+            if first != 0 or second != 0:
+                self._keywordsLine[6] = '('
                 self._keywordsLine[8] = ')'
+                if first != 0 and second == 0:
+                    self._keywordsLine[7] = self._firstPolarizedOrbitals[first]
+                elif first == 0 and second != 0:
+                    self._keywordsLine[7] = self._secondPolarizedOrbitals[second]
+                elif first != 0 and second != 0:
+                    self._keywordsLine[7] = self._firstPolarizedOrbitals[first] + ',' + self._secondPolarizedOrbitals[second]
             else:
-                self._keywordsLine[6] = ''
-                self._keywordsLine[8] = ''
-        elif widgetNumber == 14:
-            if selection != 0:
-                self._keywordsLine[7] = ',' + self._secondPolarizedOrbitals[selection]
-            else:
-                self._keywordsLine[7] = ''
+                for i in range(6, 9):
+                    self._keywordsLine[i] = ''
         elif widgetNumber == 27:
             if selection == 0:
                 self._keywordsLine[9] = ''
@@ -357,6 +375,32 @@ class CalculationsController(qtw.QWidget):
                 self._keywordsLine[11] = ''
         elif widgetNumber == 34:
             self._keywordsLine[9] = re.sub(r'\d+', str(selection), self._keywordsLine[9])
+        elif widgetNumber == 36:
+            if selection == 0:
+                self._keywordsLine[3] = ''
+            elif selection == 1:
+                self._keywordsLine[3] = '=QEQ'
+            elif selection == 2:
+                self._keywordsLine[3] = '=UNTYPED'
+            else:
+                self._keywordsLine[3] = '=UNCHARGED'
+        elif widgetNumber == 37:
+            selectedMethod = self._methodWidgets[1].currentIndex()
+            if selectedMethod == 4:
+                if selection:
+                    self._keywordsLine[3] = '=FULL/'
+                else:
+                    self._keywordsLine[3] = '/'
+            elif selectedMethod == 5:
+                if selection:
+                    self._keywordsLine[3] = ',FULL)/'
+                else:
+                    self._keywordsLine[3] = ')/'
+        elif widgetNumber == 38:
+            if selection == 0:
+                self._keywordsLine[2] = 'MP4(SDTQ'
+            else:
+                self._keywordsLine[2] = 'MP4(SDQ'
 
         self.uiKeywordsLabel.setText(''.join(self._keywordsLine))
 
