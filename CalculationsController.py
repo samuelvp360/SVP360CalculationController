@@ -2,9 +2,7 @@
 # -*- coding: utf-8 -*-
 
 import re
-# from PyQt5 import QtCore as qtc
 from PyQt5 import QtWidgets as qtw
-# from PyQt5 import QtGui as qtg
 from PyQt5 import uic
 # from Models import StatusModel
 import multiprocessing
@@ -15,7 +13,7 @@ class CalculationsController(qtw.QWidget):
 
     def __init__(self):
         super(CalculationsController, self).__init__()
-        uic.loadUi('Views/uiCalculationsWindow2.ui', self)
+        uic.loadUi('Views/uiCalculationsWindow.ui', self)
         self.uiOptGroupBox.setVisible(False)
         self.uiFreqGroupBox.setVisible(False)
         self.uiIRCGroupBox.setVisible(False)
@@ -48,7 +46,7 @@ class CalculationsController(qtw.QWidget):
         self._forceConstants2 = ('Calculate Once', 'Calculate Always', 'Read from .CHK')
         self._recorrect = (None, 'Never', 'Yes', 'Always', 'Test')
         self._followIRC = ('Both directions', 'Forward only', 'Reverse only')
-        self._state = ('Ground State', 'ZINDO', 'CIS', 'SAC-CI', 'TD-SCF', 'TDA', 'EOM-CCSD')
+        self._state = ('Ground State', 'ZINDO', 'CIS') #, 'TD-SCF', 'TDA', 'EOM-CCSD')
         self._methods = ('Mechanics...', 'Semi-empirical...', 'Hartree-Fock', 'DFT...',
                          'MP2', 'MP4', 'CCSD', 'BD', 'CASSCF')
         self._shellType = ('Default Spin', 'Restricted', 'Unrestricted', 'Restricted-Open')
@@ -73,6 +71,8 @@ class CalculationsController(qtw.QWidget):
             "Don't use", 'All atoms', 'Untyped atoms', 'Uncharged atoms'
         )
         self._includeExclude = ('Include Triples', 'Exclude Triples')
+        self._includeExclude2 = ('Exclude Triples', 'Include Triples', 'Include MP4 Triples')
+        self._states = ('Default', 'Singlet Only', 'Triplet Only', 'Singlets & Triplets')
         self._jobsWidgets = [
             self.uiJobTypeComboBox,  # 0
             self.uiTightCheckBox,  # 1
@@ -137,7 +137,21 @@ class CalculationsController(qtw.QWidget):
             self.uiQeqChargesLabel,  # 35
             self.uiQeqChargesComboBox,  # 36
             self.uiIncludeAllElectronsCheckBox,  # 37
-            self.uiIncludeExcludeComboBox  # 38
+            self.uiIncludeExcludeComboBox,  # 38
+            self.uiReadAmpCheckBox,  # 39
+            self.uiSaveAmpCheckBox,  # 40
+            self.uiIncludeExclude2ComboBox,  # 41
+            self.uiNumElectLabel,  # 42
+            self.uiNumOrbLabel,  # 43
+            self.uiNumElectSpinBox,  # 44
+            self.uiNumOrbSpinBox,  # 45
+            self.uiRFOCheckBox,  # 46
+            self.uiStatesLabel,  # 47
+            self.uiStatesComboBox,  # 48
+            self.uiMoreStatesCheckBox,  # 49
+            self.uiMoreStatesSpinBox,  # 50
+            self.uiStateOfInterestCheckBox,  # 51
+            self.uiStateOfInterestSpinBox,  # 52
         ]
         self.lastMethodWidget = len(self._methodWidgets)
 
@@ -166,6 +180,8 @@ class CalculationsController(qtw.QWidget):
         self._methodWidgets[29].addItems(self._fittingSet)
         self._methodWidgets[36].addItems(self._qeqCharges)
         self._methodWidgets[38].addItems(self._includeExclude)
+        self._methodWidgets[41].addItems(self._includeExclude2)
+        self._methodWidgets[48].addItems(self._states)
         [self._methodWidgets[i].setVisible(False) for i in range(3, self.lastMethodWidget) if i not in (6, 8, 10, 30, 31, 32)]
 
         self._jobsWidgets[0].addItems(self._jobTypes)
@@ -180,6 +196,7 @@ class CalculationsController(qtw.QWidget):
         self._jobsWidgets[22].addItems(self._followIRC)
 
         # ------------------------------------SIGNALS---------------------------------------------------------------
+        self._methodWidgets[0].currentIndexChanged.connect(lambda: self.SetKeywords(0, self._methodWidgets[0].currentIndex()))
         self._methodWidgets[1].currentIndexChanged.connect(lambda: self.SetKeywords(1, self._methodWidgets[1].currentIndex()))
         self._methodWidgets[2].currentIndexChanged.connect(lambda: self.SetKeywords(2, self._methodWidgets[2].currentIndex()))
         self._methodWidgets[3].currentIndexChanged.connect(lambda: self.SetKeywords(3, self._methodWidgets[3].currentIndex()))
@@ -197,6 +214,17 @@ class CalculationsController(qtw.QWidget):
         self._methodWidgets[36].currentIndexChanged.connect(lambda: self.SetKeywords(36, self._methodWidgets[36].currentIndex()))
         self._methodWidgets[37].stateChanged.connect(lambda: self.SetKeywords(37, self._methodWidgets[37].isChecked()))
         self._methodWidgets[38].currentIndexChanged.connect(lambda: self.SetKeywords(38, self._methodWidgets[38].currentIndex()))
+        self._methodWidgets[39].stateChanged.connect(lambda: self.SetKeywords(39, self._methodWidgets[39].isChecked()))
+        self._methodWidgets[40].stateChanged.connect(lambda: self.SetKeywords(40, self._methodWidgets[40].isChecked()))
+        self._methodWidgets[41].currentIndexChanged.connect(lambda: self.SetKeywords(41, self._methodWidgets[41].currentIndex()))
+        self._methodWidgets[44].valueChanged.connect(lambda: self.SetKeywords(44, self._methodWidgets[44].value()))
+        self._methodWidgets[45].valueChanged.connect(lambda: self.SetKeywords(45, self._methodWidgets[45].value()))
+        self._methodWidgets[46].stateChanged.connect(lambda: self.SetKeywords(46, self._methodWidgets[46].isChecked()))
+        self._methodWidgets[48].currentIndexChanged.connect(lambda: self.SetKeywords(48, self._methodWidgets[48].currentIndex()))
+        self._methodWidgets[49].stateChanged.connect(lambda: self.SetKeywords(49, self._methodWidgets[49].isChecked()))
+        self._methodWidgets[50].valueChanged.connect(lambda: self.SetKeywords(50, self._methodWidgets[50].value()))
+        self._methodWidgets[51].stateChanged.connect(lambda: self.SetKeywords(51, self._methodWidgets[51].isChecked()))
+        self._methodWidgets[52].valueChanged.connect(lambda: self.SetKeywords(52, self._methodWidgets[52].value()))
         self._jobsWidgets[0].currentIndexChanged.connect(lambda: self.JobTypeController(0, self._jobsWidgets[0].currentIndex()))
         self.uiTitleLineEdit.textChanged.connect(self.SetTitle)
         self._methodWidgets[30].valueChanged.connect(self.SetCahrgeMult)
@@ -218,7 +246,40 @@ class CalculationsController(qtw.QWidget):
 
     def SetKeywords(self, widgetNumber, selection):
 
-        if widgetNumber == 1:
+        if widgetNumber == 0:
+            if selection == 0:
+                self._methodWidgets[1].setVisible(True)
+                self.SetKeywords(1, self._methodWidgets[1].currentIndex())
+            elif selection == 1:
+                self._methodWidgets[2].model().item(3).setEnabled(False)
+                self._methodWidgets[2].setCurrentIndex(0)
+                for i in range(1, 12):
+                    self._keywordsLine[i] = ''
+                self._keywordsLine[2] = 'ZINDO'
+                [self._methodWidgets[i].setVisible(False) for i in range(1, self.lastMethodWidget) if i not in (2, 30, 31, 32)]
+                [self._methodWidgets[i].setVisible(True) for i in range(47, 53)]
+                self.SetKeywords(48, self._methodWidgets[48].currentIndex())
+            elif selection == 2:
+                self._methodWidgets[2].model().item(3).setEnabled(False)
+                self._methodWidgets[2].setCurrentIndex(0)
+                for i in range(1, 12):
+                    self._keywordsLine[i] = ''
+                self._keywordsLine[2] = 'CIS'
+                [self._methodWidgets[i].setVisible(False) for i in range(1, self.lastMethodWidget) if i not in (2, 30, 31, 32)]
+                [self._methodWidgets[i].setVisible(True) for i in (6, 8)]
+                [self._methodWidgets[i].setVisible(True) for i in range(47, 53)]
+                [self.SetKeywords(i, self._methodWidgets[i].currentIndex()) for i in (8, 48)]
+            # elif selection == 3:
+            #     self._methodWidgets[2].model().item(3).setEnabled(False)
+            #     self._methodWidgets[2].setCurrentIndex(0)
+            #     for i in range(1, 12):
+            #         self._keywordsLine[i] = ''
+            #     [self._methodWidgets[i].setVisible(False) for i in range(3, self.lastMethodWidget) if i not in (30, 31, 32)]
+            #     [self._methodWidgets[i].setVisible(True) for i in (1, 2, 6, 8)]
+            #     [self._methodWidgets[i].setVisible(True) for i in range(47, 53)]
+            #     [self.SetKeywords(i, self._methodWidgets[i].currentIndex()) for i in (8, 48)]
+        elif widgetNumber == 1:
+            self._methodWidgets[2].model().item(3).setEnabled(True)
             if selection == 0:
                 for i in range(1, 12):
                     self._keywordsLine[i] = ''
@@ -261,6 +322,31 @@ class CalculationsController(qtw.QWidget):
                 [self._methodWidgets[i].setVisible(True) for i in (2, 6, 8, 10, 37, 38)]
                 [self.SetKeywords(i, self._methodWidgets[i].currentIndex()) for i in (38, 8)]
                 self.SetKeywords(37, self._methodWidgets[37].isChecked())
+            elif selection == 6:
+                for i in range(2, 12):
+                    self._keywordsLine[i] = ''
+                self._keywordsLine[2] = 'CCSD'
+                [self._methodWidgets[i].setVisible(False) for i in range(3, self.lastMethodWidget) if i not in range(30, 33)]
+                [self._methodWidgets[i].setVisible(True) for i in (2, 6, 8, 37, 39, 40, 41)]
+                self.SetKeywords(8, self._methodWidgets[8].currentIndex())
+                self.SetKeywords(39, 1)
+            elif selection == 7:
+                for i in range(2, 12):
+                    self._keywordsLine[i] = ''
+                self._keywordsLine[2] = 'BD'
+                [self._methodWidgets[i].setVisible(False) for i in range(3, self.lastMethodWidget) if i not in range(30, 33)]
+                [self._methodWidgets[i].setVisible(True) for i in (2, 6, 8, 39, 40)]
+                self._methodWidgets[41].setCurrentIndex(0)
+                self._methodWidgets[37].setChecked(False)
+                self.SetKeywords(8, self._methodWidgets[8].currentIndex())
+                self.SetKeywords(39, 1)
+            elif selection == 8:
+                for i in range(2, 12):
+                    self._keywordsLine[i] = ''
+                [self._methodWidgets[i].setVisible(False) for i in range(3, self.lastMethodWidget) if i not in range(30, 33)]
+                [self._methodWidgets[i].setVisible(True) for i in (2, 6, 8, 42, 43, 44, 45, 46)]
+                self.SetKeywords(8, self._methodWidgets[8].currentIndex())
+                self.SetKeywords(46, 1)
         elif widgetNumber == 2:
             if selection == 0:
                 self._keywordsLine[1] = ''
@@ -342,7 +428,7 @@ class CalculationsController(qtw.QWidget):
                 self._keywordsLine[5] = self._asterisk[selection]
             else:
                 self._keywordsLine[5] = ''
-        elif widgetNumber == 12 or widgetNumber == 14:
+        elif widgetNumber in (12, 14):
             first = self._methodWidgets[12].currentIndex()
             second = self._methodWidgets[14].currentIndex()
             if first != 0 or second != 0:
@@ -396,11 +482,88 @@ class CalculationsController(qtw.QWidget):
                     self._keywordsLine[3] = ',FULL)/'
                 else:
                     self._keywordsLine[3] = ')/'
+            elif selectedMethod == 6:
+                self.SetKeywords(39, self._methodWidgets[39].isChecked())
         elif widgetNumber == 38:
             if selection == 0:
                 self._keywordsLine[2] = 'MP4(SDTQ'
             else:
                 self._keywordsLine[2] = 'MP4(SDQ'
+        elif widgetNumber in range(39, 42):
+            first = self._methodWidgets[39].isChecked()
+            if first:
+                firstVariable = 'READAMPLITUDES,'
+            else:
+                firstVariable = ''
+            second = self._methodWidgets[40].isChecked()
+            if second:
+                secondVariable = 'SAVEAMPLITUDES,'
+            else:
+                secondVariable = ''
+            third = self._methodWidgets[37].isChecked()
+            if third:
+                thirdVariable = 'FULL,'
+            else:
+                thirdVariable = ''
+            fourth = self._methodWidgets[41].currentIndex()
+            if fourth == 1:
+                fourthVariable = 'T,'
+            elif fourth == 2:
+                fourthVariable = 'T,E4T,'
+            else:
+                fourthVariable = ''
+            variables = (fourthVariable, thirdVariable, firstVariable, secondVariable)
+            combination = (first, second, third, fourth)
+            if sum(combination) > 0:
+                if first + second == 1 and third + fourth == 0:
+                    self._keywordsLine[3] = '=' + re.sub(r'\,$', '', ''.join(variables)) + '/'
+                elif first == 0 and second == 0:
+                    self._keywordsLine[3] = '(' + re.sub(r'\,$', '', ''.join(variables)) + ')/'
+                else:
+                    self._keywordsLine[3] = '=(' + re.sub(r'\,$', '', ''.join(variables)) + ')/'
+            else:
+                self._keywordsLine[3] = '/'
+        elif widgetNumber in range(44, 47):
+            self._keywordsLine[2] = f'CASSCF({self._methodWidgets[44].value()},{self._methodWidgets[45].value()}'
+            if self._methodWidgets[46].isChecked():
+                self._keywordsLine[3] = ',RFO)/'
+            else:
+                self._keywordsLine[3] = ')/'
+        elif widgetNumber in range(48, 53):
+            first = self._methodWidgets[48].currentIndex()
+            if first == 0:
+                firstVariable = ''
+            elif first == 1:
+                firstVariable = 'SINGLETS,'
+            elif first == 2:
+                firstVariable = 'TRIPLETS,'
+            else:
+                firstVariable = '50-50,'
+            second = self._methodWidgets[49].isChecked()
+            if second:
+                self._methodWidgets[50].setEnabled(True)
+                secondVariable = f'NSTATES={str(self._methodWidgets[50].value())},'
+            else:
+                self._methodWidgets[50].setEnabled(False)
+                secondVariable = ''
+            third = self._methodWidgets[51].isChecked()
+            if third:
+                self._methodWidgets[52].setEnabled(True)
+                thirdVariable = f'ROOT={str(self._methodWidgets[52].value())},'
+            else:
+                self._methodWidgets[52].setEnabled(False)
+                thirdVariable = ''
+            variables = (firstVariable, secondVariable, thirdVariable)
+            combination = (first, second, third)
+            if sum(combination) > 0:
+                if second or third:
+                    self._keywordsLine[3] = '=(' + re.sub(r'\,$', '', ''.join(variables)) + ')/'
+                else:
+                    self._keywordsLine[3] = '=' + re.sub(r'\,$', '', ''.join(variables)) + '/'
+            else:
+                self._keywordsLine[3] = '/'
+            if self._methodWidgets[0].currentIndex() == 1:
+                self._keywordsLine[3] = re.sub(r'/$', '', self._keywordsLine[3])
 
         self.uiKeywordsLabel.setText(''.join(self._keywordsLine))
 
@@ -454,12 +617,11 @@ class CalculationsController(qtw.QWidget):
             self._methodWidgets[31].setVisible(True)
             self._methodWidgets[32].setValue(1)
             self._chargeMultiplicityLine[2] = str(self._methodWidgets[31].value())
-        
+
         if combination == 0 and self._methodWidgets[32].value() == 1:
             self._methodWidgets[2].model().item(1).setEnabled(True)
         else:
             self._methodWidgets[2].setCurrentIndex(0)
             self._methodWidgets[2].model().item(1).setEnabled(False)
-        
+
         self.uiChargeMultLabel.setText(''.join(self._chargeMultiplicityLine))
-# por aquí
