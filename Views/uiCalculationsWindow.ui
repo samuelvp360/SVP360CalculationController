@@ -148,7 +148,7 @@
              </size>
             </property>
             <property name="currentIndex">
-             <number>1</number>
+             <number>0</number>
             </property>
             <widget class="QWidget" name="uiJobTypeTab">
              <attribute name="title">
@@ -293,17 +293,13 @@
                     <property name="horizontalSpacing">
                      <number>6</number>
                     </property>
-                    <item row="1" column="0">
-                     <widget class="QLabel" name="label_17">
-                      <property name="text">
-                       <string>Compute ROA</string>
-                      </property>
-                     </widget>
-                    </item>
-                    <item row="3" column="0" colspan="3">
-                     <widget class="QCheckBox" name="uiProjectedFreqCheckBox">
-                      <property name="text">
-                       <string>Compute projected frequencies</string>
+                    <item row="1" column="1">
+                     <widget class="QComboBox" name="uiROAComboBox">
+                      <property name="maximumSize">
+                       <size>
+                        <width>70</width>
+                        <height>16777215</height>
+                       </size>
                       </property>
                      </widget>
                     </item>
@@ -317,6 +313,31 @@
                       </property>
                      </widget>
                     </item>
+                    <item row="1" column="4">
+                     <widget class="QCheckBox" name="uiSkipCheckBox">
+                      <property name="text">
+                       <string>Skip dial. of
+full matrix</string>
+                      </property>
+                     </widget>
+                    </item>
+                    <item row="2" column="1" colspan="2">
+                     <widget class="QCheckBox" name="uiAnharmonicModesCheckBox">
+                      <property name="enabled">
+                       <bool>false</bool>
+                      </property>
+                      <property name="text">
+                       <string>Specify Anharmonic Modes</string>
+                      </property>
+                     </widget>
+                    </item>
+                    <item row="1" column="0">
+                     <widget class="QLabel" name="label_17">
+                      <property name="text">
+                       <string>Compute ROA</string>
+                      </property>
+                     </widget>
+                    </item>
                     <item row="1" column="2">
                      <widget class="QLabel" name="label_18">
                       <property name="text">
@@ -325,6 +346,38 @@ Light Freqs.</string>
                       </property>
                       <property name="alignment">
                        <set>Qt::AlignCenter</set>
+                      </property>
+                     </widget>
+                    </item>
+                    <item row="0" column="1">
+                     <widget class="QComboBox" name="uiRamanComboBox">
+                      <property name="maximumSize">
+                       <size>
+                        <width>70</width>
+                        <height>16777215</height>
+                       </size>
+                      </property>
+                     </widget>
+                    </item>
+                    <item row="0" column="4">
+                     <widget class="QCheckBox" name="uiVCDCheckBox">
+                      <property name="text">
+                       <string>Compute VCD</string>
+                      </property>
+                     </widget>
+                    </item>
+                    <item row="2" column="0">
+                     <widget class="QCheckBox" name="uiAnharmonicCheckBox">
+                      <property name="text">
+                       <string>Anharmonic
+Corrections</string>
+                      </property>
+                     </widget>
+                    </item>
+                    <item row="3" column="0" colspan="3">
+                     <widget class="QCheckBox" name="uiProjectedFreqCheckBox">
+                      <property name="text">
+                       <string>Compute projected frequencies</string>
                       </property>
                      </widget>
                     </item>
@@ -355,19 +408,6 @@ Mode Options</string>
                       </property>
                      </widget>
                     </item>
-                    <item row="1" column="1">
-                     <widget class="QComboBox" name="uiROAComboBox">
-                      <property name="maximumSize">
-                       <size>
-                        <width>70</width>
-                        <height>16777215</height>
-                       </size>
-                      </property>
-                     </widget>
-                    </item>
-                    <item row="2" column="3" colspan="2">
-                     <widget class="QLineEdit" name="uiAnharmonicLine"/>
-                    </item>
                     <item row="0" column="0">
                      <widget class="QLabel" name="label_13">
                       <property name="maximumSize">
@@ -381,43 +421,16 @@ Mode Options</string>
                       </property>
                      </widget>
                     </item>
-                    <item row="1" column="4">
-                     <widget class="QCheckBox" name="uiSkipCheckBox">
-                      <property name="text">
-                       <string>Skip dial. of
-full matrix</string>
+                    <item row="2" column="3">
+                     <widget class="QSpinBox" name="uiAnharmonicSpinBox">
+                      <property name="enabled">
+                       <bool>false</bool>
                       </property>
-                     </widget>
-                    </item>
-                    <item row="0" column="4">
-                     <widget class="QCheckBox" name="uiVCDCheckBox">
-                      <property name="text">
-                       <string>Compute VCD</string>
+                      <property name="minimum">
+                       <number>1</number>
                       </property>
-                     </widget>
-                    </item>
-                    <item row="2" column="0">
-                     <widget class="QCheckBox" name="uiAnharmonicCheckBox">
-                      <property name="text">
-                       <string>Anharmonic
-Corrections</string>
-                      </property>
-                     </widget>
-                    </item>
-                    <item row="0" column="1">
-                     <widget class="QComboBox" name="uiRamanComboBox">
-                      <property name="maximumSize">
-                       <size>
-                        <width>70</width>
-                        <height>16777215</height>
-                       </size>
-                      </property>
-                     </widget>
-                    </item>
-                    <item row="2" column="1" colspan="2">
-                     <widget class="QCheckBox" name="uiAnharmonicModesCheckBox">
-                      <property name="text">
-                       <string>Specify Anharmonic Modes</string>
+                      <property name="maximum">
+                       <number>9</number>
                       </property>
                      </widget>
                     </item>
@@ -1367,14 +1380,7 @@ Corrections</string>
            </widget>
           </item>
           <item row="2" column="1">
-           <widget class="QLineEdit" name="uiAditionalKeyLineEdit"/>
-          </item>
-          <item row="2" column="2">
-           <widget class="QPushButton" name="uiUpdateKeyButton">
-            <property name="text">
-             <string>Update</string>
-            </property>
-           </widget>
+           <widget class="QLineEdit" name="uiAdditionalKeyLine"/>
           </item>
           <item row="4" column="2">
            <widget class="QPushButton" name="uiHelpButton">
