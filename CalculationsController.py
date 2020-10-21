@@ -89,14 +89,14 @@ class CalculationsController(qtw.QWidget):
             self.uiProjectedFreqCheckBox,  # 12
             self.uiAnharmonicSpinBox,  # 13
             self.uiIncidentLightComboBox,  # 14
-            self.uiRecalculateCheckBox,  # 15
+            self.uiFollowIRCComboBox,  # 15
             self.uiForceConst2ComboBox,  # 16
-            self.uiIRCMaxCheckBox,  # 17
-            self.uiMorePointsLine,  # 18
-            self.uiMorePointsCheckBox,  # 19
-            self.uiRecorrectComboBox,  # 20
-            self.uiRecalculateLine,  # 21
-            self.uiFollowIRCComboBox  # 22
+            self.uiRecorrectComboBox,  # 17
+            self.uiMorePointsCheckBox,  # 18
+            self.uiMorePointsSpinBox,  # 19
+            self.uiRecalculateCheckBox,  # 20
+            self.uiRecalculateSpinBox,  # 21
+            self.uiIRCMaxCheckBox  # 22
         ]
         self._methodWidgets = [
             self.uiStateComboBox,  # 0
@@ -191,9 +191,9 @@ class CalculationsController(qtw.QWidget):
         self._jobsWidgets[6].addItems(self._computeROA)
         self._jobsWidgets[7].addItems(self._saveNormalModesOptions)
         self._jobsWidgets[14].addItems(self._readIncidentLightFreqs)
+        self._jobsWidgets[15].addItems(self._followIRC)
         self._jobsWidgets[16].addItems(self._forceConstants2)
-        self._jobsWidgets[20].addItems(self._recorrect)
-        self._jobsWidgets[22].addItems(self._followIRC)
+        self._jobsWidgets[17].addItems(self._recorrect)
 
         # ------------------------------------SIGNALS---------------------------------------------------------------
         self._methodWidgets[0].currentIndexChanged.connect(lambda: self.SetKeywords(0, self._methodWidgets[0].currentIndex()))
@@ -239,6 +239,14 @@ class CalculationsController(qtw.QWidget):
         self._jobsWidgets[10].stateChanged.connect(lambda: self.JobTypeController(10, self._jobsWidgets[10].isChecked()))
         self._jobsWidgets[11].stateChanged.connect(lambda: self.JobTypeController(11, self._jobsWidgets[11].isChecked()))
         self._jobsWidgets[12].stateChanged.connect(lambda: self.JobTypeController(12, self._jobsWidgets[12].isChecked()))
+        self._jobsWidgets[15].currentIndexChanged.connect(lambda: self.JobTypeController(15, self._jobsWidgets[15].currentIndex()))
+        self._jobsWidgets[16].currentIndexChanged.connect(lambda: self.JobTypeController(16, self._jobsWidgets[16].currentIndex()))
+        self._jobsWidgets[17].currentIndexChanged.connect(lambda: self.JobTypeController(17, self._jobsWidgets[17].currentIndex()))
+        self._jobsWidgets[18].stateChanged.connect(lambda: self.JobTypeController(18, self._jobsWidgets[18].isChecked()))
+        self._jobsWidgets[19].valueChanged.connect(lambda: self.JobTypeController(19, self._jobsWidgets[19].value()))
+        self._jobsWidgets[20].stateChanged.connect(lambda: self.JobTypeController(20, self._jobsWidgets[20].isChecked()))
+        self._jobsWidgets[21].valueChanged.connect(lambda: self.JobTypeController(21, self._jobsWidgets[21].value()))
+        self._jobsWidgets[22].stateChanged.connect(lambda: self.JobTypeController(22, self._jobsWidgets[22].isChecked()))
         self.uiTitleLineEdit.textChanged.connect(self.SetTitle)
         self._methodWidgets[30].valueChanged.connect(self.SetCahrgeMult)
         self._methodWidgets[31].valueChanged.connect(self.SetCahrgeMult)
@@ -282,15 +290,6 @@ class CalculationsController(qtw.QWidget):
                 [self._methodWidgets[i].setVisible(True) for i in (6, 8)]
                 [self._methodWidgets[i].setVisible(True) for i in range(47, 53)]
                 [self.SetKeywords(i, self._methodWidgets[i].currentIndex()) for i in (8, 48)]
-            # elif selection == 3:
-            #     self._methodWidgets[2].model().item(3).setEnabled(False)
-            #     self._methodWidgets[2].setCurrentIndex(0)
-            #     for i in range(1, 12):
-            #         self._keywordsLine[i] = ''
-            #     [self._methodWidgets[i].setVisible(False) for i in range(3, self.lastMethodWidget) if i not in (30, 31, 32)]
-            #     [self._methodWidgets[i].setVisible(True) for i in (1, 2, 6, 8)]
-            #     [self._methodWidgets[i].setVisible(True) for i in range(47, 53)]
-            #     [self.SetKeywords(i, self._methodWidgets[i].currentIndex()) for i in (8, 48)]
         elif widgetNumber == 1:
             self._methodWidgets[2].model().item(3).setEnabled(True)
             if selection == 0:
@@ -305,8 +304,6 @@ class CalculationsController(qtw.QWidget):
                 [self._methodWidgets[i].setVisible(False) for i in range(3, self.lastMethodWidget) if i not in range(30, 33)]
                 [self._methodWidgets[i].setVisible(True) for i in (2, 4, 33)]
                 self._methodWidgets[33].setEnabled(True)
-                # functional = self._semiempiricalFunctionals[self._methodWidgets[4].currentIndex()]
-                # self._keywordsLine[2] = f'{functional}'
                 self.SetKeywords(4, self._methodWidgets[4].currentIndex())
                 self.SetKeywords(33, self._methodWidgets[33].isChecked())
             elif selection == 2:
@@ -578,6 +575,7 @@ class CalculationsController(qtw.QWidget):
                 self._keywordsLine[3] = re.sub(r'/$', '', self._keywordsLine[3])
         elif widgetNumber == 60:
             self._keywordsLine[-1] = ' ' + selection.upper()
+
         self.uiKeywordsLabel.setText(''.join(self._keywordsLine))
 
     def JobTypeController(self, widgetNumber, selection):
@@ -587,29 +585,41 @@ class CalculationsController(qtw.QWidget):
                 self.uiOptGroupBox.setVisible(False)
                 self.uiFreqGroupBox.setVisible(False)
                 self.uiIRCGroupBox.setVisible(False)
-                self._keywordsLine[-2] = ''
-                self._keywordsLine[-3] = ''
+                self._methodWidgets[0].model().item(1).setEnabled(True)
+                for i in range(-4, -1):
+                    self._keywordsLine[i] = ''
             elif selection == 1:
                 self.uiOptGroupBox.setVisible(True)
                 self.uiFreqGroupBox.setVisible(False)
                 self.uiIRCGroupBox.setVisible(False)
+                self._methodWidgets[0].setCurrentIndex(0)
+                self._methodWidgets[0].model().item(1).setEnabled(False)
+                self._keywordsLine[-3] = ''
                 self._keywordsLine[-2] = ''
                 self.JobTypeController(1, 1)
             elif selection == 2:
                 self.uiOptGroupBox.setVisible(False)
                 self.uiFreqGroupBox.setVisible(True)
                 self.uiIRCGroupBox.setVisible(False)
-                self._keywordsLine[-3] = ''
+                self._methodWidgets[0].model().item(1).setEnabled(True)
+                self._keywordsLine[-4] = ''
                 self.JobTypeController(5, 1)
             elif selection == 3:
                 self.uiOptGroupBox.setVisible(True)
                 self.uiFreqGroupBox.setVisible(True)
                 self.uiIRCGroupBox.setVisible(False)
+                self._methodWidgets[0].setCurrentIndex(0)
+                self._methodWidgets[0].model().item(1).setEnabled(False)
                 [self.JobTypeController(i, 1) for i in (1, 5)]
             elif selection == 4:
                 self.uiOptGroupBox.setVisible(False)
                 self.uiFreqGroupBox.setVisible(False)
                 self.uiIRCGroupBox.setVisible(True)
+                self._methodWidgets[0].setCurrentIndex(0)
+                self._methodWidgets[0].model().item(1).setEnabled(False)
+                for i in range(-4, -1):
+                    self._keywordsLine[i] = ''
+                self.JobTypeController(15, 1)
             else:
                 self.uiOptGroupBox.setVisible(False)
                 self.uiFreqGroupBox.setVisible(False)
@@ -645,11 +655,11 @@ class CalculationsController(qtw.QWidget):
             combination = (first, second, third, fourth)
             if sum(combination) > 0:
                 if sum(combination) > 1:
-                    self._keywordsLine[-3] = ' OPT=(' + re.sub(r'\,$', '', ''.join(variables)) + ')'
+                    self._keywordsLine[-4] = ' OPT=(' + re.sub(r'\,$', '', ''.join(variables)) + ')'
                 else:
-                    self._keywordsLine[-3] = ' OPT=' + re.sub(r'\,$', '', ''.join(variables))
+                    self._keywordsLine[-4] = ' OPT=' + re.sub(r'\,$', '', ''.join(variables))
             else:
-                self._keywordsLine[-3] = ' OPT'
+                self._keywordsLine[-4] = ' OPT'
         elif widgetNumber in range(5, 13):
             first = self._jobsWidgets[5].currentIndex()
             if first == 1:
@@ -710,11 +720,84 @@ class CalculationsController(qtw.QWidget):
             combination = (first, second, third, fourth, fifth, sixth, seventh, eighth)
             if sum(combination) > 0:
                 if sum(combination) > 1:
-                    self._keywordsLine[-2] = ' FREQ=(' + re.sub(r'\,$', '', ''.join(variables)) + ')'
+                    self._keywordsLine[-3] = ' FREQ=(' + re.sub(r'\,$', '', ''.join(variables)) + ')'
                 else:
-                    self._keywordsLine[-2] = ' FREQ=' + re.sub(r'\,$', '', ''.join(variables))
+                    self._keywordsLine[-3] = ' FREQ=' + re.sub(r'\,$', '', ''.join(variables))
             else:
-                self._keywordsLine[-2] = ' FREQ'
+                self._keywordsLine[-3] = ' FREQ'
+        elif widgetNumber == 14:
+            if selection == 1:
+                self._keywordsLine[-2] = ' CPHF=RDFREQ'
+            elif selection == 2:
+                self._keywordsLine[-2] = ' CPHF=NOREAD'
+            else:
+                self._keywordsLine[-2] = ''
+        elif widgetNumber in range(15, 23):
+            first = self._jobsWidgets[15].currentIndex()
+            if first == 1:
+                firstVariable = 'FORWARD,'
+            elif first == 2:
+                firstVariable = 'REVERSE,'
+            else:
+                firstVariable = ''
+            second = self._jobsWidgets[16].currentIndex()
+            if second == 1:
+                secondVariable = 'CALCALL,'
+                self._jobsWidgets[20].setEnabled(False)
+            elif second == 2:
+                secondVariable = 'RCFC,'
+                self._jobsWidgets[20].setEnabled(True)
+                self._jobsWidgets[21].setEnabled(True)
+            else:
+                secondVariable = 'CALCFC,'
+                self._jobsWidgets[20].setEnabled(True)
+                self._jobsWidgets[21].setEnabled(True)
+            third = self._jobsWidgets[17].currentIndex()
+            if third == 1:
+                thirdVariable = 'RECORRECT=NEVER,'
+            elif third == 2:
+                thirdVariable = 'RECORRECT=YES,'
+            elif third == 3:
+                thirdVariable = 'RECORRECT=ALWAYS,'
+            elif third == 4:
+                thirdVariable = 'RECORRECT=TEST,'
+            else:
+                thirdVariable = ''
+            fourth = self._jobsWidgets[18].isChecked()
+            if fourth:
+                self._jobsWidgets[19].setEnabled(True)
+                fourthVariable = f'MAXPOINTS={str(self._jobsWidgets[19].value())},'
+            else:
+                fourthVariable = ''
+                self._jobsWidgets[19].setEnabled(False)
+            fifth = self._jobsWidgets[20].isChecked()
+            if fifth:
+                self._jobsWidgets[21].setEnabled(True)
+                self._jobsWidgets[16].model().item(1).setEnabled(False)
+                fifthVariable = f'RECALC={str(self._jobsWidgets[21].value())},'
+            else:
+                self._jobsWidgets[21].setEnabled(False)
+                self._jobsWidgets[16].model().item(1).setEnabled(True)
+                fifthVariable = ''
+            sixth = self._jobsWidgets[22].isChecked()
+            if sixth:
+                sixthVariable = 'HF/3-21G:HF/3-21G,'
+                for i in range(1, 13):
+                    self._keywordsLine[i] = ''
+                self._keywordsLine[-4] = ' IRCMAX='
+            else:
+                sixthVariable = ''
+                self._keywordsLine[-4] = ' IRC='
+                self.SetKeywords(0, self._methodWidgets[0].currentIndex())
+            variables = (
+                firstVariable, secondVariable, fourthVariable,
+                fifthVariable, thirdVariable, sixthVariable
+            )
+            combination = (first, second, third, fourth, fifth, sixth)
+            if sum(combination) >= 1:
+                self._keywordsLine[-3] = '(' + re.sub(r'\,$', '', ''.join(variables)) + ')'
+            else:
+                self._keywordsLine[-3] = 'CALCFC'
 
         self.uiKeywordsLabel.setText(''.join(self._keywordsLine))
 

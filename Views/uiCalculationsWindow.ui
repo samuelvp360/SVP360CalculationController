@@ -465,16 +465,6 @@ Mode Options</string>
                   </property>
                   <item>
                    <layout class="QGridLayout" name="uiIRCLayout">
-                    <item row="1" column="4">
-                     <widget class="QLineEdit" name="uiMorePointsLine">
-                      <property name="maximumSize">
-                       <size>
-                        <width>50</width>
-                        <height>16777215</height>
-                       </size>
-                      </property>
-                     </widget>
-                    </item>
                     <item row="3" column="0">
                      <widget class="QLabel" name="label_19">
                       <property name="text">
@@ -482,22 +472,21 @@ Mode Options</string>
                       </property>
                      </widget>
                     </item>
-                    <item row="2" column="3">
-                     <widget class="QLineEdit" name="uiRecalculateLine">
+                    <item row="0" column="2" colspan="2">
+                     <widget class="QCheckBox" name="uiIRCMaxCheckBox">
                       <property name="maximumSize">
                        <size>
-                        <width>50</width>
+                        <width>200</width>
                         <height>16777215</height>
                        </size>
                       </property>
-                     </widget>
-                    </item>
-                    <item row="0" column="0">
-                     <widget class="QLabel" name="label_21">
                       <property name="text">
-                       <string>Follow IRC</string>
+                       <string>Do IRCMax calculation</string>
                       </property>
                      </widget>
+                    </item>
+                    <item row="3" column="1">
+                     <widget class="QComboBox" name="uiRecorrectComboBox"/>
                     </item>
                     <item row="1" column="0">
                      <widget class="QLabel" name="label_20">
@@ -525,6 +514,16 @@ Mode Options</string>
                       </property>
                      </widget>
                     </item>
+                    <item row="0" column="1">
+                     <widget class="QComboBox" name="uiFollowIRCComboBox">
+                      <property name="maximumSize">
+                       <size>
+                        <width>140</width>
+                        <height>16777215</height>
+                       </size>
+                      </property>
+                     </widget>
+                    </item>
                     <item row="2" column="0" colspan="3">
                      <widget class="QCheckBox" name="uiRecalculateCheckBox">
                       <property name="maximumSize">
@@ -538,34 +537,47 @@ Mode Options</string>
                       </property>
                      </widget>
                     </item>
-                    <item row="0" column="1">
-                     <widget class="QComboBox" name="uiFollowIRCComboBox">
-                      <property name="maximumSize">
-                       <size>
-                        <width>140</width>
-                        <height>16777215</height>
-                       </size>
-                      </property>
-                     </widget>
-                    </item>
                     <item row="1" column="1">
                      <widget class="QComboBox" name="uiForceConst2ComboBox"/>
                     </item>
-                    <item row="0" column="2" colspan="2">
-                     <widget class="QCheckBox" name="uiIRCMaxCheckBox">
-                      <property name="maximumSize">
-                       <size>
-                        <width>200</width>
-                        <height>16777215</height>
-                       </size>
-                      </property>
+                    <item row="0" column="0">
+                     <widget class="QLabel" name="label_21">
                       <property name="text">
-                       <string>Do IRCMax calculation</string>
+                       <string>Follow IRC</string>
                       </property>
                      </widget>
                     </item>
-                    <item row="3" column="1">
-                     <widget class="QComboBox" name="uiRecorrectComboBox"/>
+                    <item row="1" column="4">
+                     <widget class="QSpinBox" name="uiMorePointsSpinBox">
+                      <property name="maximumSize">
+                       <size>
+                        <width>50</width>
+                        <height>16777215</height>
+                       </size>
+                      </property>
+                      <property name="minimum">
+                       <number>1</number>
+                      </property>
+                      <property name="value">
+                       <number>10</number>
+                      </property>
+                     </widget>
+                    </item>
+                    <item row="2" column="3">
+                     <widget class="QSpinBox" name="uiRecalculateSpinBox">
+                      <property name="maximumSize">
+                       <size>
+                        <width>50</width>
+                        <height>16777215</height>
+                       </size>
+                      </property>
+                      <property name="minimum">
+                       <number>1</number>
+                      </property>
+                      <property name="value">
+                       <number>3</number>
+                      </property>
+                     </widget>
                     </item>
                    </layout>
                   </item>
