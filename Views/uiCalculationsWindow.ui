@@ -148,7 +148,7 @@
              </size>
             </property>
             <property name="currentIndex">
-             <number>0</number>
+             <number>3</number>
             </property>
             <widget class="QWidget" name="uiJobTypeTab">
              <attribute name="title">
@@ -1191,10 +1191,10 @@ Mode Options</string>
                   </widget>
                  </item>
                  <item row="2" column="2">
-                  <widget class="QLineEdit" name="uiChkLineEdit"/>
+                  <widget class="QLineEdit" name="uiChkLine"/>
                  </item>
                  <item row="3" column="2">
-                  <widget class="QLineEdit" name="uiOldChkLineEdit"/>
+                  <widget class="QLineEdit" name="uiOldChkLine"/>
                  </item>
                  <item row="1" column="0">
                   <widget class="QLabel" name="label_6">
@@ -1206,12 +1206,9 @@ Mode Options</string>
                  <item row="0" column="2">
                   <widget class="QLabel" name="label_9">
                    <property name="text">
-                    <string>MB</string>
+                    <string>GB</string>
                    </property>
                   </widget>
-                 </item>
-                 <item row="0" column="1">
-                  <widget class="QSpinBox" name="uiMemorySpinBox"/>
                  </item>
                  <item row="2" column="1">
                   <widget class="QComboBox" name="uiChkComboBox"/>
@@ -1255,6 +1252,16 @@ Mode Options</string>
                    </property>
                    <property name="text">
                     <string>...</string>
+                   </property>
+                  </widget>
+                 </item>
+                 <item row="0" column="1">
+                  <widget class="QDoubleSpinBox" name="uiMemorySpinBox">
+                   <property name="decimals">
+                    <number>1</number>
+                   </property>
+                   <property name="singleStep">
+                    <double>0.100000000000000</double>
                    </property>
                   </widget>
                  </item>

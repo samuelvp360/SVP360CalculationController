@@ -20,16 +20,14 @@ class CalculationsController(qtw.QWidget):
         # ------------------------------------PROPERTIES------------------------------------------------------
 
         # mem = virtual_memory()
-        self.memory = virtual_memory().total // 1000000
+        self.memory = virtual_memory().total // 1e9
         self.cpu = multiprocessing.cpu_count()
         # self._parametersList = []
         self._keywordsLine = []
         for i in range(16):
             self._keywordsLine.append('')
         self._keywordsLine[0] = '# '
-        self._link0MemoryLine = ''
-        self._link0CPULine = ''
-        self._link0ChkLine = ''
+        self._link0Line = ['', '', '', '']
         self._chargeMultiplicityLine = ['', ' ', '']
         # self._addInputs = []
 
@@ -46,7 +44,7 @@ class CalculationsController(qtw.QWidget):
         self._forceConstants2 = ('Calculate Once', 'Calculate Always', 'Read from .CHK')
         self._recorrect = (None, 'Never', 'Yes', 'Always', 'Test')
         self._followIRC = ('Both directions', 'Forward only', 'Reverse only')
-        self._state = ('Ground State', 'ZINDO', 'CIS') #, 'TD-SCF', 'TDA', 'EOM-CCSD')
+        self._state = ('Ground State', 'ZINDO', 'CIS')  # , 'TD-SCF', 'TDA', 'EOM-CCSD')
         self._methods = ('Mechanics...', 'Semi-empirical...', 'Hartree-Fock', 'DFT...',
                          'MP2', 'MP4', 'CCSD', 'BD', 'CASSCF')
         self._shellType = ('Default Spin', 'Restricted', 'Unrestricted', 'Restricted-Open')
@@ -73,6 +71,8 @@ class CalculationsController(qtw.QWidget):
         self._includeExclude = ('Include Triples', 'Exclude Triples')
         self._includeExclude2 = ('Exclude Triples', 'Include Triples', 'Include MP4 Triples')
         self._states = ('Default', 'Singlet Only', 'Triplet Only', 'Singlets & Triplets')
+        self._chk = ("Don't save", 'Default name', 'Specify...')
+        self._oldChk = ('No', 'Default name', 'Specify...')
         self._jobsWidgets = [
             self.uiJobTypeComboBox,  # 0
             self.uiOptimizeToAComboBox,  # 1
@@ -154,6 +154,17 @@ class CalculationsController(qtw.QWidget):
             self.uiStateOfInterestSpinBox,  # 52
         ]
         self.lastMethodWidget = len(self._methodWidgets)
+        self._link0Widgets = [
+            self.uiMemorySpinBox,  # 0
+            self.uiProcessorsSpinBox,  # 1
+            self.uiChkComboBox,  # 2
+            self.uiChkLine,  # 3
+            self.uiSaveChkButton,  # 4
+            self.uiOldChkComboBox,  # 5
+            self.uiOldChkLine,  # 6
+            self.uiSelectOldChkButton,  # 7
+            self.uiLink0EditPlainText  # 8
+        ]
 
         # ------------------------------------POPULATE WIDGETS------------------------------------------------------
         self._methodWidgets[0].addItems(self._state)
@@ -195,6 +206,14 @@ class CalculationsController(qtw.QWidget):
         self._jobsWidgets[16].addItems(self._forceConstants2)
         self._jobsWidgets[17].addItems(self._recorrect)
 
+        self._link0Widgets[0].setMaximum(self.memory)
+        self._link0Widgets[0].setValue(self.memory - 2)
+        self._link0Widgets[1].setMaximum(self.cpu)
+        self._link0Widgets[1].setValue(self.cpu - 1)
+        self._link0Widgets[2].addItems(self._chk)
+        [self._link0Widgets[i].setEnabled(False) for i in range(3, 8) if i != 5]
+        self._link0Widgets[5].addItems(self._oldChk)
+
         # ------------------------------------SIGNALS---------------------------------------------------------------
         self._methodWidgets[0].currentIndexChanged.connect(lambda: self.SetKeywords(0, self._methodWidgets[0].currentIndex()))
         self._methodWidgets[1].currentIndexChanged.connect(lambda: self.SetKeywords(1, self._methodWidgets[1].currentIndex()))
@@ -226,27 +245,35 @@ class CalculationsController(qtw.QWidget):
         self._methodWidgets[51].stateChanged.connect(lambda: self.SetKeywords(51, self._methodWidgets[51].isChecked()))
         self._methodWidgets[52].valueChanged.connect(lambda: self.SetKeywords(52, self._methodWidgets[52].value()))
         self.uiAdditionalKeyLine.textChanged.connect(lambda: self.SetKeywords(60, self.uiAdditionalKeyLine.text()))
-        self._jobsWidgets[0].currentIndexChanged.connect(lambda: self.JobTypeController(0, self._jobsWidgets[0].currentIndex()))
-        self._jobsWidgets[1].currentIndexChanged.connect(lambda: self.JobTypeController(1, self._jobsWidgets[1].currentIndex()))
-        self._jobsWidgets[2].currentIndexChanged.connect(lambda: self.JobTypeController(2, self._jobsWidgets[2].currentIndex()))
-        self._jobsWidgets[3].stateChanged.connect(lambda: self.JobTypeController(3, self._jobsWidgets[3].isChecked()))
-        self._jobsWidgets[4].stateChanged.connect(lambda: self.JobTypeController(4, self._jobsWidgets[4].isChecked()))
-        self._jobsWidgets[5].currentIndexChanged.connect(lambda: self.JobTypeController(5, self._jobsWidgets[5].currentIndex()))
-        self._jobsWidgets[6].currentIndexChanged.connect(lambda: self.JobTypeController(6, self._jobsWidgets[6].currentIndex()))
-        self._jobsWidgets[7].currentIndexChanged.connect(lambda: self.JobTypeController(7, self._jobsWidgets[7].currentIndex()))
-        self._jobsWidgets[8].stateChanged.connect(lambda: self.JobTypeController(8, self._jobsWidgets[8].isChecked()))
-        self._jobsWidgets[9].stateChanged.connect(lambda: self.JobTypeController(9, self._jobsWidgets[9].isChecked()))
-        self._jobsWidgets[10].stateChanged.connect(lambda: self.JobTypeController(10, self._jobsWidgets[10].isChecked()))
-        self._jobsWidgets[11].stateChanged.connect(lambda: self.JobTypeController(11, self._jobsWidgets[11].isChecked()))
-        self._jobsWidgets[12].stateChanged.connect(lambda: self.JobTypeController(12, self._jobsWidgets[12].isChecked()))
-        self._jobsWidgets[15].currentIndexChanged.connect(lambda: self.JobTypeController(15, self._jobsWidgets[15].currentIndex()))
-        self._jobsWidgets[16].currentIndexChanged.connect(lambda: self.JobTypeController(16, self._jobsWidgets[16].currentIndex()))
-        self._jobsWidgets[17].currentIndexChanged.connect(lambda: self.JobTypeController(17, self._jobsWidgets[17].currentIndex()))
-        self._jobsWidgets[18].stateChanged.connect(lambda: self.JobTypeController(18, self._jobsWidgets[18].isChecked()))
-        self._jobsWidgets[19].valueChanged.connect(lambda: self.JobTypeController(19, self._jobsWidgets[19].value()))
-        self._jobsWidgets[20].stateChanged.connect(lambda: self.JobTypeController(20, self._jobsWidgets[20].isChecked()))
-        self._jobsWidgets[21].valueChanged.connect(lambda: self.JobTypeController(21, self._jobsWidgets[21].value()))
-        self._jobsWidgets[22].stateChanged.connect(lambda: self.JobTypeController(22, self._jobsWidgets[22].isChecked()))
+        self._jobsWidgets[0].currentIndexChanged.connect(lambda: self.SetJobType(0, self._jobsWidgets[0].currentIndex()))
+        self._jobsWidgets[1].currentIndexChanged.connect(lambda: self.SetJobType(1, self._jobsWidgets[1].currentIndex()))
+        self._jobsWidgets[2].currentIndexChanged.connect(lambda: self.SetJobType(2, self._jobsWidgets[2].currentIndex()))
+        self._jobsWidgets[3].stateChanged.connect(lambda: self.SetJobType(3, self._jobsWidgets[3].isChecked()))
+        self._jobsWidgets[4].stateChanged.connect(lambda: self.SetJobType(4, self._jobsWidgets[4].isChecked()))
+        self._jobsWidgets[5].currentIndexChanged.connect(lambda: self.SetJobType(5, self._jobsWidgets[5].currentIndex()))
+        self._jobsWidgets[6].currentIndexChanged.connect(lambda: self.SetJobType(6, self._jobsWidgets[6].currentIndex()))
+        self._jobsWidgets[7].currentIndexChanged.connect(lambda: self.SetJobType(7, self._jobsWidgets[7].currentIndex()))
+        self._jobsWidgets[8].stateChanged.connect(lambda: self.SetJobType(8, self._jobsWidgets[8].isChecked()))
+        self._jobsWidgets[9].stateChanged.connect(lambda: self.SetJobType(9, self._jobsWidgets[9].isChecked()))
+        self._jobsWidgets[10].stateChanged.connect(lambda: self.SetJobType(10, self._jobsWidgets[10].isChecked()))
+        self._jobsWidgets[11].stateChanged.connect(lambda: self.SetJobType(11, self._jobsWidgets[11].isChecked()))
+        self._jobsWidgets[12].stateChanged.connect(lambda: self.SetJobType(12, self._jobsWidgets[12].isChecked()))
+        self._jobsWidgets[15].currentIndexChanged.connect(lambda: self.SetJobType(15, self._jobsWidgets[15].currentIndex()))
+        self._jobsWidgets[16].currentIndexChanged.connect(lambda: self.SetJobType(16, self._jobsWidgets[16].currentIndex()))
+        self._jobsWidgets[17].currentIndexChanged.connect(lambda: self.SetJobType(17, self._jobsWidgets[17].currentIndex()))
+        self._jobsWidgets[18].stateChanged.connect(lambda: self.SetJobType(18, self._jobsWidgets[18].isChecked()))
+        self._jobsWidgets[19].valueChanged.connect(lambda: self.SetJobType(19, self._jobsWidgets[19].value()))
+        self._jobsWidgets[20].stateChanged.connect(lambda: self.SetJobType(20, self._jobsWidgets[20].isChecked()))
+        self._jobsWidgets[21].valueChanged.connect(lambda: self.SetJobType(21, self._jobsWidgets[21].value()))
+        self._jobsWidgets[22].stateChanged.connect(lambda: self.SetJobType(22, self._jobsWidgets[22].isChecked()))
+        self._link0Widgets[0].valueChanged.connect(lambda: self.SetLink0(0, self._link0Widgets[0].value()))
+        self._link0Widgets[1].valueChanged.connect(lambda: self.SetLink0(1, self._link0Widgets[1].value()))
+        self._link0Widgets[2].currentIndexChanged.connect(lambda: self.SetLink0(2, self._link0Widgets[2].currentIndex()))
+        self._link0Widgets[3].textChanged.connect(lambda: self.SetLink0(3, self._link0Widgets[3].text()))
+        self._link0Widgets[4].clicked.connect(lambda: self.SetLink0(4, 1))
+        self._link0Widgets[5].currentIndexChanged.connect(lambda: self.SetLink0(5, self._link0Widgets[5].currentIndex()))
+        self._link0Widgets[6].textChanged.connect(lambda: self.SetLink0(6, self._link0Widgets[6].text()))
+        self._link0Widgets[7].clicked.connect(lambda: self.SetLink0(7, 1))
         self.uiTitleLineEdit.textChanged.connect(self.SetTitle)
         self._methodWidgets[30].valueChanged.connect(self.SetCahrgeMult)
         self._methodWidgets[31].valueChanged.connect(self.SetCahrgeMult)
@@ -259,11 +286,15 @@ class CalculationsController(qtw.QWidget):
         docstring
         """
         self._molecule = molecule
+        self._chk = self._molecule.GetName
+        self._oldChk = self._molecule.GetName
         self.uiTitleLineEdit.setText(self._molecule.GetName)
         self._methodWidgets[30].setValue(self._molecule.GetNetCharge)
         self._methodWidgets[10].model().item(2).setEnabled(False)
         self.SetKeywords(1, self._methodWidgets[1].currentIndex())
         self.SetCahrgeMult()
+        [self.SetLink0(i, self._link0Widgets[i].value()) for i in range(2)]
+        [self.SetLink0(i, self._link0Widgets[i].currentIndex()) for i in (2, 5)]
 
     def SetKeywords(self, widgetNumber, selection):
 
@@ -578,7 +609,7 @@ class CalculationsController(qtw.QWidget):
 
         self.uiKeywordsLabel.setText(''.join(self._keywordsLine))
 
-    def JobTypeController(self, widgetNumber, selection):
+    def SetJobType(self, widgetNumber, selection):
 
         if widgetNumber == 0:
             if selection == 0:
@@ -596,21 +627,21 @@ class CalculationsController(qtw.QWidget):
                 self._methodWidgets[0].model().item(1).setEnabled(False)
                 self._keywordsLine[-3] = ''
                 self._keywordsLine[-2] = ''
-                self.JobTypeController(1, 1)
+                self.SetJobType(1, 1)
             elif selection == 2:
                 self.uiOptGroupBox.setVisible(False)
                 self.uiFreqGroupBox.setVisible(True)
                 self.uiIRCGroupBox.setVisible(False)
                 self._methodWidgets[0].model().item(1).setEnabled(True)
                 self._keywordsLine[-4] = ''
-                self.JobTypeController(5, 1)
+                self.SetJobType(5, 1)
             elif selection == 3:
                 self.uiOptGroupBox.setVisible(True)
                 self.uiFreqGroupBox.setVisible(True)
                 self.uiIRCGroupBox.setVisible(False)
                 self._methodWidgets[0].setCurrentIndex(0)
                 self._methodWidgets[0].model().item(1).setEnabled(False)
-                [self.JobTypeController(i, 1) for i in (1, 5)]
+                [self.SetJobType(i, 1) for i in (1, 5)]
             elif selection == 4:
                 self.uiOptGroupBox.setVisible(False)
                 self.uiFreqGroupBox.setVisible(False)
@@ -619,7 +650,7 @@ class CalculationsController(qtw.QWidget):
                 self._methodWidgets[0].model().item(1).setEnabled(False)
                 for i in range(-4, -1):
                     self._keywordsLine[i] = ''
-                self.JobTypeController(15, 1)
+                self.SetJobType(15, 1)
             else:
                 self.uiOptGroupBox.setVisible(False)
                 self.uiFreqGroupBox.setVisible(False)
@@ -704,7 +735,7 @@ class CalculationsController(qtw.QWidget):
             if seventh:
                 seventhVariable = 'SELECTANHARMONICMODES,'
                 self._jobsWidgets[13].setEnabled(True)
-                self.JobTypeController(13, self._jobsWidgets[13].value())
+                self.SetJobType(13, self._jobsWidgets[13].value())
             else:
                 seventhVariable = ''
                 self._jobsWidgets[13].setEnabled(False)
@@ -831,3 +862,74 @@ class CalculationsController(qtw.QWidget):
             self._methodWidgets[2].model().item(1).setEnabled(False)
 
         self.uiChargeMultLabel.setText(''.join(self._chargeMultiplicityLine))
+
+    def SetLink0(self, widgetNumber, selection):
+        """
+        docstring
+        """
+        if widgetNumber == 0:
+            if selection != 0:
+                self._link0Line[2] = f'%Mem={str(round(selection, 2))}GB\n'
+            else:
+                self._link0Line[2] = ''
+        elif widgetNumber == 1:
+            if selection != 0:
+                self._link0Line[1] = f'%NProcShared={str(selection)}\n'
+            else:
+                self._link0Line[1] = ''
+        elif widgetNumber == 2:
+            if selection == 1:
+                [self._link0Widgets[i].setEnabled(False) for i in (3, 4)]
+                self._link0Widgets[3].setText(self._molecule.GetName)
+            elif selection == 2:
+                [self._link0Widgets[i].setEnabled(True) for i in (3, 4)]
+                self._link0Widgets[3].clear()
+                self._link0Widgets[3].setPlaceholderText('Name_here')
+            else:
+                [self._link0Widgets[i].setEnabled(False) for i in (3, 4)]
+                self._link0Widgets[3].clear()
+            self.SetLink0(3, self._link0Widgets[3].text())
+        elif widgetNumber == 3:
+            if selection == '':
+                self._link0Line[3] = ''
+            else:
+                self._link0Line[3] = f'%CHK={selection}.chk\n'
+        elif widgetNumber == 4:
+            self._chk, _ = qtw.QFileDialog.getSaveFileName(
+                self,
+                'Save your chk file',
+                options=qtw.QFileDialog.DontUseNativeDialog,
+                filter='Chk files(*.chk)'
+            )
+            if self._chk != '':
+                self._link0Widgets[3].setText(f'{self._chk}.chk')
+                self.SetLink0(3, self._chk)
+        elif widgetNumber == 5:
+            if selection == 1:
+                [self._link0Widgets[i].setEnabled(False) for i in (6, 7)]
+                self._link0Widgets[6].setText(f'{self._molecule.GetName}')
+            elif selection == 2:
+                [self._link0Widgets[i].setEnabled(True) for i in (6, 7)]
+                self._link0Widgets[6].clear()
+                self._link0Widgets[6].setPlaceholderText('Name_here')
+            else:
+                [self._link0Widgets[i].setEnabled(False) for i in (6, 7)]
+                self._link0Widgets[6].clear()
+            self.SetLink0(6, self._link0Widgets[6].text())
+        elif widgetNumber == 6:
+            if selection == '':
+                self._link0Line[0] = ''
+            else:
+                self._link0Line[0] = f'%OLDCHK={selection}.chk\n'
+        elif widgetNumber == 7:
+            self._oldChk, _ = qtw.QFileDialog.getOpenFileName(
+                self,
+                'Open an old chk file',
+                options=qtw.QFileDialog.DontUseNativeDialog,
+                filter='Chk files(*.chk)'
+            )
+            if self._oldChk != '':
+                self._link0Widgets[6].setText(f'{self._oldChk}.chk')
+                self.SetLink0(6, self._oldChk)
+
+        self._link0Widgets[8].setPlainText(''.join(self._link0Line))
