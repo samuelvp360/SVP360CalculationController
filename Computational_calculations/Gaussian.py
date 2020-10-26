@@ -11,6 +11,7 @@ from rdkit.Chem import Draw, Descriptors
 # from rdkit.Chem.Draw import rdMolDraw2D
 from rdkit import RDLogger
 import numpy as np
+import pandas as pd
 from persistent import Persistent
 import transaction
 
@@ -48,11 +49,12 @@ class Gaussian(Persistent):
         self.heavyAtoms = []
         self.totalAtoms = []
         self.SetName()
-        self.SetCharges()
+        self.SetInitMatrix()
+        self.SetZMatrix()
+        # self.SetCharges()
         self.SetLightAndHeavyAtoms()
-        self.__properties['NET CHARGE'] = int(round(np.sum(self.__properties['PARTIAL CHARGES'], axis=0, dtype=np.float32)[0]))
-        self.__properties['FORMULA'] = ''.join(set((i+str(self.totalAtoms.count(i)) for i in self.totalAtoms)))
-#         self.__properties['INIT COORD'] = {}
+        # self.__properties['NET CHARGE'] = int(round(np.sum(self.__properties['PARTIAL CHARGES'], axis=0, dtype=np.float32)[0]))
+        self.__properties['FORMULA'] = ''.join(set((i + str(self.totalAtoms.count(i)) for i in self.totalAtoms)))
         self.__properties['MOLAR MASS'] = round(Descriptors.ExactMolWt(self.mol), 2)
         self.__properties['VALENCE ELECTRONS'] = Descriptors.NumValenceElectrons(self.mol)
         self.__properties['RADICAL ELECTRONS'] = Descriptors.NumRadicalElectrons(self.mol)
@@ -86,22 +88,22 @@ class Gaussian(Persistent):
         else:
             self.heavyAtomsPresent = False
 
-    def SetCharges(self):
+    # def SetCharges(self):
 
-        Chem.rdPartialCharges.ComputeGasteigerCharges(self.mol)
-        n = self.mol.GetNumAtoms()
-        self.__properties['PARTIAL CHARGES'] = np.zeros((n, 1), dtype=np.float32)
-        for i in range(n):
-            a = self.mol.GetAtomWithIdx(i)
-            self.__properties['PARTIAL CHARGES'][i, 0] = a.GetProp("_GasteigerCharge")
-        if np.isnan(np.sum(self.__properties['PARTIAL CHARGES'])):
-            with open(self.moleculePath, 'r') as f:
-                lines = f.readlines()
-                n = self.mol.GetNumAtoms()
-                self.__properties['PARTIAL CHARGES'] = np.zeros((n, 1), dtype=np.float32)
-                charges = [i.split()[-1] for i in lines if len(i.split()) == 9]
-                for i in range(n):
-                    self.__properties['PARTIAL CHARGES'][i, 0] = charges[i]
+    #     Chem.rdPartialCharges.ComputeGasteigerCharges(self.mol)
+    #     n = self.mol.GetNumAtoms()
+    #     self.__properties['PARTIAL CHARGES'] = np.zeros((n, 1), dtype=np.float32)
+    #     for i in range(n):
+    #         a = self.mol.GetAtomWithIdx(i)
+    #         self.__properties['PARTIAL CHARGES'][i, 0] = a.GetProp("_GasteigerCharge")
+    #     if np.isnan(np.sum(self.__properties['PARTIAL CHARGES'])):
+    #         with open(self.moleculePath, 'r') as f:
+    #             lines = f.readlines()
+    #             n = self.mol.GetNumAtoms()
+    #             self.__properties['PARTIAL CHARGES'] = np.zeros((n, 1), dtype=np.float32)
+    #             charges = [i.split()[-1] for i in lines if len(i.split()) == 9]
+    #             for i in range(n):
+    #                 self.__properties['PARTIAL CHARGES'][i, 0] = charges[i]
 
     def Set2DImage(self):
 
@@ -110,6 +112,30 @@ class Gaussian(Persistent):
             self.__properties['SMILES'] = Chem.MolToSmiles(self.mol)
             self.mol2D = Chem.MolFromSmiles(self.__properties['SMILES'])
         self.__properties['2D IMAGE'] = Draw.MolToImage(self.mol2D, size=(500, 500))
+
+    def SetInitMatrix(self):
+        """
+        docstring
+        """
+        with open(self.moleculePath, 'r') as f:
+            lines = f.readlines()
+            initialCoords = [i.split()[:] for i in lines if len(i.split()) == 9]
+            self.__properties['INIT MATRIX'] = pd.DataFrame(
+                initialCoords, columns=['ID', 'ATOM', 'X', 'Y', 'Z', 'ATOM TYPE', 'SUBS. ID', 'SUBS. NAME', 'CHARGE']
+            )
+            self.__properties['INIT MATRIX'][['ID', 'SUBS. ID']] = self.__properties['INIT MATRIX'][['ID', 'SUBS. ID']].astype('int')
+            self.__properties['INIT MATRIX'][['X', 'Y', 'Z', 'CHARGE']] = self.__properties['INIT MATRIX'][['X', 'Y', 'Z', 'CHARGE']].astype('float')
+
+    def SetZMatrix(self):
+        """
+        docstring
+        """
+        exec(f"""self.run = subprocess.run(
+                'obabel {self.path} -ogzmat',
+                shell=True,
+                capture_output=True,
+                text=True).stdout""")
+        self.__properties['ZMAT'] = self.run.splitlines()[6:]
 
     def SetCalculations(
             self, kind, method, functional, basis, basis2, saveFile, status, memory, cpu
@@ -124,7 +150,7 @@ class Gaussian(Persistent):
             self.__calculations['OPT'][position]['BASIS2'] = basis2
             results = self.__Optimization(method, functional, basis, basis2, memory, cpu)
             self.__calculations['OPT'][position]['RESULT'] = results
-            if results is not None:  # estoy hay que optimizarlo
+            if results is not None:
                 self.__calculations['OPT'][position]['STATUS'] = 'Finished'
             else:
                 self.__calculations['OPT'][position]['STATUS'] = 'Failed'
@@ -133,7 +159,6 @@ class Gaussian(Persistent):
                 self.__ReplaceCoordinates(self.__properties['NAME'], results)
 
         if self.stored:
-            print('se da el cambio')  # ojo
             self._p_changed = True
             transaction.commit()
 
@@ -146,12 +171,16 @@ class Gaussian(Persistent):
         return self.__properties['NAME']
 
     @property
-    def GetPartialCharges(self):
-        return self.__properties['PARTIAL CHARGES']
+    def GetInitMatrix(self):
+        return self.__properties['INIT MATRIX']
 
     @property
     def GetNetCharge(self):
-        return self.__properties['NET CHARGE']
+        return int(round(self.__properties['INIT MATRIX']['CHARGE'].sum(), 1))
+
+    @property
+    def GetGasteigerCharges(self):
+        return self.__properties['INIT MATRIX']['CHARGE']
 
     @property
     def GetValenceElectrons(self):
@@ -180,6 +209,14 @@ class Gaussian(Persistent):
     @property
     def Get2DImage(self):
         return self.__properties['2D IMAGE']
+
+    @property
+    def GetInitCoords(self):
+        return self.__properties['INIT MATRIX'].iloc[:, 1:5]
+
+    @property
+    def GetZMatrix(self):
+        return '\n'.join(self.__properties['ZMAT'])
 
     def GetCalculations(self, kind):
 
