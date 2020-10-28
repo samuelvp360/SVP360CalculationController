@@ -29,14 +29,17 @@ class CalculationsController(qtw.QWidget):
         self._keywordsLine[0] = '# '
         self._link0Line = ['', '', '', '']
         self._chargeMultiplicityLine = ['', ' ', '']
-        # self._addInputs = []
+        self._lightBasis = ['', '', '', '', '', '']
+        self._addInput = ''
 
         # ------------------------------------WIDGETS------------------------------------------------------
-        self._jobTypes = ('Energy', 'Optimization', 'Frequency', 'Opt+Freq', 'IRC',
-                          'Scan', 'Stability', 'NMR')
+        self._jobTypes = (
+            'Energy', 'Optimization', 'Frequency', 'Opt+Freq', 'IRC', 'Scan', 'Stability', 'NMR'
+        )
         self._optimizeToA = ('Minimum', 'TS (Berny)')
-        self._forceConstants = (None, 'Calculate at First Point', 'Calculate at all Points',
-                                'Read Internal', 'Read Cartesian')
+        self._forceConstants = (
+            None, 'Calculate at First Point', 'Calculate at all Points', 'Read Internal', 'Read Cartesian'
+        )
         self._computeRaman = (None, 'No', 'Yes')
         self._saveNormalModesOptions = (None, 'Yes', 'No')
         self._computeROA = ('No', 'Yes')
@@ -45,18 +48,25 @@ class CalculationsController(qtw.QWidget):
         self._recorrect = (None, 'Never', 'Yes', 'Always', 'Test')
         self._followIRC = ('Both directions', 'Forward only', 'Reverse only')
         self._state = ('Ground State', 'ZINDO', 'CIS')  # , 'TD-SCF', 'TDA', 'EOM-CCSD')
-        self._methods = ('Mechanics...', 'Semi-empirical...', 'Hartree-Fock', 'DFT...',
-                         'MP2', 'MP4', 'CCSD', 'BD', 'CASSCF')
+        self._methods = (
+            'Mechanics...', 'Semi-empirical...', 'Hartree-Fock', 'DFT...', 'MP2', 'MP4', 'CCSD', 'BD', 'CASSCF'
+        )
         self._shellType = ('Default Spin', 'Restricted', 'Unrestricted', 'Restricted-Open')
         self._semiempiricalFunctionals = ('PM6', 'PDDG', 'AM1', 'PM3', 'PM3MM', 'INDO', 'CNDO')
-        self._dftFunctionals = ('LSDA', 'BPV86', 'B3LYP', 'CAM-B3LYP', 'B3PW91', 'MPW1PW91',
-                                'PBEPBE', 'HSEH1PBE', 'HCTH', 'TPSSTPSS', 'WB97XD', 'APFD',
-                                'MPWB1K', 'M06-2X')
+        self._dftFunctionals = (
+            'LSDA', 'BPV86', 'B3LYP', 'CAM-B3LYP', 'B3PW91', 'MPW1PW91', 'PBEPBE', 'HSEH1PBE',
+            'HCTH', 'TPSSTPSS', 'WB97XD', 'APFD', 'MPWB1K', 'M06-2X'
+        )
         self._mechanics = ('UFF', 'Dreiding', 'Amber')
         self._augmented = (None, 'aug-')
-        self._basisSet = ('STO-3G', '3-21G', '6-31G', '6-31G\'', '6-311G', 'cc-pVDZ', 'cc-pVTZ',
-                          'cc-pVQZ', 'LanL2DZ', 'LanL2MB', 'SDD', 'DGDZVP', 'DGDZVP2', 'DGTZVP',
-                          'GEN', 'GENECP')
+        self._basisSet = (
+            'STO-3G', '3-21G', '6-31G', '6-31G\'', '6-311G', 'cc-pVDZ', 'cc-pVTZ', 'cc-pVQZ',
+            'LanL2DZ', 'LanL2MB', 'SDD', 'DGDZVP', 'DGDZVP2', 'DGTZVP', 'GEN', 'GENECP'
+        )
+        self._heavyBasisSet = ('LanL2DZ', 'LanL2MB', 'SDD', 'DGDZVP', 'DGDZVP2', 'DGTZVP')
+        self._lightBasisSet = (
+            'STO-3G', '3-21G', '6-31G', '6-31G\'', '6-311G', 'cc-pVDZ', 'cc-pVTZ', 'cc-pVQZ'
+        )
         self._asterisk = (None, '*', '**')
         self._diffuse = (None, '+', '++')
         self._firstPolarizedOrbitals = (None, 'd', '2d', '3d', 'df', '2df', '3df', '3d2f')
@@ -125,10 +135,10 @@ class CalculationsController(qtw.QWidget):
             self.uiComma2,  # 23
             self.uiSecondPolarized2ComboBox,  # 24
             self.uiParentheses4,  # 25
-            self.uiFittingSetLabel,  # 26
-            self.uiFittingSetComboBox,  # 27
-            self.uiFittingSet2Label,  # 28
-            self.uiFittingSet2ComboBox,  # 29
+            self.uiBasis3Label,  # 26
+            self.uiBasis3ComboBox,  # 27
+            self.uiFittingSetLabel,  # 28
+            self.uiFittingSetComboBox,  # 29
             self.uiChargeSpinBox,  # 30
             self.uiEvenSpinSpinBox,  # 31
             self.uiOddSpinSpinBox,  # 32
@@ -197,12 +207,12 @@ class CalculationsController(qtw.QWidget):
         self._methodWidgets[12].addItems(self._firstPolarizedOrbitals)
         self._methodWidgets[14].addItems(self._secondPolarizedOrbitals)
         self._methodWidgets[17].addItems(self._augmented)
-        self._methodWidgets[18].addItems(self._basisSet)
+        self._methodWidgets[18].addItems(self._lightBasisSet)
         self._methodWidgets[19].addItems(self._diffuse)
         self._methodWidgets[20].addItems(self._asterisk)
         self._methodWidgets[22].addItems(self._firstPolarizedOrbitals)
         self._methodWidgets[24].addItems(self._secondPolarizedOrbitals)
-        self._methodWidgets[27].addItems(self._fittingSet)
+        self._methodWidgets[27].addItems(self._heavyBasisSet)
         self._methodWidgets[29].addItems(self._fittingSet)
         self._methodWidgets[36].addItems(self._qeqCharges)
         self._methodWidgets[38].addItems(self._includeExclude)
@@ -244,7 +254,14 @@ class CalculationsController(qtw.QWidget):
         self._methodWidgets[10].currentIndexChanged.connect(lambda: self.SetKeywords(10, self._methodWidgets[10].currentIndex()))
         self._methodWidgets[12].currentIndexChanged.connect(lambda: self.SetKeywords(12))
         self._methodWidgets[14].currentIndexChanged.connect(lambda: self.SetKeywords(14))
+        self._methodWidgets[17].currentIndexChanged.connect(lambda: self.SetKeywords(17, self._methodWidgets[17].currentIndex()))
+        self._methodWidgets[18].currentIndexChanged.connect(lambda: self.SetKeywords(18, self._methodWidgets[18].currentIndex()))
+        self._methodWidgets[19].currentIndexChanged.connect(lambda: self.SetKeywords(19, self._methodWidgets[19].currentIndex()))
+        self._methodWidgets[20].currentIndexChanged.connect(lambda: self.SetKeywords(20, self._methodWidgets[20].currentIndex()))
+        self._methodWidgets[22].currentIndexChanged.connect(lambda: self.SetKeywords(22))
+        self._methodWidgets[24].currentIndexChanged.connect(lambda: self.SetKeywords(24))
         self._methodWidgets[27].currentIndexChanged.connect(lambda: self.SetKeywords(27, self._methodWidgets[27].currentIndex()))
+        self._methodWidgets[29].currentIndexChanged.connect(lambda: self.SetKeywords(29, self._methodWidgets[29].currentIndex()))
         self._methodWidgets[30].valueChanged.connect(self.SetCahrgeMult)
         self._methodWidgets[31].valueChanged.connect(self.SetCahrgeMult)
         self._methodWidgets[32].valueChanged.connect(self.SetCahrgeMult)
@@ -302,9 +319,10 @@ class CalculationsController(qtw.QWidget):
         self._generalWidgets[11].stateChanged.connect(lambda: self.SetGeneral(11, self._generalWidgets[11].isChecked()))
         self._generalWidgets[12].valueChanged.connect(lambda: self.SetGeneral(12, self._generalWidgets[12].value()))
         self.uiTitleLineEdit.textChanged.connect(self.SetTitle)
+        self.uiAddInputCheckBox.stateChanged.connect(self.SetAddInput)
 
 
-        # ------------------------------------METHODS---------------------------------------------------------------
+  # ------------------------------------METHODS---------------------------------------------------------------
 
     def DetectMolecule(self, molecule):
         """
@@ -431,12 +449,12 @@ class CalculationsController(qtw.QWidget):
             functional = self._dftFunctionals[selection]
             self._keywordsLine[2] = f'{functional}/'
             if selection in (0, 1, 6, 8, 9):
-                [self._methodWidgets[i].setVisible(True) for i in (26, 27)]
+                [self._methodWidgets[i].setVisible(True) for i in (28, 29)]
                 self._methodWidgets[33].setEnabled(True)
                 self.SetKeywords(33, self._methodWidgets[33].isChecked())
-                self.SetKeywords(27, self._methodWidgets[27].currentIndex())
+                self.SetKeywords(29, self._methodWidgets[29].currentIndex())
             else:
-                [self._methodWidgets[i].setVisible(False) for i in (26, 27, 34)]
+                [self._methodWidgets[i].setVisible(False) for i in (28, 29, 34)]
                 self._methodWidgets[33].setEnabled(False)
             self.SetKeywords(8, self._methodWidgets[8].currentIndex())
         elif widgetNumber == 4:
@@ -457,32 +475,38 @@ class CalculationsController(qtw.QWidget):
             self._keywordsLine[4] = self._basisSet[selection]
 
             if selection == 0:
-                self._methodWidgets[7].setVisible(False)
+                [self._methodWidgets[i].setVisible(False) for i in range(7, 16) if i not in (8, 10)]
+                [self._methodWidgets[i].setVisible(False) for i in range(16, 28)]
                 self._methodWidgets[10].setVisible(True)
-                self._methodWidgets[9].setVisible(False)
                 self._methodWidgets[10].setCurrentIndex(0)
                 self._methodWidgets[10].model().item(2).setEnabled(False)
                 self.SetKeywords(10, self._methodWidgets[10].currentIndex())
             elif selection == 1:
                 self._methodWidgets[7].setVisible(False)
                 [self._methodWidgets[i].setVisible(True) for i in (9, 10)]
-                [self._methodWidgets[i].setVisible(False) for i in range(11, 16)]
+                [self._methodWidgets[i].setVisible(False) for i in range(11, 28)]
                 self._methodWidgets[9].setCurrentIndex(0)
                 self._methodWidgets[9].model().item(2).setEnabled(False)
                 self._methodWidgets[10].model().item(2).setEnabled(True)
                 [self.SetKeywords(i, self._methodWidgets[i].currentIndex()) for i in (9, 10)]
             elif selection in range(2, 5):
                 self._methodWidgets[7].setVisible(False)
-                [self._methodWidgets[i].setVisible(True) for i in range(9, 16) if i != 10]
                 self._methodWidgets[10].setVisible(False)
+                [self._methodWidgets[i].setVisible(False) for i in range(16, 28)]
+                [self._methodWidgets[i].setVisible(True) for i in range(9, 16) if i != 10]
                 self._methodWidgets[9].model().item(2).setEnabled(True)
                 [self.SetKeywords(i, self._methodWidgets[i].currentIndex()) for i in (9, 12)]
             elif selection in range(5, 8):
-                [self._methodWidgets[i].setVisible(False) for i in range(9, 16)]
+                [self._methodWidgets[i].setVisible(False) for i in range(9, 28)]
                 self._methodWidgets[7].setVisible(True)
                 self.SetKeywords(7, self._methodWidgets[7].currentIndex())
+            elif selection in range(14, 16):
+                [self._methodWidgets[i].setVisible(False) for i in range(9, 26) if i not in (16, 18, 20)]
+                [self._methodWidgets[i].setVisible(True) for i in (16, 18, 20, 26, 27)]
+                [self.SetKeywords(i, self._methodWidgets[i].currentIndex()) for i in (18, 27)]
+                self.SetAddInput()
             else:
-                [self._methodWidgets[i].setVisible(False) for i in range(7, 16) if i != 8]
+                [self._methodWidgets[i].setVisible(False) for i in range(7, 28) if i != 8]
         elif widgetNumber == 9:
             basis = self._basisSet[self._methodWidgets[8].currentIndex()]
             if selection == 1:
@@ -511,7 +535,76 @@ class CalculationsController(qtw.QWidget):
             else:
                 for i in range(6, 9):
                     self._keywordsLine[i] = ''
+        elif widgetNumber == 17:
+            if selection == 1:
+                self._lightBasis[0] = self._augmented[selection]
+            else:
+                self._lightBasis[0] = ''
+            self.SetAddInput()
+        elif widgetNumber == 18:
+            for i in range(0, 6):
+                self._lightBasis[i] = ''
+            self._lightBasis[1] = self._lightBasisSet[selection]
+            self.SetKeywords(27, self._methodWidgets[27].currentIndex())
+            if selection == 0:
+                [self._methodWidgets[i].setVisible(False) for i in range(17, 26) if i not in (18, 20)]
+                self._methodWidgets[20].setVisible(True)
+                self._methodWidgets[20].setCurrentIndex(0)
+                self._methodWidgets[20].model().item(2).setEnabled(False)
+                self.SetKeywords(20, self._methodWidgets[20].currentIndex())
+            elif selection == 1:
+                self._methodWidgets[17].setVisible(False)
+                [self._methodWidgets[i].setVisible(True) for i in (19, 20)]
+                [self._methodWidgets[i].setVisible(False) for i in range(21, 26)]
+                self._methodWidgets[19].setCurrentIndex(0)
+                self._methodWidgets[19].model().item(2).setEnabled(False)
+                self._methodWidgets[20].model().item(2).setEnabled(True)
+                [self.SetKeywords(i, self._methodWidgets[i].currentIndex()) for i in (19, 20)]
+            elif selection in range(2, 5):
+                [self._methodWidgets[i].setVisible(False) for i in (17, 20)]
+                [self._methodWidgets[i].setVisible(True) for i in range(21, 26) if i != 20]
+                self._methodWidgets[19].model().item(2).setEnabled(True)
+                [self.SetKeywords(i, self._methodWidgets[i].currentIndex()) for i in (19, 22)]
+            elif selection in range(5, 8):
+                [self._methodWidgets[i].setVisible(False) for i in range(19, 26)]
+                self._methodWidgets[17].setVisible(True)
+                self.SetKeywords(17, self._methodWidgets[17].currentIndex())
+            self.SetAddInput()
+        elif widgetNumber == 19:
+            basis = self._lightBasisSet[self._methodWidgets[18].currentIndex()]
+            if selection == 1:
+                self._lightBasis[1] = basis.replace('G', '+G')
+            elif selection == 2:
+                self._lightBasis[1] = basis.replace('G', '++G')
+            else:
+                self._lightBasis[1] = basis
+            self.SetAddInput()
+        elif widgetNumber == 20:
+            if selection in (1, 2):
+                self._lightBasis[2] = self._asterisk[selection]
+            else:
+                self._lightBasis[2] = ''
+            self.SetAddInput()
+        elif widgetNumber in (22, 24):
+            first = self._methodWidgets[22].currentIndex()
+            second = self._methodWidgets[24].currentIndex()
+            if first != 0 or second != 0:
+                self._lightBasis[3] = '('
+                self._lightBasis[5] = ')'
+                if first != 0 and second == 0:
+                    self._lightBasis[4] = self._firstPolarizedOrbitals[first]
+                elif first == 0 and second != 0:
+                    self._lightBasis[4] = self._secondPolarizedOrbitals[second]
+                elif first != 0 and second != 0:
+                    self._lightBasis[4] = self._firstPolarizedOrbitals[first] + ',' + self._secondPolarizedOrbitals[second]
+            else:
+                for i in range(3, 6):
+                    self._lightBasis[i] = ''
+            self.SetAddInput()
         elif widgetNumber == 27:
+            self._heavyBasis = self._heavyBasisSet[selection]
+            self.SetAddInput()
+        elif widgetNumber == 29:
             if selection == 0:
                 self._keywordsLine[9] = ''
             elif selection == 1:
@@ -1009,12 +1102,30 @@ class CalculationsController(qtw.QWidget):
         self.uiKeywordsLabel.setText(''.join(self._keywordsLine))
         self.SetPreview()
 
+    def SetAddInput(self):
+        """
+        docstring
+        """
+        heavyAtoms = ' '.join(set(self._molecule.heavyAtoms))
+        lightAtoms = ' '.join(set(self._molecule.lightAtoms))
+        self.uiAddInputPlainText.clear()
+        self.uiAddInputPlainText.setPlainText(
+            f"{heavyAtoms} 0\n{self._heavyBasis}\n****\n{lightAtoms} 0\n{''.join(self._lightBasis)}\n****\n\n{heavyAtoms} 0\n{self._heavyBasis}"
+        )
+
+        if self.uiAddInputCheckBox.isChecked():
+            self._addInput = '\n' + self.uiAddInputPlainText.toPlainText()
+        else:
+            self._addInput = ''
+
+        self.SetPreview()
+
     def SetPreview(self):
         """
         docstring
         """
         self._input = [
-            self._link0Widgets[8].toPlainText(), self.uiKeywordsLabel.text(),
-            self.uiTitleLineEdit.text(), self.uiChargeMultLabel.text(), self._coordinates
+            self._link0Widgets[8].toPlainText(), self.uiKeywordsLabel.text(), self.uiTitleLineEdit.text(),
+            self.uiChargeMultLabel.text(), self._coordinates, self._addInput
         ]
-        self.uiPreviewPlainText.setPlainText('{}{}\n\n {}\n\n{}\n{}'.format(*self._input))
+        self.uiPreviewPlainText.setPlainText('{}{}\n\n {}\n\n{}\n{}\n{}'.format(*self._input))

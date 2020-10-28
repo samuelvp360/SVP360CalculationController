@@ -179,7 +179,7 @@
              </size>
             </property>
             <property name="currentIndex">
-             <number>9</number>
+             <number>1</number>
             </property>
             <widget class="QWidget" name="uiJobTypeTab">
              <attribute name="title">
@@ -641,7 +641,7 @@ Mode Options</string>
                 <x>21</x>
                 <y>21</y>
                 <width>926</width>
-                <height>261</height>
+                <height>271</height>
                </rect>
               </property>
               <layout class="QVBoxLayout" name="verticalLayout_4">
@@ -800,7 +800,7 @@ Mode Options</string>
                  <item>
                   <widget class="QLabel" name="uiBasis2Label">
                    <property name="text">
-                    <string>Basis Set 2:</string>
+                    <string>Basis Set Light:</string>
                    </property>
                   </widget>
                  </item>
@@ -844,14 +844,14 @@ Mode Options</string>
                   </widget>
                  </item>
                  <item>
-                  <widget class="QLabel" name="uiFittingSet2Label">
+                  <widget class="QLabel" name="uiBasis3Label">
                    <property name="text">
-                    <string>Fitting Set:</string>
+                    <string>Basis Set Heavy:</string>
                    </property>
                   </widget>
                  </item>
                  <item>
-                  <widget class="QComboBox" name="uiFittingSet2ComboBox"/>
+                  <widget class="QComboBox" name="uiBasis3ComboBox"/>
                  </item>
                  <item>
                   <spacer name="horizontalSpacer_3">
@@ -1328,7 +1328,7 @@ Mode Options</string>
                <rect>
                 <x>10</x>
                 <y>20</y>
-                <width>651</width>
+                <width>656</width>
                 <height>131</height>
                </rect>
               </property>
@@ -1499,15 +1499,15 @@ Mode Options</string>
                 <x>20</x>
                 <y>10</y>
                 <width>561</width>
-                <height>151</height>
+                <height>261</height>
                </rect>
               </property>
               <layout class="QVBoxLayout" name="verticalLayout">
                <item>
-                <widget class="QPlainTextEdit" name="uiAddInpPlainText"/>
+                <widget class="QPlainTextEdit" name="uiAddInputPlainText"/>
                </item>
                <item>
-                <widget class="QCheckBox" name="checkBox">
+                <widget class="QCheckBox" name="uiAddInputCheckBox">
                  <property name="text">
                   <string>Write Additional Input</string>
                  </property>
@@ -1526,7 +1526,7 @@ Mode Options</string>
                 <x>10</x>
                 <y>9</y>
                 <width>581</width>
-                <height>531</height>
+                <height>381</height>
                </rect>
               </property>
              </widget>
