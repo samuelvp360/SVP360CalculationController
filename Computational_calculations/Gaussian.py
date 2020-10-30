@@ -2,8 +2,6 @@
 # -*- coding: utf-8 -*-
 
 import subprocess
-# import multiprocessing
-# from psutil import virtual_memory
 import re
 import os
 from rdkit import Chem
@@ -23,7 +21,6 @@ class Gaussian(Persistent):
         RDLogger.DisableLog('rdApp.*')  # evita los mensajes adicionales no cruciales
         self.moleculePath = moleculePath
         self.path = self.moleculePath.replace(' ', '\ ')
-        self.__properties = {}
         exec(
             f"""self.smiles = subprocess.run(
                 'obabel {self.path} -ocan',
@@ -32,16 +29,12 @@ class Gaussian(Persistent):
                 text=True
             ).stdout.split()[0]"""
         )
-        self.__properties['SMILES'] = self.smiles
+        self.__properties = pd.Series({'SMILES': self.smiles}, dtype='string')
         if Chem.MolFromMol2File(self.moleculePath) is not None:
             self.mol = Chem.MolFromMol2File(self.moleculePath)
         else:
             mol = Chem.MolFromSmiles(self.__properties['SMILES'])
             self.mol = Chem.AddHs(mol)
-
-        self.__calculations = {
-            'OPT': {}, 'SPEN': {}, 'SPERA': {}, 'SPERC': {}, 'REACTIVITY INDEX': {}
-        }
 
         self.stored = False
         self._p_changed = False
@@ -51,21 +44,18 @@ class Gaussian(Persistent):
         self.SetName()
         self.SetInitMatrix()
         self.SetZMatrix()
-        # self.SetCharges()
         self.SetLightAndHeavyAtoms()
-        # self.__properties['NET CHARGE'] = int(round(np.sum(self.__properties['PARTIAL CHARGES'], axis=0, dtype=np.float32)[0]))
         self.__properties['FORMULA'] = ''.join(set((i + str(self.totalAtoms.count(i)) for i in self.totalAtoms)))
         self.__properties['MOLAR MASS'] = round(Descriptors.ExactMolWt(self.mol), 2)
         self.__properties['VALENCE ELECTRONS'] = Descriptors.NumValenceElectrons(self.mol)
-        self.__properties['RADICAL ELECTRONS'] = Descriptors.NumRadicalElectrons(self.mol)
+        self.__properties['RADICAL ELECTRONS'] = Descriptors.NumRadicalElectrons(self.mol)  # arreglar
         self.__properties['INCHIKEY'] = re.sub('\n', '', re.sub('-', '_', Chem.inchi.MolToInchiKey(self.mol)))
-        
         self.Set2DImage()
 
-    def SetName(self, name=None):
+    def SetName(self, nameMol=None):
 
-        if name is not None and len(str(name).split(' ')) < 2:
-            self.__properties['NAME'] = name
+        if nameMol is not None and len(str(nameMol).split(' ')) < 2:
+            self.__properties['NAME'] = nameMol
             self.mol.SetProp('_Name', self.__properties['NAME'])
             if self.stored:
                 self._p_changed = True
@@ -88,23 +78,6 @@ class Gaussian(Persistent):
         else:
             self.heavyAtomsPresent = False
 
-    # def SetCharges(self):
-
-    #     Chem.rdPartialCharges.ComputeGasteigerCharges(self.mol)
-    #     n = self.mol.GetNumAtoms()
-    #     self.__properties['PARTIAL CHARGES'] = np.zeros((n, 1), dtype=np.float32)
-    #     for i in range(n):
-    #         a = self.mol.GetAtomWithIdx(i)
-    #         self.__properties['PARTIAL CHARGES'][i, 0] = a.GetProp("_GasteigerCharge")
-    #     if np.isnan(np.sum(self.__properties['PARTIAL CHARGES'])):
-    #         with open(self.moleculePath, 'r') as f:
-    #             lines = f.readlines()
-    #             n = self.mol.GetNumAtoms()
-    #             self.__properties['PARTIAL CHARGES'] = np.zeros((n, 1), dtype=np.float32)
-    #             charges = [i.split()[-1] for i in lines if len(i.split()) == 9]
-    #             for i in range(n):
-    #                 self.__properties['PARTIAL CHARGES'][i, 0] = charges[i]
-
     def Set2DImage(self):
 
         self.mol2D = Chem.MolFromSmiles(self.__properties['SMILES'])
@@ -120,11 +93,15 @@ class Gaussian(Persistent):
         with open(self.moleculePath, 'r') as f:
             lines = f.readlines()
             initialCoords = [i.split()[:] for i in lines if len(i.split()) == 9]
-            self.__properties['INIT MATRIX'] = pd.DataFrame(
-                initialCoords, columns=['ID', 'ATOM', 'X', 'Y', 'Z', 'ATOM TYPE', 'SUBS. ID', 'SUBS. NAME', 'CHARGE']
+            self.__initialMatrix = pd.DataFrame(
+                initialCoords, columns=['ID', 'ATOM', 'X', 'Y', 'Z', 'ATOM_TYPE', 'SUBS_ID', 'SUBS_NAME', 'CHARGE']
             )
-            self.__properties['INIT MATRIX'][['ID', 'SUBS. ID']] = self.__properties['INIT MATRIX'][['ID', 'SUBS. ID']].astype('int')
-            self.__properties['INIT MATRIX'][['X', 'Y', 'Z', 'CHARGE']] = self.__properties['INIT MATRIX'][['X', 'Y', 'Z', 'CHARGE']].astype('float')
+            self.__initialMatrix[['ID', 'SUBS_ID']] = self.__initialMatrix[['ID', 'SUBS_ID']].astype('int')
+            self.__initialMatrix[['X', 'Y', 'Z', 'CHARGE']] = self.__initialMatrix[['X', 'Y', 'Z', 'CHARGE']].astype('float')
+            self.__initialMatrix[['ATOM', 'ATOM_TYPE', 'SUBS_NAME']] = self.__initialMatrix[['ATOM', 'ATOM_TYPE', 'SUBS_NAME']].astype('string')
+            doubleLetterSymbol = self.__initialMatrix['ATOM'].str.len() == 2
+            self.__initialMatrix['ATOM'].loc[doubleLetterSymbol] = [''.join([i[0], i[1].lower()]) for i in self.__initialMatrix['ATOM'] if len(i) == 2]
+            self.__initialMatrix.set_index('ID', inplace=True)
 
     def SetZMatrix(self):
         """
@@ -135,7 +112,7 @@ class Gaussian(Persistent):
                 shell=True,
                 capture_output=True,
                 text=True).stdout""")
-        self.__properties['ZMAT'] = self.run.splitlines()[6:]
+        self.__zMatrix = self.run.splitlines()[6:]
 
     def SetCalculations(
             self, kind, method, functional, basis, basis2, saveFile, status, memory, cpu
@@ -172,15 +149,15 @@ class Gaussian(Persistent):
 
     @property
     def GetInitMatrix(self):
-        return self.__properties['INIT MATRIX']
+        return self.__initialMatrix
 
     @property
     def GetNetCharge(self):
-        return int(round(self.__properties['INIT MATRIX']['CHARGE'].sum(), 1))
+        return int(round(self.__initialMatrix['CHARGE'].sum(), 1))
 
     @property
     def GetGasteigerCharges(self):
-        return self.__properties['INIT MATRIX']['CHARGE']
+        return self.__initialMatrix['CHARGE']
 
     @property
     def GetValenceElectrons(self):
@@ -212,11 +189,11 @@ class Gaussian(Persistent):
 
     @property
     def GetInitCoords(self):
-        return self.__properties['INIT MATRIX'].iloc[:, 1:5]
+        return self.__initialMatrix.iloc[:, 0:4]
 
     @property
     def GetZMatrix(self):
-        return '\n'.join(self.__properties['ZMAT'])
+        return '\n'.join(self.__zMatrix)
 
     def GetCalculations(self, kind):
 
@@ -246,10 +223,6 @@ STORED: {self.stored}
         -------
         an input file with .com extension to run Gaussian
         """
-
-        # mem = virtual_memory()
-        # memory = mem.total//1000000 - 2000
-        # cpu = multiprocessing.cpu_count() - 1
 
         self.method = method
         self.functional = functional
@@ -310,13 +283,13 @@ STORED: {self.stored}
 
         homeDir = '/home/'+subprocess.run(
             'ls /home/', shell=True, text=True, capture_output=True
-            ).stdout.replace('\n', '')
+        ).stdout.replace('\n', '')
 
         with open(f'{homeDir}/.bashrc', 'r') as f:
             bashrcInfo = f.read()
             root = re.search(r'g[0-9]+root=[/a-zA-Z0-9]+', bashrcInfo)[0]
             scrdir = re.search(r'GAUSS_SCRDIR=[/a-zA-Z0-9]+', bashrcInfo)[0]
-            source = '$'+re.search(r'g[0-9]+root[/a-zA-Z0-9]+\.profile', bashrcInfo)[0]
+            source = '$' + re.search(r'g[0-9]+root[/a-zA-Z0-9]+\.profile', bashrcInfo)[0]
             gaussianExecutable = source.replace('source ', '').replace('bsd/', '').replace('.profile', '')
 
         cmd = (f"export {root}; export {scrdir}; source {source}; {gaussianExecutable} < {inputFile} > Opt_{self.__properties['NAME']}.log")

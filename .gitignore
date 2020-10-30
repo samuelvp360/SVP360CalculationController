@@ -7,4 +7,8 @@ Solubiliad.sk2
 *.log
 test.py
 Tripos_atom_types.txt
-test.py
+test.ipynb
+pymolwidget.py
+prueba_pymol.py
+DB/moleculesDB.fs.lock
+main.py

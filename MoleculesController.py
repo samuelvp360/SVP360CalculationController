@@ -14,7 +14,7 @@ from PIL import ImageQt  # , Image
 from Views import resources
 from DB.MoleculesDB import MyZODB
 from CalculationsController import CalculationsController
-
+from pymolwidget import *
 
 class MainWindow(qtw.QMainWindow):
 
@@ -25,7 +25,6 @@ class MainWindow(qtw.QMainWindow):
         self._filePathList = []
         self._molecules = []
         self.database = MyZODB()
-        self.calculationSetupController = CalculationsController()
         self._propertiesWidgets = [
             self.uiName,
             self.uiNameLabel,
@@ -41,8 +40,8 @@ class MainWindow(qtw.QMainWindow):
             self.uiSubmitCalcButton,
             self.ui2DImage
         ]
+        # self.pymolwidget = PyMolWidget()
     # --------------------------------------------------STYLE--------------------------------------------------
-        self.uiCalculationsLayout.addWidget(self.calculationSetupController)
         self.uiOpen.setIcon(qtg.QIcon(':/icons/openIcon.png'))
         self.uiSave.setIcon(qtg.QIcon(':/icons/saveIcon.png'))
         self.uiDeleteMoleculeButton.setIcon(qtg.QIcon(':/icons/trashIcon.png'))
@@ -54,15 +53,12 @@ class MainWindow(qtw.QMainWindow):
         self.uiLoadMoleculeButton.setIcon(qtg.QIcon(':/icons/loadIcon.png'))
         self.uiRemoveButton.setIcon(qtg.QIcon(':/icons/trashIcon.png'))
         self.statusBar().showMessage('Welcome to SVP360 Calculation Manager')
-        for w in self._propertiesWidgets:
-            w.setVisible(False)
+        [w.setVisible(False) for w in self._propertiesWidgets]
         self.uiSaveToDB.setEnabled(False)
         self.uiSave.setEnabled(False)
         self.uiDeleteMoleculeButton.setEnabled(False)
         self.uiResetButton.setEnabled(False)
         self.uiRemoveButton.setEnabled(False)
-        self.calculationSetupController.setVisible(False)
-
     # --------------------------------------------------SIGNALS--------------------------------------------------
         self.uiLoadMoleculeButton.pressed.connect(self.LoadMolecules)
         self.uiSave.triggered.connect(self.SaveFiles)
@@ -73,11 +69,9 @@ class MainWindow(qtw.QMainWindow):
         self.uiSaveToDB.triggered.connect(self.StoreMolecule)
         self.uiStopCalcButton.clicked.connect(lambda: self.uiStartCalcButton.setEnabled(True))
         self.uiRemoveButton.clicked.connect(self.RemoveFromQueue)
-        self.uiSubmitCalcButton.pressed.connect(lambda: self.calculationSetupController.setVisible(True))
-        self.uiSubmitCalcButton.pressed.connect(lambda: self.calculationSetupController.DetectMolecule(self._selectedMolecule))
-        self.uiMoleculesList.clicked.connect(lambda: self.calculationSetupController.DetectMolecule(self._selectedMolecule))
+        self.uiSubmitCalcButton.clicked.connect(self.SubmitCalc)
+    #---------------------------------------------------METHODS--------------------------------------------------
 
-#     --------------------------------------------------FUNCTIONS------------------------------------------------
     def LoadMolecules(self):
         """
         Open File Dialog to get the files of the molecules
@@ -195,6 +189,14 @@ class MainWindow(qtw.QMainWindow):
             qtg.QPixmap.fromImage(ImageQt.ImageQt(self._selectedMolecule.Get2DImage))
         )
         self._dataMapper.toFirst()
+        # self.ui3DViewLayout.addWidget(self.pymolwidget)
+
+    def SubmitCalc(self):
+        """
+        docstring
+        """
+        self.calculationSetupController = CalculationsController(self._selectedMolecule)
+        self.calculationSetupController.show()
 
     def DeleteMolecule(self):
         """

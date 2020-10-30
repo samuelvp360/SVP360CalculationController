@@ -9,20 +9,23 @@ import multiprocessing
 from psutil import virtual_memory
 
 
-class CalculationsController(qtw.QWidget):
+class CalculationsController(qtw.QMainWindow):
 
-    def __init__(self):
+    def __init__(self, molecule):
         super(CalculationsController, self).__init__()
         uic.loadUi('Views/uiCalculationsWindow.ui', self)
         self.uiOptGroupBox.setVisible(False)
         self.uiFreqGroupBox.setVisible(False)
         self.uiIRCGroupBox.setVisible(False)
-        # ------------------------------------PROPERTIES------------------------------------------------------
+    # ------------------------------------PROPERTIES------------------------------------------------------
+        self._molecule = molecule
+        self._chk = self._molecule.GetName
+        self._oldChk = self._molecule.GetName
+        self._coordinates = self._molecule.GetZMatrix
+        self.uiTitleLineEdit.setText(self._molecule.GetName)
 
-        # mem = virtual_memory()
         self.memory = virtual_memory().total // 1e9
         self.cpu = multiprocessing.cpu_count()
-        # self._parametersList = []
         self._keywordsLine = []
         for i in range(20):
             self._keywordsLine.append('')
@@ -31,8 +34,7 @@ class CalculationsController(qtw.QWidget):
         self._chargeMultiplicityLine = ['', ' ', '']
         self._lightBasis = ['', '', '', '', '', '']
         self._addInput = ''
-
-        # ------------------------------------WIDGETS------------------------------------------------------
+    # ------------------------------------WIDGETS---------------------------------------------------------
         self._jobTypes = (
             'Energy', 'Optimization', 'Frequency', 'Opt+Freq', 'IRC', 'Scan', 'Stability', 'NMR'
         )
@@ -190,8 +192,7 @@ class CalculationsController(qtw.QWidget):
             self.uiMaxDiskCheckBox,  # 11
             self.uiMaxDiskSpinBox  # 12
         ]
-
-        # ------------------------------------POPULATE WIDGETS------------------------------------------------------
+    # ------------------------------------POPULATE WIDGETS------------------------------------------------------
         self._methodWidgets[0].addItems(self._state)
         self._methodWidgets[1].addItems(self._methods)
         self._methodWidgets[1].setCurrentIndex(2)
@@ -239,9 +240,7 @@ class CalculationsController(qtw.QWidget):
         [self._link0Widgets[i].setEnabled(False) for i in range(3, 8) if i != 5]
         self._link0Widgets[5].addItems(self._oldChk)
         [self._generalWidgets[i].setEnabled(False) for i in (3, 4, 5, 6, 8, 10, 12)]
-
-
-        # ------------------------------------SIGNALS---------------------------------------------------------------
+    # ------------------------------------SIGNALS---------------------------------------------------------------
         self._methodWidgets[0].currentIndexChanged.connect(lambda: self.SetKeywords(0, self._methodWidgets[0].currentIndex()))
         self._methodWidgets[1].currentIndexChanged.connect(lambda: self.SetKeywords(1, self._methodWidgets[1].currentIndex()))
         self._methodWidgets[2].currentIndexChanged.connect(lambda: self.SetKeywords(2, self._methodWidgets[2].currentIndex()))
@@ -319,28 +318,17 @@ class CalculationsController(qtw.QWidget):
         self._generalWidgets[11].stateChanged.connect(lambda: self.SetGeneral(11, self._generalWidgets[11].isChecked()))
         self._generalWidgets[12].valueChanged.connect(lambda: self.SetGeneral(12, self._generalWidgets[12].value()))
         self.uiTitleLineEdit.textChanged.connect(self.SetTitle)
-        self.uiAddInputCheckBox.stateChanged.connect(self.SetAddInput)
+        self.uiAddInputCheckBox.stateChanged.connect(self.SetPreview)
 
-
-  # ------------------------------------METHODS---------------------------------------------------------------
-
-    def DetectMolecule(self, molecule):
-        """
-        docstring
-        """
-        self._molecule = molecule
-        self._chk = self._molecule.GetName
-        self._oldChk = self._molecule.GetName
-        self._coordinates = self._molecule.GetZMatrix
-        self.uiTitleLineEdit.setText(self._molecule.GetName)
         self._methodWidgets[30].setValue(self._molecule.GetNetCharge)
         self._methodWidgets[10].model().item(2).setEnabled(False)
         self.SetKeywords(1, self._methodWidgets[1].currentIndex())
         self.SetCahrgeMult()
         [self.SetLink0(i, self._link0Widgets[i].value()) for i in range(2)]
         [self.SetLink0(i, self._link0Widgets[i].currentIndex()) for i in (2, 5)]
-
+        self.SetTitle()
         self.SetPreview()
+    # ------------------------------------METHODS---------------------------------------------------------------
 
     def SetKeywords(self, widgetNumber=None, selection=None):
 
@@ -1113,17 +1101,15 @@ class CalculationsController(qtw.QWidget):
             f"{heavyAtoms} 0\n{self._heavyBasis}\n****\n{lightAtoms} 0\n{''.join(self._lightBasis)}\n****\n\n{heavyAtoms} 0\n{self._heavyBasis}"
         )
 
+    def SetPreview(self):
+        """
+        docstring
+        """
         if self.uiAddInputCheckBox.isChecked():
             self._addInput = '\n' + self.uiAddInputPlainText.toPlainText()
         else:
             self._addInput = ''
 
-        self.SetPreview()
-
-    def SetPreview(self):
-        """
-        docstring
-        """
         self._input = [
             self._link0Widgets[8].toPlainText(), self.uiKeywordsLabel.text(), self.uiTitleLineEdit.text(),
             self.uiChargeMultLabel.text(), self._coordinates, self._addInput
