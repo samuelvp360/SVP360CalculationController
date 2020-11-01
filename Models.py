@@ -33,45 +33,45 @@ class MoleculesModel(qtc.QAbstractListModel):
         return qtc.Qt.ItemIsEnabled | qtc.Qt.ItemIsSelectable
 
 
-class PropertiesModel(qtc.QAbstractListModel):
-    """Model to populate the Properties Widgets"""
+# class PropertiesModel(qtc.QAbstractListModel):
+#     """Model to populate the Properties Widgets"""
 
-    def __init__(self, molecule):
-        super(PropertiesModel, self).__init__()
-        self.molecule = molecule
+#     def __init__(self, molecule):
+#         super(PropertiesModel, self).__init__()
+#         self.molecule = molecule
 
-    def data(self, index, role):
-        if role == qtc.Qt.DisplayRole or role == qtc.Qt.EditRole:
-            if index.row() == 0:
-                return self.molecule.GetName
-            elif index.row() == 1:
-                return self.molecule.GetForm
-            elif index.row() == 2:
-                return self.molecule.GetMolarMass
-            elif index.row() == 3:
-                return self.molecule.GetInchikey
-            elif index.row() == 4:
-                return self.molecule.GetSmiles
+#     def data(self, index, role):
+#         if role == qtc.Qt.DisplayRole or role == qtc.Qt.EditRole:
+#             if index.row() == 0:
+#                 return self.molecule.GetName
+#             elif index.row() == 1:
+#                 return self.molecule.GetForm
+#             elif index.row() == 2:
+#                 return self.molecule.GetMolarMass
+#             elif index.row() == 3:
+#                 return self.molecule.GetInchikey
+#             elif index.row() == 4:
+#                 return self.molecule.GetSmiles
 
-    def setData(self, index, value, role=qtc.Qt.EditRole):
-        if role == qtc.Qt.EditRole:
-            if index.row() == 0:
-                self.molecule.SetName(value)
-                self.dataChanged.emit(index, index)
-                return True
-            else:
-                return False
+#     def setData(self, index, value, role=qtc.Qt.EditRole):
+#         if role == qtc.Qt.EditRole:
+#             if index.row() == 0:
+#                 self.molecule.SetName(value)
+#                 self.dataChanged.emit(index, index)
+#                 return True
+#             else:
+#                 return False
 
-    def rowCount(self, index):
-        return 6
+#     def rowCount(self, index):
+#         return 6
 
-    def headerData(self, section, orientation, role):
-        if role == qtc.Qt.DisplayRole:
-            if section == 0:
-                return 'Properties'
+#     def headerData(self, section, orientation, role):
+#         if role == qtc.Qt.DisplayRole:
+#             if section == 0:
+#                 return 'Properties'
 
-    def flags(self, index):
-        return qtc.Qt.ItemIsEnabled | qtc.Qt.ItemIsSelectable | qtc.Qt.ItemIsEditable
+#     def flags(self, index):
+#         return qtc.Qt.ItemIsEnabled | qtc.Qt.ItemIsSelectable | qtc.Qt.ItemIsEditable
 
 
 class StatusModel(qtc.QAbstractTableModel):
@@ -82,33 +82,31 @@ class StatusModel(qtc.QAbstractTableModel):
         super(StatusModel, self).__init__()
         self.calcToDoList = calcToDoList
         self._headers = (
-            'Molecule', 'Type', 'Method', 'Functional',
-            'Basis', 'Basis 2', 'Save file', 'Status'
-            )
+            'Molecule', 'Job Type', 'Keywords', 'Status'
+        )
 
     def data(self, index, role):
 
         if role == qtc.Qt.DisplayRole:
             if index.column() == 0:
-                return self.calcToDoList[index.row()][0].GetName
-            else:
-                return str(self.calcToDoList[index.row()][1][index.column() - 1])
+                return self.calcToDoList[index.row()][index.column()].GetName
+            return self.calcToDoList[index.row()][index.column()]
 
         if role == qtc.Qt.ForegroundRole:
-            if self.calcToDoList[index.row()][1][6] == 'Pending':
+            if self.calcToDoList[index.row()][3] == 'Pending':
                 return qtg.QColor('orange')
-            elif self.calcToDoList[index.row()][1][6] == 'Running':
+            elif self.calcToDoList[index.row()][3] == 'Running':
                 return qtg.QColor('blue')
-            elif self.calcToDoList[index.row()][1][6] == 'Finished':
+            elif self.calcToDoList[index.row()][3] == 'Finished':
                 return qtg.QColor('green')
-            elif self.calcToDoList[index.row()][1][6] == 'Failed':
+            elif self.calcToDoList[index.row()][3] == 'Failed':
                 return qtg.QColor('red')
 
     def rowCount(self, index):
         return len(self.calcToDoList)
 
     def columnCount(self, index):
-        return 8
+        return 4
 
     def headerData(self, section, orientation, role):
 

@@ -3,6 +3,7 @@
 
 import re
 from PyQt5 import QtWidgets as qtw
+from PyQt5 import QtCore as qtc
 from PyQt5 import uic
 # from Models import StatusModel
 import multiprocessing
@@ -10,6 +11,8 @@ from psutil import virtual_memory
 
 
 class CalculationsController(qtw.QMainWindow):
+
+    submitted = qtc.pyqtSignal(list)
 
     def __init__(self, molecule):
         super(CalculationsController, self).__init__()
@@ -319,6 +322,9 @@ class CalculationsController(qtw.QMainWindow):
         self._generalWidgets[12].valueChanged.connect(lambda: self.SetGeneral(12, self._generalWidgets[12].value()))
         self.uiTitleLineEdit.textChanged.connect(self.SetTitle)
         self.uiAddInputCheckBox.stateChanged.connect(self.SetPreview)
+        self.uiQueueCalcButton.clicked.connect(
+            lambda: self.QueueCalculation(self._molecule, self._jobTypes[self._jobsWidgets[0].currentIndex()])
+        )
 
         self._methodWidgets[30].setValue(self._molecule.GetNetCharge)
         self._methodWidgets[10].model().item(2).setEnabled(False)
@@ -982,7 +988,7 @@ class CalculationsController(qtw.QMainWindow):
         """
         if widgetNumber == 0:
             if selection != 0:
-                self._link0Line[2] = f'%Mem={str(round(selection, 2))}GB\n'
+                self._link0Line[2] = f'%Mem={str(selection)}GB\n'
             else:
                 self._link0Line[2] = ''
         elif widgetNumber == 1:
@@ -1114,4 +1120,16 @@ class CalculationsController(qtw.QMainWindow):
             self._link0Widgets[8].toPlainText(), self.uiKeywordsLabel.text(), self.uiTitleLineEdit.text(),
             self.uiChargeMultLabel.text(), self._coordinates, self._addInput
         ]
-        self.uiPreviewPlainText.setPlainText('{}{}\n\n {}\n\n{}\n{}\n{}'.format(*self._input))
+        self.uiPreviewPlainText.setPlainText('{}{}\n\n {}\n\n{}\n{}\n{}\n'.format(*self._input))
+
+    def QueueCalculation(self, molecule, jobType):
+        """
+        docstring
+        """
+        fileName = f'{molecule.GetName}_{jobType}.com'
+        with open(fileName, 'w') as f:
+            f.write(self.uiPreviewPlainText.toPlainText())
+
+        calculation = [molecule, jobType, self.uiKeywordsLabel.text(), 'Pending', fileName]
+        self.submitted.emit(calculation)
+        self.close()

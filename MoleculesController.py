@@ -2,19 +2,20 @@
 # -*- coding: utf-8 -*-
 
 import sys
+import os
 from Computational_calculations.Gaussian import Gaussian
 from PyQt5 import QtCore as qtc
 from PyQt5 import QtWidgets as qtw
 from PyQt5 import QtGui as qtg
 from PyQt5 import uic
-from Models import MoleculesModel, PropertiesModel, StatusModel
+from Models import MoleculesModel, StatusModel
 from Worker import WorkerThread
 from rdkit import Chem
 from PIL import ImageQt  # , Image
 from Views import resources
 from DB.MoleculesDB import MyZODB
 from CalculationsController import CalculationsController
-from pymolwidget import *
+
 
 class MainWindow(qtw.QMainWindow):
 
@@ -24,24 +25,18 @@ class MainWindow(qtw.QMainWindow):
     # --------------------------------------------------PARAMETERS--------------------------------------------------
         self._filePathList = []
         self._molecules = []
+        self.masterQueue = []
         self.database = MyZODB()
         self._propertiesWidgets = [
             self.uiName,
-            self.uiNameLabel,
-            self.uiFormula,
-            self.uiFormulaLabel,
-            self.uiMolarMass,
-            self.uiMolarMassLabel,
-            self.uiInchikey,
-            self.uiInchikeyLabel,
-            self.uiSmiles,
-            self.uiSmilesLabel,
             self.uiDisplayAvailableCalcButton,
             self.uiSubmitCalcButton,
             self.ui2DImage
         ]
-        # self.pymolwidget = PyMolWidget()
     # --------------------------------------------------STYLE--------------------------------------------------
+        self.fontDB = qtg.QFontDatabase()
+        self.fontDB.addApplicationFont(":/fonts/CascadiaCode.ttf")
+        self.setFont(qtg.QFont("CascadiaCode", 10))
         self.uiOpen.setIcon(qtg.QIcon(':/icons/openIcon.png'))
         self.uiSave.setIcon(qtg.QIcon(':/icons/saveIcon.png'))
         self.uiDeleteMoleculeButton.setIcon(qtg.QIcon(':/icons/trashIcon.png'))
@@ -52,13 +47,18 @@ class MainWindow(qtw.QMainWindow):
         self.uiStopCalcButton.setIcon(qtg.QIcon(':/icons/cancelIcon.png'))
         self.uiLoadMoleculeButton.setIcon(qtg.QIcon(':/icons/loadIcon.png'))
         self.uiRemoveButton.setIcon(qtg.QIcon(':/icons/trashIcon.png'))
+        self.uiSubmitCalcButton.setIcon(qtg.QIcon(':/icons/calculateIcon.png'))
+        self.uiDisplayAvailableCalcButton.setIcon(qtg.QIcon(':/icons/displayCalcIcon.png'))
+        iconSize = qtc.QSize(50, 50)
+        self.uiSubmitCalcButton.setIconSize(iconSize)
+        self.uiDisplayAvailableCalcButton.setIconSize(iconSize)
         self.statusBar().showMessage('Welcome to SVP360 Calculation Manager')
-        [w.setVisible(False) for w in self._propertiesWidgets]
         self.uiSaveToDB.setEnabled(False)
         self.uiSave.setEnabled(False)
         self.uiDeleteMoleculeButton.setEnabled(False)
         self.uiResetButton.setEnabled(False)
         self.uiRemoveButton.setEnabled(False)
+        [w.setEnabled(False) for w in self._propertiesWidgets]
     # --------------------------------------------------SIGNALS--------------------------------------------------
         self.uiLoadMoleculeButton.pressed.connect(self.LoadMolecules)
         self.uiSave.triggered.connect(self.SaveFiles)
@@ -169,26 +169,30 @@ class MainWindow(qtw.QMainWindow):
 
     def ShowProperties(self):
         """
-        Set the model and the mapper to feed the widgets with the properties
-        of the molecule
+        Show the properties of the selected molecule in the status bar
         """
-        for w in self._propertiesWidgets:
-            w.setVisible(True)
         self.GetSelectedMolecule()
-        self.uiSubmitCalcButton.setChecked(False)
-        self.propertiesModel = PropertiesModel(self._selectedMolecule)
-        self._dataMapper = qtw.QDataWidgetMapper()
-        self._dataMapper.setModel(self.propertiesModel)
-        self._dataMapper.setOrientation(qtc.Qt.Vertical)
-        self._dataMapper.addMapping(self.uiName, 0)
-        self._dataMapper.addMapping(self.uiFormula, 1)
-        self._dataMapper.addMapping(self.uiMolarMass, 2)
-        self._dataMapper.addMapping(self.uiInchikey, 3)
-        self._dataMapper.addMapping(self.uiSmiles, 4)
+        name = self._selectedMolecule.GetName
+        weight = self._selectedMolecule.GetMolarMass
+        formula = self._selectedMolecule.GetForm
+        inchikey = self._selectedMolecule.GetInchikey
+        smiles = self._selectedMolecule.GetSmiles
+        [w.setEnabled(True) for w in self._propertiesWidgets]
+        self._propertiesWidgets[0].setText(name)
+        self.statusBar().showMessage(f'{name}  {formula}  FW:{weight}  InchiKey:{inchikey}  Smiles:{smiles}')
+        # self.propertiesModel = PropertiesModel(self._selectedMolecule)
+        # self._dataMapper = qtw.QDataWidgetMapper()
+        # self._dataMapper.setModel(self.propertiesModel)
+        # self._dataMapper.setOrientation(qtc.Qt.Vertical)
+        # self._dataMapper.addMapping(self.uiName, 0)
+        # self._dataMapper.addMapping(self.uiFormula, 1)
+        # self._dataMapper.addMapping(self.uiMolarMass, 2)
+        # self._dataMapper.addMapping(self.uiInchikey, 3)
+        # self._dataMapper.addMapping(self.uiSmiles, 4)
         self.ui2DImage.setPixmap(
             qtg.QPixmap.fromImage(ImageQt.ImageQt(self._selectedMolecule.Get2DImage))
         )
-        self._dataMapper.toFirst()
+        # self._dataMapper.toFirst()
         # self.ui3DViewLayout.addWidget(self.pymolwidget)
 
     def SubmitCalc(self):
@@ -196,6 +200,7 @@ class MainWindow(qtw.QMainWindow):
         docstring
         """
         self.calculationSetupController = CalculationsController(self._selectedMolecule)
+        self.calculationSetupController.submitted.connect(self.QueueManager)
         self.calculationSetupController.show()
 
     def DeleteMolecule(self):
@@ -246,17 +251,17 @@ class MainWindow(qtw.QMainWindow):
         indexes = self.uiCalculationFlowTable.selectedIndexes()
         if indexes:
             thisIndex = indexes[0]
+            os.remove(self.masterQueue[thisIndex.row()][4])
             del self.masterQueue[thisIndex.row()]
             self.statusModel.layoutChanged.emit()
         if len(self.masterQueue) == 0:
             self.uiRemoveButton.setEnabled(False)
-            # falta quitarlo del queue de cada widget
+            self.uiStopCalcButton.setEnabled(False)
 
-    def QueueManager(self):
+    @qtc.pyqtSlot(list)
+    def QueueManager(self, calculation):
 
-        self.masterQueue = []
-        for index, w in enumerate(self._calcWidgets):
-            self.masterQueue.extend([[self._molecules[index], i] for i in w.queue])
+        self.masterQueue.append(calculation)
         self.statusModel = StatusModel(self.masterQueue)
         self.uiCalculationFlowTable.setModel(self.statusModel)
         if len(self.masterQueue) == 0:
@@ -290,7 +295,7 @@ class MainWindow(qtw.QMainWindow):
         self.statusBar().showMessage(
             f'Something get wrong with {errorMol.GetName} with index: {index}. Please check the log file'
         )
-        self.masterQueue[index][1][6] = 'Failed'
+        self.masterQueue[index][3] = 'Failed'
         self.statusModel.layoutChanged.emit()
         if index != (len(self.masterQueue) - 1):
             self.RunCalculations()
@@ -298,11 +303,11 @@ class MainWindow(qtw.QMainWindow):
     @qtc.pyqtSlot(object, int, str)
     def ExecutionFlowManager(self, procMol, index, status):
         if status == 'Running':
-            self.masterQueue[index][1][6] = 'Running'
+            self.masterQueue[index][3] = 'Running'
             self.statusModel.layoutChanged.emit()
             self.statusBar().showMessage(f'Currently processing {procMol.GetName}')
         elif status == 'Finished':
-            self.masterQueue[index][1][6] = 'Finished'
+            self.masterQueue[index][3] = 'Finished'
             self.statusModel.layoutChanged.emit()
             self.statusBar().showMessage(f'Already processed {procMol.GetName}')
 

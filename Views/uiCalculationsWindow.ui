@@ -9,8 +9,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>788</width>
-    <height>628</height>
+    <width>806</width>
+    <height>646</height>
    </rect>
   </property>
   <property name="minimumSize">
@@ -1304,14 +1304,7 @@ Mode Options</string>
                   </widget>
                  </item>
                  <item row="0" column="1">
-                  <widget class="QDoubleSpinBox" name="uiMemorySpinBox">
-                   <property name="decimals">
-                    <number>1</number>
-                   </property>
-                   <property name="singleStep">
-                    <double>0.100000000000000</double>
-                   </property>
-                  </widget>
+                  <widget class="QSpinBox" name="uiMemorySpinBox"/>
                  </item>
                 </layout>
                </widget>

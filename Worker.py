@@ -21,16 +21,17 @@ class WorkerThread(qtc.QObject):
 
         try:
             for index, calc in enumerate(self.masterQueue):
-                self.index = index
-                self.molecule, self.parameters = calc
-                if self.parameters[6] == 'Pending':
-                    self.startingCalc.emit(self.molecule, self.index, 'Running')
+                # self.index = index
+                self.molecule, *self.parameters = calc
+                if self.parameters[2] == 'Pending':
+                    self.startingCalc.emit(self.molecule, index, 'Running')
                     self.molecule.SetCalculations(*self.parameters)
-                    self.okCalc.emit(self.molecule, self.index, 'Finished')
+                    self.okCalc.emit(self.molecule, index, 'Finished')
+                    print(self.molecule.GetCalculations)
                 if self.isStopped:
                     break
         except:
-            self.error.emit(self.molecule, self.index, 'Aborted')
+            self.error.emit(self.molecule, index, 'Aborted')
         finally:
             self.finished.emit()
             self.deleteLater()

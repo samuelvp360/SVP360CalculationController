@@ -5,6 +5,8 @@ Propionic_radical_anion.mol
 Solubiliad.sk2
 *.com
 *.log
+*.ipynb
+*.ipynb_checkpoints
 test.py
 Tripos_atom_types.txt
 test.ipynb

@@ -4,6 +4,7 @@
 import subprocess
 import re
 import os
+import datetime
 from rdkit import Chem
 from rdkit.Chem import Draw, Descriptors
 # from rdkit.Chem.Draw import rdMolDraw2D
@@ -51,6 +52,7 @@ class Gaussian(Persistent):
         self.__properties['RADICAL ELECTRONS'] = Descriptors.NumRadicalElectrons(self.mol)  # arreglar
         self.__properties['INCHIKEY'] = re.sub('\n', '', re.sub('-', '_', Chem.inchi.MolToInchiKey(self.mol)))
         self.Set2DImage()
+        self.__calculations = pd.DataFrame(columns=['JOB TYPE', 'DESCRIPTION', 'RESULTS', 'STATUS'])
 
     def SetName(self, nameMol=None):
 
@@ -96,9 +98,8 @@ class Gaussian(Persistent):
             self.__initialMatrix = pd.DataFrame(
                 initialCoords, columns=['ID', 'ATOM', 'X', 'Y', 'Z', 'ATOM_TYPE', 'SUBS_ID', 'SUBS_NAME', 'CHARGE']
             )
-            self.__initialMatrix[['ID', 'SUBS_ID']] = self.__initialMatrix[['ID', 'SUBS_ID']].astype('int')
-            self.__initialMatrix[['X', 'Y', 'Z', 'CHARGE']] = self.__initialMatrix[['X', 'Y', 'Z', 'CHARGE']].astype('float')
-            self.__initialMatrix[['ATOM', 'ATOM_TYPE', 'SUBS_NAME']] = self.__initialMatrix[['ATOM', 'ATOM_TYPE', 'SUBS_NAME']].astype('string')
+            self.__initialMatrix[['ID', 'SUBS_ID']] = self.__initialMatrix[['ID', 'SUBS_ID']].astype(int)
+            self.__initialMatrix[['X', 'Y', 'Z', 'CHARGE']] = self.__initialMatrix[['X', 'Y', 'Z', 'CHARGE']].astype(float)
             doubleLetterSymbol = self.__initialMatrix['ATOM'].str.len() == 2
             self.__initialMatrix['ATOM'].loc[doubleLetterSymbol] = [''.join([i[0], i[1].lower()]) for i in self.__initialMatrix['ATOM'] if len(i) == 2]
             self.__initialMatrix.set_index('ID', inplace=True)
@@ -114,31 +115,23 @@ class Gaussian(Persistent):
                 text=True).stdout""")
         self.__zMatrix = self.run.splitlines()[6:]
 
-    def SetCalculations(
-            self, kind, method, functional, basis, basis2, saveFile, status, memory, cpu
-    ):
+    def SetCalculations(self, jobType, keywords, status, inputFile=None):
 
-        if kind == 'opt':
-            position = len(self.__calculations['OPT']) + 1
-            self.__calculations['OPT'][position] = {}
-            self.__calculations['OPT'][position]['METHOD'] = method
-            self.__calculations['OPT'][position]['FUNCTIONAL'] = functional
-            self.__calculations['OPT'][position]['BASIS'] = basis
-            self.__calculations['OPT'][position]['BASIS2'] = basis2
-            results = self.__Optimization(method, functional, basis, basis2, memory, cpu)
-            self.__calculations['OPT'][position]['RESULT'] = results
-            if results is not None:
-                self.__calculations['OPT'][position]['STATUS'] = 'Finished'
-            else:
-                self.__calculations['OPT'][position]['STATUS'] = 'Failed'
-
-            if saveFile:
-                self.__ReplaceCoordinates(self.__properties['NAME'], results)
+        position = len(self.__calculations)
+        self.__calculations.loc[position, 'JOB TYPE'] = jobType
+        self.__calculations.loc[position, 'DESCRIPTION'] = keywords
+        if jobType == 'Optimization':
+            results = self.__Optimization(inputFile)
+            self.__calculations.loc[position, 'RESULTS'] = results
+        if results is not None:
+            self.__calculations.loc[position, 'STATUS'] = 'Finished'
+        else:
+            self.__calculations.loc[position, 'STATUS'] = 'Failed'
 
         if self.stored:
             self._p_changed = True
             transaction.commit()
-
+#  ----------------------------------------------------GETTERS---------------------------------------
     @property
     def GetProperties(self):
         return self.__properties
@@ -195,10 +188,9 @@ class Gaussian(Persistent):
     def GetZMatrix(self):
         return '\n'.join(self.__zMatrix)
 
-    def GetCalculations(self, kind):
-
-        if kind == 'opt':
-            return self.__calculations['OPT']
+    @property
+    def GetCalculations(self):
+        return self.__calculations
 
     def __str__(self):
         return f"""NAME: {self.__properties['NAME']}
@@ -209,69 +201,69 @@ INCHIKEY: {self.__properties['INCHIKEY']}
 STORED: {self.stored}
 {self.__calculations}"""
 
-    def __Inputs(self, kind, method, functional, basis, basis2, memory, cpu):
-        """
-        Parameters
-        ----------
-        kind : opt, spen, spera or sperc.
-        method : DFT or SEMIEMPIRICAL.
-        functional : a valid functional from the list.
-        basis : a valid basis from the list.
-        basis2 : a second basis set in case of heavy atoms.
+    # def __Inputs(self, kind, method, functional, basis, basis2, memory, cpu):
+    #     """
+    #     Parameters
+    #     ----------
+    #     kind : opt, spen, spera or sperc.
+    #     method : DFT or SEMIEMPIRICAL.
+    #     functional : a valid functional from the list.
+    #     basis : a valid basis from the list.
+    #     basis2 : a second basis set in case of heavy atoms.
 
-        Returns
-        -------
-        an input file with .com extension to run Gaussian
-        """
+    #     Returns
+    #     -------
+    #     an input file with .com extension to run Gaussian
+    #     """
 
-        self.method = method
-        self.functional = functional
-        self.basis = basis
-        self.basis2 = basis2
+    #     self.method = method
+    #     self.functional = functional
+    #     self.basis = basis
+    #     self.basis2 = basis2
 
-        if kind == 'opt':
+    #     if kind == 'opt':
 
-            exec(f"""self.run = subprocess.run(
-                'obabel {self.path} -ogzmat',
-                shell=True,
-                capture_output=True,
-                text=True).stdout""")
-            self.gzmat = self.run.splitlines()
-            self.gzmat.insert(0, '%Mem='+str(memory)+'MB')
-            self.gzmat[1] = '%NProcShared='+str(cpu)
+    #         exec(f"""self.run = subprocess.run(
+    #             'obabel {self.path} -ogzmat',
+    #             shell=True,
+    #             capture_output=True,
+    #             text=True).stdout""")
+    #         self.gzmat = self.run.splitlines()
+    #         self.gzmat.insert(0, '%Mem='+str(memory)+'MB')
+    #         self.gzmat[1] = '%NProcShared='+str(cpu)
 
-            if self.functional == 'MPWB1K':
-                if self.basis2 == 'LANL2DZ' or self.basis2 == 'SDD':
-                    self.gzmat[2] = ('#P mpwb95/GENECP IOp(3/76=0560004400) Opt')
-                else:
-                    self.gzmat[2] = (f'#P mpwb95/{basis} IOp(3/76=0560004400) Opt')
-            elif self.functional == 'M06-2X':
-                if self.basis2 == 'LANL2DZ' or self.basis2 == 'SDD':
-                    self.gzmat[2] = ('#P mpwb95/GENECP IOp(3/76=0560004400) Opt')
-                else:
-                    self.gzmat[2] = (f'#P mpwb95/{basis} integral=ultrafine Opt')
-            elif self.functional == 'AM1' or self.functional == 'PM3' or self.functional == 'PM6':
-                self.gzmat[2] = (f'#P {self.functional} Opt')
-            else:
-                if self.basis2 == 'LANL2DZ' or self.basis2 == 'SDD':
-                    self.gzmat[2] = (f'#P {self.functional}/GENECP Opt')
-                else:
-                    self.gzmat[2] = (f'#P {self.functional}/{self.basis} Opt')
+    #         if self.functional == 'MPWB1K':
+    #             if self.basis2 == 'LANL2DZ' or self.basis2 == 'SDD':
+    #                 self.gzmat[2] = ('#P mpwb95/GENECP IOp(3/76=0560004400) Opt')
+    #             else:
+    #                 self.gzmat[2] = (f'#P mpwb95/{basis} IOp(3/76=0560004400) Opt')
+    #         elif self.functional == 'M06-2X':
+    #             if self.basis2 == 'LANL2DZ' or self.basis2 == 'SDD':
+    #                 self.gzmat[2] = ('#P mpwb95/GENECP IOp(3/76=0560004400) Opt')
+    #             else:
+    #                 self.gzmat[2] = (f'#P mpwb95/{basis} integral=ultrafine Opt')
+    #         elif self.functional == 'AM1' or self.functional == 'PM3' or self.functional == 'PM6':
+    #             self.gzmat[2] = (f'#P {self.functional} Opt')
+    #         else:
+    #             if self.basis2 == 'LANL2DZ' or self.basis2 == 'SDD':
+    #                 self.gzmat[2] = (f'#P {self.functional}/GENECP Opt')
+    #             else:
+    #                 self.gzmat[2] = (f'#P {self.functional}/{self.basis} Opt')
 
-            self.gzmat[4] = ' '+self.__properties['NAME']
+    #         self.gzmat[4] = ' '+self.__properties['NAME']
 
-            if self.basis2 == 'LANL2DZ' or self.basis2 == 'SDD':
-                self.gzmat.append(
-                    ' '.join(self.heavyAtoms) + ' 0\n' + basis2 + '\n****\n' +
-                    ' '.join(self.lightAtoms) + ' 0\n' + basis + '\n****\n\n' +
-                    ' '.join(self.heavyAtoms) + ' 0\n'+basis2
-                )
+    #         if self.basis2 == 'LANL2DZ' or self.basis2 == 'SDD':
+    #             self.gzmat.append(
+    #                 ' '.join(self.heavyAtoms) + ' 0\n' + basis2 + '\n****\n' +
+    #                 ' '.join(self.lightAtoms) + ' 0\n' + basis + '\n****\n\n' +
+    #                 ' '.join(self.heavyAtoms) + ' 0\n'+basis2
+    #             )
 
-            with open('Opt_'+self.__properties['NAME']+'.com', 'w') as optFile:
-                optFile.write('\n'.join(self.gzmat))
-
-    def __Run(self, inputFile):
-        """
+    #         with open('Opt_'+self.__properties['NAME']+'.com', 'w') as optFile:
+    #             optFile.write('\n'.join(self.gzmat))
+# ----------------------------------------------------METHODS---------------------------------------
+    def __Run(self, inputFile, outputFile):
+        '''
         Parameters
         ----------
         inputFile : the .com file as Gaussian input
@@ -279,36 +271,38 @@ STORED: {self.stored}
         Returns
         -------
         log file corresponding to the output of required calculation
-        """
+        '''
+        myEnv = os.environ.copy()
+        gaussExecutable = myEnv['GAUSS_EXEDIR'].split('/')[-1]
+        
+        # homeDir = '/home/'+subprocess.run(
+        #     'ls /home/', shell=True, text=True, capture_output=True
+        # ).stdout.replace('\n', '')
 
-        homeDir = '/home/'+subprocess.run(
-            'ls /home/', shell=True, text=True, capture_output=True
-        ).stdout.replace('\n', '')
+        # with open(f'{homeDir}/.bashrc', 'r') as f:
+        #     bashrcInfo = f.read()
+        #     root = re.search(r'g[0-9]+root=[/a-zA-Z0-9]+', bashrcInfo)[0]
+        #     scrdir = re.search(r'GAUSS_SCRDIR=[/a-zA-Z0-9]+', bashrcInfo)[0]
+        #     source = '$' + re.search(r'g[0-9]+root[/a-zA-Z0-9]+\.profile', bashrcInfo)[0]
+        #     gaussianExecutable = source.replace('source ', '').replace('bsd/', '').replace('.profile', '')
 
-        with open(f'{homeDir}/.bashrc', 'r') as f:
-            bashrcInfo = f.read()
-            root = re.search(r'g[0-9]+root=[/a-zA-Z0-9]+', bashrcInfo)[0]
-            scrdir = re.search(r'GAUSS_SCRDIR=[/a-zA-Z0-9]+', bashrcInfo)[0]
-            source = '$' + re.search(r'g[0-9]+root[/a-zA-Z0-9]+\.profile', bashrcInfo)[0]
-            gaussianExecutable = source.replace('source ', '').replace('bsd/', '').replace('.profile', '')
+        # cmd = (f"export {root}; export {scrdir}; source {source}; {gaussianExecutable} < {inputFile} > Opt_{self.__properties['NAME']}.log")
+        cmd = f'{gaussExecutable} < {inputFile} > {outputFile}'
+        subprocess.run(cmd, shell=True)
 
-        cmd = (f"export {root}; export {scrdir}; source {source}; {gaussianExecutable} < {inputFile} > Opt_{self.__properties['NAME']}.log")
+        # os.remove(inputFile)
 
-        subprocess.run(cmd, shell=True, executable='/bin/bash')
-
-        os.remove(inputFile)
-
-    def __ExtractCoordinates(self, name):
-        """
+    def __ExtractCoordinates(self, outputFile):
+        '''
         Parameters
         ----------
-        name : the name of the molecule
+        outputFile
 
         Returns
         -------
-        A numpy object containing the matrix of optimized coordinates
-        """
-        with open(f"Opt_{name}.log", 'r') as logFile:
+        A Pandas DataFrame containing the matrix of optimized coordinates
+        '''
+        with open(f'{outputFile}', 'r') as logFile:
             opt = []
             log = logFile.read()
             maxForce = re.findall(r' Maximum Force\s+\d+\.\d+\s+\d+\.\d+\s+(YES|NO)', log)
@@ -326,9 +320,11 @@ STORED: {self.stored}
                 for i in optCoord:
                     if i.start() > minSpan and i.end() < maxSpan:
                         opt.append(i.group(0).split()[3:6])
+                
+                lasted = re.findall(r'Elapsed time:\s+\d+ days\s+\d+ hours\s+\d+ minutes\s+\d+\.\d+ seconds', log)[0].split()[2:]
+                elapsedTime = datetime.time(int(lasted[2]), int(lasted[4]), int(lasted[6].split('.')[0]), int(lasted[6].split('.')[1]) * 100000)
         # os.remove(f'Opt_{name}.log')
-
-        return np.array(opt)
+        return {'OPT COORD MATRIX': np.array(opt, dtype=float), 'DATE OF RUN': datetime.datetime.now(), 'ELAPSED TIME': elapsedTime}
 
     def __ReplaceCoordinates(self, name, coordinatesMatrix):
         """
@@ -365,26 +361,23 @@ STORED: {self.stored}
             # preguntar si quiero guardar este fichero
             outputFile.writelines(optimizedMol2File)
 
-    def __Optimization(self, method, functional, basis, basis2, memory, cpu):
-        """
+    def __Optimization(self, inputFile):
+        '''
         Parameters
         ----------
-        functional : main functional to use.
-        basis : main basis for light atoms.
-        basis2 : secondary basis if heavy atoms are present. The default is None.
+        input: .com file as inputFile
 
         Returns
         -------
-        Opt_{name}.mol2 file
+        A Pandas DataFrame with the results
+        '''
+        outputFile = inputFile.split('.')[0] + '.log'
 
-        """
-        self.__Inputs('opt', method, functional, basis, basis2, memory, cpu)
+        self.__Run(inputFile, outputFile)
 
-        self.__Run(f"Opt_{self.__properties['NAME']}.com")
+        coordinates = self.__ExtractCoordinates(outputFile)
 
-        result = self.__ExtractCoordinates(self.__properties['NAME'])
-
-        return result
+        return coordinates
 
     def SPEN(self):
         pass
