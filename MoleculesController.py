@@ -8,7 +8,7 @@ from PyQt5 import QtCore as qtc
 from PyQt5 import QtWidgets as qtw
 from PyQt5 import QtGui as qtg
 from PyQt5 import uic
-from Models import MoleculesModel, StatusModel
+from Models import MoleculesModel, StatusModel, AvailableCalcModel
 from Worker import WorkerThread
 from rdkit import Chem
 from PIL import ImageQt  # , Image
@@ -33,7 +33,7 @@ class MainWindow(qtw.QMainWindow):
             self.uiSubmitCalcButton,
             self.ui2DImage
         ]
-    # --------------------------------------------------STYLE--------------------------------------------------
+    # --------------------------------------------------STYLE-------------------------------------------------------
         self.fontDB = qtg.QFontDatabase()
         self.fontDB.addApplicationFont(":/fonts/CascadiaCode.ttf")
         self.setFont(qtg.QFont("CascadiaCode", 10))
@@ -55,10 +55,6 @@ class MainWindow(qtw.QMainWindow):
         self.statusBar().showMessage('Welcome to SVP360 Calculation Manager')
         self.uiSaveToDB.setEnabled(False)
         self.uiSave.setEnabled(False)
-        self.uiDeleteMoleculeButton.setEnabled(False)
-        self.uiResetButton.setEnabled(False)
-        self.uiRemoveButton.setEnabled(False)
-        [w.setEnabled(False) for w in self._propertiesWidgets]
     # --------------------------------------------------SIGNALS--------------------------------------------------
         self.uiLoadMoleculeButton.pressed.connect(self.LoadMolecules)
         self.uiSave.triggered.connect(self.SaveFiles)
@@ -70,6 +66,7 @@ class MainWindow(qtw.QMainWindow):
         self.uiStopCalcButton.clicked.connect(lambda: self.uiStartCalcButton.setEnabled(True))
         self.uiRemoveButton.clicked.connect(self.RemoveFromQueue)
         self.uiSubmitCalcButton.clicked.connect(self.SubmitCalc)
+        self._propertiesWidgets[1].clicked.connect(self.DisplayAvailableCalcs)
     #---------------------------------------------------METHODS--------------------------------------------------
 
     def LoadMolecules(self):
@@ -120,18 +117,17 @@ class MainWindow(qtw.QMainWindow):
 
     def StoreMolecule(self):
 
-        self.GetSelectedMoleculeAndWidgets()
+        self.GetSelectedMolecule()
         if not self._selectedMolecule.stored:
             try:
                 self.database.StoreMolecule(self._selectedMolecule)
-                self.GetSelectedMoleculeAndWidgets(
+                self.GetSelectedMolecule(
                     self.database.FetchMolecule(self._selectedMolecule.GetInchikey)
                 )
                 self.listModel.layoutChanged.emit()
                 self.statusBar().showMessage(
                     f'{self._selectedMolecule.GetName} succesfully added to DB!'
                 )
-                print(self.database.ShowAll())  # quitar
                 self.uiSubmitCalcButton.setChecked(False)
                 self.listModel = MoleculesModel(self._molecules)  # ojo
                 self.uiMoleculesList.setModel(self.listModel)  # ojo
@@ -177,23 +173,16 @@ class MainWindow(qtw.QMainWindow):
         formula = self._selectedMolecule.GetForm
         inchikey = self._selectedMolecule.GetInchikey
         smiles = self._selectedMolecule.GetSmiles
-        [w.setEnabled(True) for w in self._propertiesWidgets]
+        [w.setEnabled(True) for w in self._propertiesWidgets if w != 1]
+        if len(self._selectedMolecule.GetCalculations) > 0:
+            self._propertiesWidgets[1].setEnabled(True)
+        else:
+            self._propertiesWidgets[1].setEnabled(False)
         self._propertiesWidgets[0].setText(name)
         self.statusBar().showMessage(f'{name}  {formula}  FW:{weight}  InchiKey:{inchikey}  Smiles:{smiles}')
-        # self.propertiesModel = PropertiesModel(self._selectedMolecule)
-        # self._dataMapper = qtw.QDataWidgetMapper()
-        # self._dataMapper.setModel(self.propertiesModel)
-        # self._dataMapper.setOrientation(qtc.Qt.Vertical)
-        # self._dataMapper.addMapping(self.uiName, 0)
-        # self._dataMapper.addMapping(self.uiFormula, 1)
-        # self._dataMapper.addMapping(self.uiMolarMass, 2)
-        # self._dataMapper.addMapping(self.uiInchikey, 3)
-        # self._dataMapper.addMapping(self.uiSmiles, 4)
         self.ui2DImage.setPixmap(
             qtg.QPixmap.fromImage(ImageQt.ImageQt(self._selectedMolecule.Get2DImage))
         )
-        # self._dataMapper.toFirst()
-        # self.ui3DViewLayout.addWidget(self.pymolwidget)
 
     def SubmitCalc(self):
         """
@@ -264,6 +253,7 @@ class MainWindow(qtw.QMainWindow):
         self.masterQueue.append(calculation)
         self.statusModel = StatusModel(self.masterQueue)
         self.uiCalculationFlowTable.setModel(self.statusModel)
+        self.uiCalculationFlowTable.resizeColumnsToContents()
         if len(self.masterQueue) == 0:
             self.uiStartCalcButton.setEnabled(False)
             self.uiRemoveButton.setEnabled(False)
@@ -310,6 +300,14 @@ class MainWindow(qtw.QMainWindow):
             self.masterQueue[index][3] = 'Finished'
             self.statusModel.layoutChanged.emit()
             self.statusBar().showMessage(f'Already processed {procMol.GetName}')
+
+    def DisplayAvailableCalcs(self):
+        """
+        docstring
+        """
+        availableCalcModel = AvailableCalcModel(self._selectedMolecule)
+        self.uiAvailableCalcsTableView.setModel(availableCalcModel)
+        self.uiAvailableCalcsTableView.resizeColumnsToContents()
 
     def closeEvent(self, event):
 

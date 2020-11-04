@@ -7,7 +7,7 @@ from Views import resources
 
 
 class MoleculesModel(qtc.QAbstractListModel):
-    """Model to populate the list of the uploaded molecules"""
+    '''Model to populate the list of the uploaded molecules'''
 
     def __init__(self, molecules):
         super(MoleculesModel, self).__init__()
@@ -33,49 +33,40 @@ class MoleculesModel(qtc.QAbstractListModel):
         return qtc.Qt.ItemIsEnabled | qtc.Qt.ItemIsSelectable
 
 
-# class PropertiesModel(qtc.QAbstractListModel):
-#     """Model to populate the Properties Widgets"""
+class AvailableCalcModel(qtc.QAbstractTableModel):
+    '''Model to populate the Available Calculations Table'''
 
-#     def __init__(self, molecule):
-#         super(PropertiesModel, self).__init__()
-#         self.molecule = molecule
+    def __init__(self, molecule):
+        super(AvailableCalcModel, self).__init__()
+        self._calculations = molecule.GetCalculations
+        self._headers = (
+            'JOB TYPE', 'DESCRIPTION', 'RESULTS', 'STATUS', 'DATE OF RUN', 'ELAPSED TIME'
+        )
 
-#     def data(self, index, role):
-#         if role == qtc.Qt.DisplayRole or role == qtc.Qt.EditRole:
-#             if index.row() == 0:
-#                 return self.molecule.GetName
-#             elif index.row() == 1:
-#                 return self.molecule.GetForm
-#             elif index.row() == 2:
-#                 return self.molecule.GetMolarMass
-#             elif index.row() == 3:
-#                 return self.molecule.GetInchikey
-#             elif index.row() == 4:
-#                 return self.molecule.GetSmiles
+    def data(self, index, role):
+        if role == qtc.Qt.DisplayRole:
+            return self._calculations[index.row()][self._headers[index.column()]]
 
-#     def setData(self, index, value, role=qtc.Qt.EditRole):
-#         if role == qtc.Qt.EditRole:
-#             if index.row() == 0:
-#                 self.molecule.SetName(value)
-#                 self.dataChanged.emit(index, index)
-#                 return True
-#             else:
-#                 return False
+    def rowCount(self, index):
+        return len(self._calculations)
 
-#     def rowCount(self, index):
-#         return 6
+    def columnCount(self, index):
+        return 6
+        # return len(self._calculations[index.row()])
 
-#     def headerData(self, section, orientation, role):
-#         if role == qtc.Qt.DisplayRole:
-#             if section == 0:
-#                 return 'Properties'
+    def headerData(self, section, orientation, role):
+        if role == qtc.Qt.DisplayRole:
+            if orientation == qtc.Qt.Horizontal:
+                return self._headers[section]
+            if orientation == qtc.Qt.Vertical:
+                return section
 
-#     def flags(self, index):
-#         return qtc.Qt.ItemIsEnabled | qtc.Qt.ItemIsSelectable | qtc.Qt.ItemIsEditable
+    def flags(self, index):
+        return qtc.Qt.ItemIsEnabled | qtc.Qt.ItemIsSelectable
 
 
 class StatusModel(qtc.QAbstractTableModel):
-    """Model to populate the list of calculations to do"""
+    '''Model to populate the list of calculations to do'''
 
     def __init__(self, calcToDoList):
 

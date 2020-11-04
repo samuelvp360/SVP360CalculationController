@@ -9,7 +9,6 @@ from rdkit import Chem
 from rdkit.Chem import Draw, Descriptors
 # from rdkit.Chem.Draw import rdMolDraw2D
 from rdkit import RDLogger
-import numpy as np
 import pandas as pd
 from persistent import Persistent
 import transaction
@@ -52,7 +51,8 @@ class Gaussian(Persistent):
         self.__properties['RADICAL ELECTRONS'] = Descriptors.NumRadicalElectrons(self.mol)  # arreglar
         self.__properties['INCHIKEY'] = re.sub('\n', '', re.sub('-', '_', Chem.inchi.MolToInchiKey(self.mol)))
         self.Set2DImage()
-        self.__calculations = pd.DataFrame(columns=['JOB TYPE', 'DESCRIPTION', 'RESULTS', 'STATUS'])
+        self.__calculations = {}
+        # self.__calculations = pd.DataFrame(columns=['JOB TYPE', 'DESCRIPTION', 'RESULTS', 'STATUS'])
 
     def SetName(self, nameMol=None):
 
@@ -95,14 +95,15 @@ class Gaussian(Persistent):
         with open(self.moleculePath, 'r') as f:
             lines = f.readlines()
             initialCoords = [i.split()[:] for i in lines if len(i.split()) == 9]
-            self.__initialMatrix = pd.DataFrame(
-                initialCoords, columns=['ID', 'ATOM', 'X', 'Y', 'Z', 'ATOM_TYPE', 'SUBS_ID', 'SUBS_NAME', 'CHARGE']
-            )
+            col = ['ID', 'ATOM', 'X', 'Y', 'Z', 'ATOM_TYPE', 'SUBS_ID', 'SUBS_NAME', 'CHARGE']
+            self.__initialMatrix = pd.DataFrame(initialCoords, columns=col)
             self.__initialMatrix[['ID', 'SUBS_ID']] = self.__initialMatrix[['ID', 'SUBS_ID']].astype(int)
             self.__initialMatrix[['X', 'Y', 'Z', 'CHARGE']] = self.__initialMatrix[['X', 'Y', 'Z', 'CHARGE']].astype(float)
+            self.__initialMatrix['ATOM'] = self.__initialMatrix['ATOM'].astype(str)
             doubleLetterSymbol = self.__initialMatrix['ATOM'].str.len() == 2
             self.__initialMatrix['ATOM'].loc[doubleLetterSymbol] = [''.join([i[0], i[1].lower()]) for i in self.__initialMatrix['ATOM'] if len(i) == 2]
             self.__initialMatrix.set_index('ID', inplace=True)
+            self.atomsList = [i for i in self.__initialMatrix['ATOM']]
 
     def SetZMatrix(self):
         """
@@ -118,16 +119,21 @@ class Gaussian(Persistent):
     def SetCalculations(self, jobType, keywords, status, inputFile=None):
 
         position = len(self.__calculations)
-        self.__calculations.loc[position, 'JOB TYPE'] = jobType
-        self.__calculations.loc[position, 'DESCRIPTION'] = keywords
+        self.__calculations[position] = {}
+        self.__calculations[position]['JOB TYPE'] = jobType
+        self.__calculations[position]['DESCRIPTION'] = keywords
+        start = datetime.datetime.now()
         if jobType == 'Optimization':
             results = self.__Optimization(inputFile)
-            self.__calculations.loc[position, 'RESULTS'] = results
+            self.__calculations[position]['RESULTS'] = results
         if results is not None:
-            self.__calculations.loc[position, 'STATUS'] = 'Finished'
+            self.__calculations[position]['STATUS'] = 'Finished'
         else:
-            self.__calculations.loc[position, 'STATUS'] = 'Failed'
-
+            self.__calculations[position]['STATUS'] = 'Failed'
+        end = datetime.datetime.now()
+        elapsedTime = end - start
+        self.__calculations[position]['DATE OF RUN'] = str(datetime.datetime.now())
+        self.__calculations[position]['ELAPSED TIME'] = str(elapsedTime)
         if self.stored:
             self._p_changed = True
             transaction.commit()
@@ -288,6 +294,7 @@ STORED: {self.stored}
 
         # cmd = (f"export {root}; export {scrdir}; source {source}; {gaussianExecutable} < {inputFile} > Opt_{self.__properties['NAME']}.log")
         cmd = f'{gaussExecutable} < {inputFile} > {outputFile}'
+        
         subprocess.run(cmd, shell=True)
 
         # os.remove(inputFile)
@@ -319,12 +326,14 @@ STORED: {self.stored}
                 optCoord = re.finditer(r'\s+\d+\s+\d+\s+\d\s+(\d|-\d)+\.\d+\s+(\d|-\d)+\.\d+\s+(\d|-\d)+\.\d+', log)
                 for i in optCoord:
                     if i.start() > minSpan and i.end() < maxSpan:
-                        opt.append(i.group(0).split()[3:6])
-                
-                lasted = re.findall(r'Elapsed time:\s+\d+ days\s+\d+ hours\s+\d+ minutes\s+\d+\.\d+ seconds', log)[0].split()[2:]
-                elapsedTime = datetime.time(int(lasted[2]), int(lasted[4]), int(lasted[6].split('.')[0]), int(lasted[6].split('.')[1]) * 100000)
-        # os.remove(f'Opt_{name}.log')
-        return {'OPT COORD MATRIX': np.array(opt, dtype=float), 'DATE OF RUN': datetime.datetime.now(), 'ELAPSED TIME': elapsedTime}
+                        opt.append([i.group(0).split()[a] for a in range(6) if a != 2])
+
+        col = ['ID', 'ATOM', 'X', 'Y', 'Z']
+        optMatrix = pd.DataFrame(opt, columns=col)
+        optMatrix.astype({'ID': int, 'ATOM': str, 'X': float, 'Y': float, 'Z': float})
+        optMatrix.set_index('ID', inplace=True)
+        optMatrix['ATOM'] = self.atomsList
+        return optMatrix
 
     def __ReplaceCoordinates(self, name, coordinatesMatrix):
         """

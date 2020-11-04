@@ -6,7 +6,9 @@ import transaction
 
 
 class MyZODB(object):
+
     def __init__(self):
+
         self.storage = FileStorage.FileStorage('DB/moleculesDB.fs')
         self.db = DB(self.storage)
         self.connection = self.db.open()
@@ -19,14 +21,10 @@ class MyZODB(object):
         self.storage.close()
 
     def StoreMolecule(self, moleculeToStore):
-        print(self.dbroot)
+
         self.dbroot[moleculeToStore.GetInchikey] = moleculeToStore
         self.dbroot[moleculeToStore.GetInchikey].stored = True
         transaction.commit()
-        print('por aquí')
-
-    def Add(self, obj, key=None, value=None):
-        pass
 
     def FetchMolecule(self, dbMolecule):
 
@@ -49,7 +47,6 @@ class MyZODB(object):
 
     def SearchMolecule(self, key):
 
-        # try:
         if self.dbroot.get(key) is not None:
             return True
         else:
