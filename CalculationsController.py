@@ -5,7 +5,6 @@ import re
 from PyQt5 import QtWidgets as qtw
 from PyQt5 import QtCore as qtc
 from PyQt5 import uic
-# from Models import StatusModel
 import multiprocessing
 from psutil import virtual_memory
 
@@ -322,9 +321,7 @@ class CalculationsController(qtw.QMainWindow):
         self._generalWidgets[12].valueChanged.connect(lambda: self.SetGeneral(12, self._generalWidgets[12].value()))
         self.uiTitleLineEdit.textChanged.connect(self.SetTitle)
         self.uiAddInputCheckBox.stateChanged.connect(self.SetPreview)
-        self.uiQueueCalcButton.clicked.connect(
-            lambda: self.QueueCalculation(self._molecule, self._jobTypes[self._jobsWidgets[0].currentIndex()])
-        )
+        self.uiQueueCalcButton.clicked.connect(self.QueueCalculation)
 
         self._methodWidgets[30].setValue(self._molecule.GetNetCharge)
         self._methodWidgets[10].model().item(2).setEnabled(False)
@@ -1122,14 +1119,18 @@ class CalculationsController(qtw.QMainWindow):
         ]
         self.uiPreviewPlainText.setPlainText('{}{}\n\n {}\n\n{}\n{}\n{}\n'.format(*self._input))
 
-    def QueueCalculation(self, molecule, jobType):
+    def QueueCalculation(self):
         """
         docstring
         """
-        fileName = f'{molecule.GetName}_{jobType}.com'
+        fileName = f'{self._molecule.GetName}_{self._jobTypes[self._jobsWidgets[0].currentIndex()]}.com'
+        jobType = self._jobTypes[self._jobsWidgets[0].currentIndex()]
+        keywords = self.uiKeywordsLabel.text()
+        chargeMult = self.uiChargeMultLabel.text().replace(' ', '/')
         with open(fileName, 'w') as f:
             f.write(self.uiPreviewPlainText.toPlainText())
 
-        calculation = [molecule, jobType, self.uiKeywordsLabel.text(), 'Pending', fileName]
+        calculation = [self._molecule, jobType, keywords, 'Pending', chargeMult, fileName]
+
         self.submitted.emit(calculation)
         self.close()

@@ -10,8 +10,8 @@ from rdkit.Chem import Draw, Descriptors
 # from rdkit.Chem.Draw import rdMolDraw2D
 from rdkit import RDLogger
 import pandas as pd
+import numpy as np
 from persistent import Persistent
-import transaction
 
 
 class Gaussian(Persistent):
@@ -52,7 +52,6 @@ class Gaussian(Persistent):
         self.__properties['INCHIKEY'] = re.sub('\n', '', re.sub('-', '_', Chem.inchi.MolToInchiKey(self.mol)))
         self.Set2DImage()
         self.__calculations = {}
-        # self.__calculations = pd.DataFrame(columns=['JOB TYPE', 'DESCRIPTION', 'RESULTS', 'STATUS'])
 
     def SetName(self, nameMol=None):
 
@@ -100,10 +99,9 @@ class Gaussian(Persistent):
             self.__initialMatrix[['ID', 'SUBS_ID']] = self.__initialMatrix[['ID', 'SUBS_ID']].astype(int)
             self.__initialMatrix[['X', 'Y', 'Z', 'CHARGE']] = self.__initialMatrix[['X', 'Y', 'Z', 'CHARGE']].astype(float)
             self.__initialMatrix['ATOM'] = self.__initialMatrix['ATOM'].astype(str)
-            doubleLetterSymbol = self.__initialMatrix['ATOM'].str.len() == 2
-            self.__initialMatrix['ATOM'].loc[doubleLetterSymbol] = [''.join([i[0], i[1].lower()]) for i in self.__initialMatrix['ATOM'] if len(i) == 2]
+            doubleLetterSymbol = self.__initialMatrix['ATOM'].copy().str.len() == 2
+            self.__initialMatrix.loc[doubleLetterSymbol, 'ATOM'] = [''.join([i[0], i[1].lower()]) for i in self.__initialMatrix['ATOM'] if len(i) == 2]  # ojo aquí
             self.__initialMatrix.set_index('ID', inplace=True)
-            self.atomsList = [i for i in self.__initialMatrix['ATOM']]
 
     def SetZMatrix(self):
         """
@@ -116,12 +114,13 @@ class Gaussian(Persistent):
                 text=True).stdout""")
         self.__zMatrix = self.run.splitlines()[6:]
 
-    def SetCalculations(self, jobType, keywords, status, inputFile=None):
+    def SetCalculations(self, jobType, keywords, status, chargeMult, inputFile=None):
 
         position = len(self.__calculations)
         self.__calculations[position] = {}
         self.__calculations[position]['JOB TYPE'] = jobType
         self.__calculations[position]['DESCRIPTION'] = keywords
+        self.__calculations[position]['CHARGE/MULT'] = chargeMult
         start = datetime.datetime.now()
         if jobType == 'Optimization':
             results = self.__Optimization(inputFile)
@@ -134,9 +133,8 @@ class Gaussian(Persistent):
         elapsedTime = end - start
         self.__calculations[position]['DATE OF RUN'] = str(datetime.datetime.now())
         self.__calculations[position]['ELAPSED TIME'] = str(elapsedTime)
-        if self.stored:
+        if self.stored:  # arreglar
             self._p_changed = True
-            transaction.commit()
 #  ----------------------------------------------------GETTERS---------------------------------------
     @property
     def GetProperties(self):
@@ -279,8 +277,11 @@ STORED: {self.stored}
         log file corresponding to the output of required calculation
         '''
         myEnv = os.environ.copy()
-        gaussExecutable = myEnv['GAUSS_EXEDIR'].split('/')[-1]
-        
+        try:
+            gaussExecutable = myEnv['GAUSS_EXEDIR'].split('/')[-1]
+        except KeyError:
+            print('no leyó el ejecutable de Gaussian')
+            print(myEnv)
         # homeDir = '/home/'+subprocess.run(
         #     'ls /home/', shell=True, text=True, capture_output=True
         # ).stdout.replace('\n', '')
@@ -294,7 +295,7 @@ STORED: {self.stored}
 
         # cmd = (f"export {root}; export {scrdir}; source {source}; {gaussianExecutable} < {inputFile} > Opt_{self.__properties['NAME']}.log")
         cmd = f'{gaussExecutable} < {inputFile} > {outputFile}'
-        
+
         subprocess.run(cmd, shell=True)
 
         # os.remove(inputFile)
@@ -307,33 +308,43 @@ STORED: {self.stored}
 
         Returns
         -------
-        A Pandas DataFrame containing the matrix of optimized coordinates
+        A List of Pandas DataFrame containing the matrix of 
+        the different coordinates through the optimization
         '''
+
         with open(f'{outputFile}', 'r') as logFile:
             opt = []
             log = logFile.read()
-            maxForce = re.findall(r' Maximum Force\s+\d+\.\d+\s+\d+\.\d+\s+(YES|NO)', log)
-            rmsForce = re.findall(r' RMS     Force\s+\d+\.\d+\s+\d+\.\d+\s+(YES|NO)', log)
-            maxDispl = re.findall(r' Maximum Displacement\s+\d+\.\d+\s+\d+\.\d+\s+(YES|NO)', log)
-            rmsDispl = re.findall(r' RMS     Displacement\s+\d+\.\d+\s+\d+\.\d+\s+(YES|NO)', log)
+            finalization = True if re.findall('Optimization completed.', log) else False
+            if finalization:
+                matches = re.finditer('Standard orientation:', log)
+                minSpan = [i.start() for i in matches]
+                matches = re.finditer('Rotational constants', log)
+                maxSpan = [i.start() for i in matches]
+                eachSpan = [(i, j) for i, j in zip(minSpan, maxSpan)]
 
-            if maxForce[-1] == 'YES' and rmsForce[-1] == 'YES' and maxDispl[-1] == 'YES' and rmsDispl[-1] == 'YES':
+                for s, j in enumerate(eachSpan):
+                    optCoord = re.finditer(r'\s+\d+\s+\d+\s+\d\s+(\d|-\d)+\.\d+\s+(\d|-\d)+\.\d+\s+(\d|-\d)+\.\d+', log)
+                    eachCoord = [i.group() for i in optCoord if i.start() > eachSpan[s][0] and i.end() < eachSpan[s][1]]
+                    matrix = []
+                    for i in eachCoord:
+                        matrix.append([i.split()[a] for a in range(6) if a != 2])    
+                    col = ['ID', 'ATOM', 'X', 'Y', 'Z']
+                    coords = pd.DataFrame(matrix, columns=col)
+                    coords[['ID', 'ATOM']] = coords[['ID', 'ATOM']].astype(int)
+                    coords[['X', 'Y', 'Z']] = coords[['X', 'Y', 'Z']].astype(float)
+                    coords.set_index('ID', inplace=True)
+                    opt.append(coords)
 
-                minSpan = re.search(r'\s+!\s+Optimized Parameters\s+!', log).end()
-                for match in re.finditer(r'\s+Distance matrix\s\(angstroms\):', log):
-                    maxSpan = match.start()
+        opt.pop()
+        return opt
 
-                optCoord = re.finditer(r'\s+\d+\s+\d+\s+\d\s+(\d|-\d)+\.\d+\s+(\d|-\d)+\.\d+\s+(\d|-\d)+\.\d+', log)
-                for i in optCoord:
-                    if i.start() > minSpan and i.end() < maxSpan:
-                        opt.append([i.group(0).split()[a] for a in range(6) if a != 2])
-
-        col = ['ID', 'ATOM', 'X', 'Y', 'Z']
-        optMatrix = pd.DataFrame(opt, columns=col)
-        optMatrix.astype({'ID': int, 'ATOM': str, 'X': float, 'Y': float, 'Z': float})
-        optMatrix.set_index('ID', inplace=True)
-        optMatrix['ATOM'] = self.atomsList
-        return optMatrix
+                # for match in re.finditer(r'\sDipole\smoment\s', log):
+                #     minSpan = match.start()
+                #     coords = re.finditer(r'\s+X=\s+(\d|-\d)+\.\d+\s+Y=\s+(\d|-\d)+\.\d+\s+Z=\s+(\d|-\d)+\.\d+\s+Tot=\s+(\d|-\d)+\.\d+\s+', log)
+                # for i in coords:
+                #     if i.start() > minSpan:
+                #         dipoleMoment = np.array([float(i.group(0).split()[a]) for a in (1, 3, 5)])
 
     def __ReplaceCoordinates(self, name, coordinatesMatrix):
         """
@@ -381,7 +392,6 @@ STORED: {self.stored}
         A Pandas DataFrame with the results
         '''
         outputFile = inputFile.split('.')[0] + '.log'
-
         self.__Run(inputFile, outputFile)
 
         coordinates = self.__ExtractCoordinates(outputFile)

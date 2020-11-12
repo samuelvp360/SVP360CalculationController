@@ -3,18 +3,22 @@
 
 import sys
 import os
+import transaction
 from Computational_calculations.Gaussian import Gaussian
+from CalculationsController import CalculationsController
+from ResultsController import ResultsWidget
+from Models import MoleculesModel, StatusModel, AvailableCalcModel
+from Worker import WorkerThread
+from Views import resources
+from DB.MoleculesDB import MyZODB
+
 from PyQt5 import QtCore as qtc
 from PyQt5 import QtWidgets as qtw
 from PyQt5 import QtGui as qtg
 from PyQt5 import uic
-from Models import MoleculesModel, StatusModel, AvailableCalcModel
-from Worker import WorkerThread
+
 from rdkit import Chem
 from PIL import ImageQt  # , Image
-from Views import resources
-from DB.MoleculesDB import MyZODB
-from CalculationsController import CalculationsController
 
 
 class MainWindow(qtw.QMainWindow):
@@ -67,6 +71,7 @@ class MainWindow(qtw.QMainWindow):
         self.uiRemoveButton.clicked.connect(self.RemoveFromQueue)
         self.uiSubmitCalcButton.clicked.connect(self.SubmitCalc)
         self._propertiesWidgets[1].clicked.connect(self.DisplayAvailableCalcs)
+        self.uiShowResultsButton.clicked.connect(self.ShowResults)
     #---------------------------------------------------METHODS--------------------------------------------------
 
     def LoadMolecules(self):
@@ -77,7 +82,6 @@ class MainWindow(qtw.QMainWindow):
         -------
         Feeds the self._filePathList
         """
-
         filePathList, _ = qtw.QFileDialog.getOpenFileNames(
             self,
             'Select your molecule(s)',
@@ -277,6 +281,8 @@ class MainWindow(qtw.QMainWindow):
         self.thread.start()
         self.uiStartCalcButton.setEnabled(False)
         self.uiStopCalcButton.setEnabled(True)
+        self._propertiesWidgets[1].setChecked(False)
+        self.uiAvailableCalcsTableView.setModel(None)
 
     @qtc.pyqtSlot(object, int, str)
     def ErrorManager(self, errorMol, index, status):  # aquí hay que mejorar
@@ -305,9 +311,24 @@ class MainWindow(qtw.QMainWindow):
         """
         docstring
         """
-        availableCalcModel = AvailableCalcModel(self._selectedMolecule)
-        self.uiAvailableCalcsTableView.setModel(availableCalcModel)
-        self.uiAvailableCalcsTableView.resizeColumnsToContents()
+        if self._propertiesWidgets[1].isChecked():
+            availableCalcModel = AvailableCalcModel(self._selectedMolecule)
+            self.uiAvailableCalcsTableView.setModel(availableCalcModel)
+            self.uiAvailableCalcsTableView.resizeColumnsToContents()
+            self.uiShowResultsButton.setEnabled(True)
+        else:
+            self.uiAvailableCalcsTableView.setModel(None)
+            self.uiShowResultsButton.setEnabled(False)
+
+    def ShowResults(self):
+        """
+        docstring
+        """
+        indexes = self.uiAvailableCalcsTableView.selectedIndexes()
+        if indexes:
+            index = indexes[0]
+            self.resultsWidget = ResultsWidget(self._selectedMolecule.GetCalculations[index.row()]['RESULTS'])
+            self.resultsWidget.show()
 
     def closeEvent(self, event):
 
@@ -317,6 +338,7 @@ class MainWindow(qtw.QMainWindow):
         )
 
         if reply == qtw.QMessageBox.Yes:
+            transaction.commit()
             self.database.Close()
             event.accept()
             print('Window closed')

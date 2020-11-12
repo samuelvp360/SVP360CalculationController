@@ -305,6 +305,9 @@
             <property name="text">
              <string/>
             </property>
+            <property name="checkable">
+             <bool>true</bool>
+            </property>
            </widget>
           </item>
           <item row="1" column="2">
@@ -593,20 +596,6 @@
            <property name="spacing">
             <number>0</number>
            </property>
-           <item row="0" column="0">
-            <widget class="QPushButton" name="pushButton">
-             <property name="text">
-              <string>Fetch</string>
-             </property>
-            </widget>
-           </item>
-           <item row="0" column="1">
-            <widget class="QPushButton" name="pushButton_12">
-             <property name="text">
-              <string>PushButton</string>
-             </property>
-            </widget>
-           </item>
            <item row="1" column="0" colspan="2">
             <widget class="QTableView" name="uiAvailableCalcsTableView">
              <property name="font">
@@ -620,6 +609,16 @@
              </property>
              <property name="alternatingRowColors">
               <bool>true</bool>
+             </property>
+            </widget>
+           </item>
+           <item row="0" column="0">
+            <widget class="QPushButton" name="uiShowResultsButton">
+             <property name="enabled">
+              <bool>false</bool>
+             </property>
+             <property name="text">
+              <string>Show Results</string>
              </property>
             </widget>
            </item>

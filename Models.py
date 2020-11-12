@@ -3,6 +3,7 @@
 
 from PyQt5 import QtCore as qtc
 from PyQt5 import QtGui as qtg
+from PyQt5 import QtWidgets as qtw
 from Views import resources
 
 
@@ -40,18 +41,21 @@ class AvailableCalcModel(qtc.QAbstractTableModel):
         super(AvailableCalcModel, self).__init__()
         self._calculations = molecule.GetCalculations
         self._headers = (
-            'JOB TYPE', 'DESCRIPTION', 'RESULTS', 'STATUS', 'DATE OF RUN', 'ELAPSED TIME'
+            'JOB TYPE', 'DESCRIPTION', 'CHARGE/MULT', 'RESULTS', 'STATUS', 'DATE OF RUN', 'ELAPSED TIME'
         )
 
     def data(self, index, role):
         if role == qtc.Qt.DisplayRole:
-            return self._calculations[index.row()][self._headers[index.column()]]
+            if index.column() != 3:
+                return self._calculations[index.row()][self._headers[index.column()]]
+            else:
+                return 'Optimized coordinates'
 
     def rowCount(self, index):
         return len(self._calculations)
 
     def columnCount(self, index):
-        return 6
+        return len(self._headers)
         # return len(self._calculations[index.row()])
 
     def headerData(self, section, orientation, role):
@@ -106,6 +110,38 @@ class StatusModel(qtc.QAbstractTableModel):
                 return self._headers[section]
             if orientation == qtc.Qt.Vertical:
                 return section
+
+    def flags(self, index):
+        return qtc.Qt.ItemIsEnabled | qtc.Qt.ItemIsSelectable
+
+
+class ResultsModel(qtc.QAbstractTableModel):
+    '''Model to populate the Results Table'''
+
+    def __init__(self, calculation):
+        super(ResultsModel, self).__init__()
+        self._calculation[0] = calculation
+        self._headers = ('ATOM', 'X', 'Y', 'Z')
+
+    def data(self, index, role):
+        if index.isValid():
+            if role == qtc.Qt.DisplayRole:
+                return str(self._calculation.iloc[index.row(), index.column()])
+        return None
+
+    def rowCount(self, index):
+        return self._calculation.shape[0]
+
+    def columnCount(self, index):
+        return self._calculation.shape[1]
+
+    def headerData(self, section, orientation, role):
+        if role == qtc.Qt.DisplayRole:
+            if orientation == qtc.Qt.Horizontal:
+                return self._calculation.columns[section]
+            if orientation == qtc.Qt.Vertical:
+                return section + 1
+        return None
 
     def flags(self, index):
         return qtc.Qt.ItemIsEnabled | qtc.Qt.ItemIsSelectable
