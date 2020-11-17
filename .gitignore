@@ -7,6 +7,7 @@ Solubiliad.sk2
 *.log
 *.ipynb
 *.ipynb_checkpoints
+*.csv
 test.py
 Tripos_atom_types.txt
 test.ipynb

@@ -7,6 +7,7 @@ import transaction
 from Computational_calculations.Gaussian import Gaussian
 from CalculationsController import CalculationsController
 from ResultsController import ResultsWidget
+from IRController import IRPlotter, IRCanvas
 from Models import MoleculesModel, StatusModel, AvailableCalcModel
 from Worker import WorkerThread
 from Views import resources
@@ -72,6 +73,7 @@ class MainWindow(qtw.QMainWindow):
         self.uiSubmitCalcButton.clicked.connect(self.SubmitCalc)
         self._propertiesWidgets[1].clicked.connect(self.DisplayAvailableCalcs)
         self.uiShowResultsButton.clicked.connect(self.ShowResults)
+        self.uiIRManager.clicked.connect(self.DisplayIR)
     #---------------------------------------------------METHODS--------------------------------------------------
 
     def LoadMolecules(self):
@@ -329,6 +331,13 @@ class MainWindow(qtw.QMainWindow):
             index = indexes[0]
             self.resultsWidget = ResultsWidget(self._selectedMolecule.GetCalculations[index.row()]['RESULTS'])
             self.resultsWidget.show()
+
+    def DisplayIR(self):
+        """
+        docstring
+        """
+        self.IRPlotter = IRPlotter('SVP-UREA-01.csv')
+        self.IRPlotter.show()
 
     def closeEvent(self, event):
 

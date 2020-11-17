@@ -125,6 +125,9 @@ class Gaussian(Persistent):
         if jobType == 'Optimization':
             results = self.__Optimization(inputFile)
             self.__calculations[position]['RESULTS'] = results
+        if jobType == 'Opt+Freq':
+            results = self.__Optimization(inputFile)
+            self.__calculations[position]['RESULTS'] = results
         if results is not None:
             self.__calculations[position]['STATUS'] = 'Finished'
         else:

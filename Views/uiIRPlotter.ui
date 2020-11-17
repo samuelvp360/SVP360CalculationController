@@ -1,0 +1,111 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>Form</class>
+ <widget class="QWidget" name="Form">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>1075</width>
+    <height>461</height>
+   </rect>
+  </property>
+  <property name="windowTitle">
+   <string>Form</string>
+  </property>
+  <widget class="QWidget" name="layoutWidget">
+   <property name="geometry">
+    <rect>
+     <x>10</x>
+     <y>6</y>
+     <width>1061</width>
+     <height>451</height>
+    </rect>
+   </property>
+   <layout class="QGridLayout" name="gridLayout">
+    <item row="0" column="1">
+     <widget class="QPushButton" name="uiZeroButton">
+      <property name="maximumSize">
+       <size>
+        <width>130</width>
+        <height>16777215</height>
+       </size>
+      </property>
+      <property name="text">
+       <string>Zero Correction</string>
+      </property>
+     </widget>
+    </item>
+    <item row="0" column="0">
+     <layout class="QVBoxLayout" name="uiToolbarLayout"/>
+    </item>
+    <item row="0" column="3">
+     <widget class="QPushButton" name="uiSubsBaselineButton">
+      <property name="maximumSize">
+       <size>
+        <width>150</width>
+        <height>16777215</height>
+       </size>
+      </property>
+      <property name="text">
+       <string>Substract Baseline</string>
+      </property>
+     </widget>
+    </item>
+    <item row="0" column="5">
+     <widget class="QDoubleSpinBox" name="uiThresholdSpinBox">
+      <property name="maximumSize">
+       <size>
+        <width>70</width>
+        <height>16777215</height>
+       </size>
+      </property>
+      <property name="decimals">
+       <number>4</number>
+      </property>
+      <property name="maximum">
+       <double>1.000000000000000</double>
+      </property>
+      <property name="singleStep">
+       <double>0.000100000000000</double>
+      </property>
+      <property name="value">
+       <double>0.997500000000000</double>
+      </property>
+     </widget>
+    </item>
+    <item row="1" column="0" colspan="6">
+     <layout class="QVBoxLayout" name="uiSpectraLayout"/>
+    </item>
+    <item row="0" column="4">
+     <widget class="QLabel" name="label">
+      <property name="maximumSize">
+       <size>
+        <width>80</width>
+        <height>16777215</height>
+       </size>
+      </property>
+      <property name="text">
+       <string>Threshold</string>
+      </property>
+     </widget>
+    </item>
+    <item row="0" column="2">
+     <widget class="QPushButton" name="uiDetectBaselineButton">
+      <property name="maximumSize">
+       <size>
+        <width>130</width>
+        <height>16777215</height>
+       </size>
+      </property>
+      <property name="text">
+       <string>Detect Baseline</string>
+      </property>
+     </widget>
+    </item>
+   </layout>
+  </widget>
+ </widget>
+ <resources/>
+ <connections/>
+</ui>
