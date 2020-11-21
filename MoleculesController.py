@@ -336,7 +336,7 @@ class MainWindow(qtw.QMainWindow):
         """
         docstring
         """
-        self.IRPlotter = IRPlotter('SVP-KOCN-01.csv')
+        self.IRPlotter = IRPlotter('SVP-UREA-01.csv')
         self.IRPlotter.show()
 
     def closeEvent(self, event):
