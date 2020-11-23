@@ -26,7 +26,8 @@ class LineBuilder:
 
     def __call__(self, event):
         print('click', event)
-        if event.inaxes!=self.line.axes: return
+        if event.inaxes != self.line.axes:
+            return
         self.xs.append(event.xdata)
         self.ys.append(event.ydata)
         self.line.set_data(self.xs, self.ys)

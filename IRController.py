@@ -8,7 +8,9 @@ import numpy as np
 import matplotlib
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg, NavigationToolbar2QT as NavigationToolbar
 from matplotlib.figure import Figure
+from matplotlib.gridspec import  GridSpec
 from scipy.signal import argrelextrema
+from scipy.optimize import curve_fit
 import math
 
 matplotlib.use('Qt5Agg')
@@ -19,12 +21,14 @@ class IRCanvas(FigureCanvasQTAgg):
     docstring
     """
     def __init__(self, parent=None):
-        self.fig = Figure(figsize=(11, 4), dpi=100, facecolor='#f8b4a5', tight_layout=True)
-        self.axes = self.fig.add_subplot(111)
+        self.fig = Figure(figsize=(22, 4), dpi=100, facecolor='#2d2a2e')  # , tight_layout=True)
+        self.grid = GridSpec(17, 1, left=0.1, bottom=0.15, right=0.94, top=0.94, wspace=0.3, hspace=0.3)
+        self.axes = self.fig.add_subplot(self.grid[0:12, 0])
+        self.axes2 = self.fig.add_subplot(self.grid[14:, 0])
         super(IRCanvas, self).__init__(self.fig)
 
 
-class IRPlotter(qtw.QWidget):
+class IRPlotter(qtw.QMainWindow):
     """
     docstring
     """
@@ -33,6 +37,7 @@ class IRPlotter(qtw.QWidget):
         uic.loadUi('Views/uiIRPlotter.ui', self)
         self.df = pd.read_csv(csvData1, names=('Wavenumber', 'Raw Data'))
         self._title = csvData1.replace('.csv', '')
+        self.statusBar().showMessage(f'Showing IR spectrum from {self._title}')
         self._baseThreshold = self.uiBaseThresholdSpinBox.value()
         self._bandThreshold = self.uiBandsThresholdSpinBox.value()
         self._orderBase = self.uiOrderBaseSpinBox.value()
@@ -50,6 +55,7 @@ class IRPlotter(qtw.QWidget):
             'Height (A)': []
         })
         self._predictedBands = {}
+        self._bandsParameters = []
         self.canvas = IRCanvas(self)
         self.toolbar = NavigationToolbar(self.canvas, self)
         self.uiToolbarLayout.addWidget(self.toolbar)
@@ -78,33 +84,45 @@ class IRPlotter(qtw.QWidget):
         docstring
         """
         self.canvas.axes.clear()
-        self.canvas.axes.plot(self.df['Wavenumber'], self.df[yAxis], linewidth=1.0)
-        self.canvas.axes.set_title(self._title)
-        self.canvas.axes.set_xlabel('Wavenumber [cm-1]')
-        self.canvas.axes.set_ylabel(yAxis)
+        self.canvas.axes2.clear()
+        self.canvas.axes.plot(self.df['Wavenumber'], self.df[yAxis], linewidth=1.5, color='#272822')
+        self.canvas.axes.set_title(self._title, color='#f92672')
+        self.canvas.axes.set_xlabel('Wavenumber [cm-1]', color='#3691d5')
+        self.canvas.axes.set_ylabel(yAxis, color='#3691d5')
+        self.canvas.axes.tick_params(axis='x', colors='#A6E22E')
+        self.canvas.axes.tick_params(axis='y', colors='#A6E22E')
+        self.canvas.axes2.set_ylabel('Residuals', color='#3691d5')
+        self.canvas.axes2.tick_params(axis='x', colors='#A6E22E')
+        self.canvas.axes2.tick_params(axis='y', colors='#A6E22E')
+        self.canvas.axes2.axhline()
         self.canvas.axes.set_xlim(4000, 500)
-        self.canvas.axes.grid(True, color='gray', linestyle=':', linewidth=0.5) if self._showGrid else self.canvas.axes.grid(False)
+        self.canvas.axes2.set_xlim(4000, 500)
+        self.canvas.axes.grid(True, color='#2d2a2e', linestyle=':', linewidth=0.5) if self._showGrid else self.canvas.axes.grid(False)
         if self._baseline:
-            self.canvas.axes.plot(self.df['Wavenumber'], self.df['baseline'], linewidth=1.0, color='red')
+            self.canvas.axes.plot(self.df['Wavenumber'], self.df['baseline'], linewidth=1.0, color='#f92672')
         if self._bandFitting:
             for _, predicted in self._predictedBands[yAxis].iteritems():
                 self.canvas.axes.plot(self.df['Wavenumber'], predicted, linewidth=0.0)
+                self.canvas.axes2.plot(
+                    self.df['Wavenumber'], self._predictedBands['Absorbance']['Residuals'], 'o',
+                    markersize=0.2, linewidth=0.1, color='#ae81ff'
+                )
                 if yAxis == 'Transmittance':
                     self.canvas.axes.plot(
                         self.df['Wavenumber'], self._predictedBands['Transmittance']['Fitted Curve Lorentzian'],
-                        color='red', linewidth=0.5, linestyle=':'
+                        color='#ae81ff', linewidth=0.5, linestyle=':'
                     )
                     self.canvas.axes.fill_between(self.df['Wavenumber'], predicted, 1, alpha=0.2)
                 elif yAxis == '%Transmittance':
                     self.canvas.axes.plot(
                         self.df['Wavenumber'], self._predictedBands['%Transmittance']['Fitted Curve Lorentzian'],
-                        color='red', linewidth=0.5, linestyle=':'
+                        color='#ae81ff', linewidth=0.5, linestyle=':'
                     )
                     self.canvas.axes.fill_between(self.df['Wavenumber'], predicted, 100, alpha=0.2)
                 else:
                     self.canvas.axes.plot(
                         self.df['Wavenumber'], self._predictedBands['Absorbance']['Fitted Curve Lorentzian'],
-                        color='red', linewidth=0.5, linestyle=':'
+                        color='#ae81ff', linewidth=0.5, linestyle=':'
                     )
                     self.canvas.axes.fill_between(self.df['Wavenumber'], predicted, alpha=0.2)
         if self._bandDict.shape[0] > 0:
@@ -310,15 +328,13 @@ class IRPlotter(qtw.QWidget):
                 })
                 self._bandDict = self._bandDict.append(newBand, ignore_index=True)
             self.uiBandFittingAutoButton.setEnabled(True)
-            if self._bandFitting:
-                self.BandFitting()
+            print(self._bandDict)
+            if self.uiTransButton.isChecked():
+                self.SelectYAxis('T')
+            elif self.uiPercentTransButton.isChecked():
+                self.SelectYAxis('%T')
             else:
-                if self.uiTransButton.isChecked():
-                    self.SelectYAxis('T')
-                elif self.uiPercentTransButton.isChecked():
-                    self.SelectYAxis('%T')
-                else:
-                    self.SelectYAxis('A')
+                self.SelectYAxis('A')
 
     def HWHM(self, x, y):
         '''
@@ -331,21 +347,38 @@ class IRPlotter(qtw.QWidget):
             hwhm = 1.0
         return hwhm
 
-    def BandFitting(self):
+    def BandFitting(self):  # enviar al worker
         """
         docstring
         """
-        self._predictedBands['Absorbance'] = pd.DataFrame(
-            map(self.LorentzianFunction, self._bandDict['Wavenumber'], self._bandDict['Height (A)'], self._bandDict['HWHM'])
-        ).transpose()
-        self._predictedBands['Transmittance'] = self._predictedBands['Absorbance'].applymap(lambda x: (10 ** (2 - x)) / 100)
-        self._predictedBands['%Transmittance'] = self._predictedBands['Transmittance'].applymap(lambda x: 100 * x)
-        self._predictedBands['Absorbance']['Fitted Curve Lorentzian'] = self._predictedBands['Absorbance'].sum(axis=1)
-        print(self._predictedBands['Absorbance'])
-        self._predictedBands['Transmittance']['Fitted Curve Lorentzian'] = self._predictedBands['Absorbance']['Fitted Curve Lorentzian'].apply(lambda x: (10 ** (2 - x)) / 100)
-        print(self._predictedBands['Transmittance'])
-        self._predictedBands['%Transmittance']['Fitted Curve Lorentzian'] = self._predictedBands['Transmittance']['Fitted Curve Lorentzian'].apply(lambda x: 100 * x)
-        print(self._predictedBands['%Transmittance'])
+        self.statusBar().showMessage(f'Now fitting {self._title} IR spectrum')
+        n = self._bandDict.shape[0]
+        position = self._bandDict['Wavenumber'].to_list()
+        amplitude = self._bandDict['Height (A)'].to_list()
+        hwhm = self._bandDict['HWHM'].to_list()
+        self._bandsParameters = position + amplitude + hwhm
+        try:
+            fittedParams, cov = curve_fit(
+                self.LorentzianModel, self.df['Wavenumber'], self.df['Absorbance'], p0=self._bandsParameters, absolute_sigma=True
+            )
+            fittedPosition = fittedParams[:n]
+            fittedAmplitude = fittedParams[n:2 * n]
+            fittedHwhm = fittedParams[2 * n:]
+            self._bandDict['Wavenumber'] = pd.Series(fittedPosition)
+            self._bandDict['Height (A)'] = pd.Series(fittedAmplitude)
+            self._bandDict['HWHM'] = pd.Series(fittedHwhm)
+            self._predictedBands['Absorbance'] = pd.DataFrame(
+                map(self.LorentzianByBand, self._bandDict['Wavenumber'], self._bandDict['Height (A)'], self._bandDict['HWHM'])
+            ).transpose()
+            self._predictedBands['Transmittance'] = self._predictedBands['Absorbance'].applymap(lambda x: (10 ** (2 - x)) / 100)
+            self._predictedBands['%Transmittance'] = self._predictedBands['Transmittance'].applymap(lambda x: 100 * x)
+            self._predictedBands['Absorbance']['Fitted Curve Lorentzian'] = self._predictedBands['Absorbance'].sum(axis=1)
+            self._predictedBands['Absorbance']['Residuals'] = self.df['Absorbance'] - self._predictedBands['Absorbance']['Fitted Curve Lorentzian']
+            print(self._bandDict)
+            self._predictedBands['Transmittance']['Fitted Curve Lorentzian'] = self._predictedBands['Absorbance']['Fitted Curve Lorentzian'].apply(lambda x: (10 ** (2 - x)) / 100)
+            self._predictedBands['%Transmittance']['Fitted Curve Lorentzian'] = self._predictedBands['Transmittance']['Fitted Curve Lorentzian'].apply(lambda x: 100 * x)
+        except RuntimeError:
+            self.statusBar().showMessage(f'Unsuccessful fitting of {self._title}')
         self._bandFitting = True
         self.uiBandFittingAutoButton.setEnabled(False)
         if self.uiTransButton.isChecked():
@@ -355,9 +388,25 @@ class IRPlotter(qtw.QWidget):
         else:
             self.SelectYAxis('A')
 
-    def LorentzianFunction(self, x0, amp, hwhm):
+    def LorentzianFunction(self, x, x0, amp, hwhm):
+        return amp / (1 + ((x - x0) / hwhm) ** 2)
+
+    def LorentzianByBand(self, x0, amp, hwhm):
         """
         docstring
         """
         xRange = self.df['Wavenumber']
-        return pd.Series([amp / (1 + ((x - x0) / hwhm) ** 2) for x in xRange])
+        return pd.Series([(amp / (1 + ((x - x0) / hwhm) ** 2)) for x in xRange])
+
+    def LorentzianModel(self, x, *args):
+        '''
+        docstring
+        '''
+        n = self._bandDict.shape[0]
+        x0 = args[:n]
+        amp = args[n:2 * n]
+        hwhm = args[2 * n:]
+
+        res = [self.LorentzianFunction(x, x0[i], amp[i], hwhm[i]) for i in range(n)]
+
+        return sum(res)
