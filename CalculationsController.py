@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 
 import re
+from os import listdir
 from PyQt5 import QtWidgets as qtw
 from PyQt5 import QtCore as qtc
 from PyQt5 import uic
@@ -1123,7 +1124,9 @@ class CalculationsController(qtw.QMainWindow):
         """
         docstring
         """
-        fileName = f'{self._molecule.GetName}_{self._jobTypes[self._jobsWidgets[0].currentIndex()]}.com'
+        name = f'{self._molecule.GetName}_{self._jobTypes[self._jobsWidgets[0].currentIndex()]}'
+        existentImputs = str(len([i for i in listdir() if re.sub(r'_\d+\.com', '', i) == name]))
+        fileName = f'{name}_{existentImputs}.com'
         jobType = self._jobTypes[self._jobsWidgets[0].currentIndex()]
         keywords = self.uiKeywordsLabel.text()
         chargeMult = self.uiChargeMultLabel.text().replace(' ', '/')

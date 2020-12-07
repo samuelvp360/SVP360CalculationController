@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1300</width>
+    <width>1298</width>
     <height>641</height>
    </rect>
   </property>
@@ -18,8 +18,8 @@
   </property>
   <property name="font">
    <font>
-    <family>Cascadia Code</family>
-    <pointsize>10</pointsize>
+    <family>Cascadia Code PL</family>
+    <pointsize>12</pointsize>
    </font>
   </property>
   <property name="cursor">
@@ -33,6 +33,183 @@
   </property>
   <property name="toolTip">
    <string/>
+  </property>
+  <property name="styleSheet">
+   <string notr="true">/*QMainWindow */
+QMainWindow {
+	background-color: #272822;
+}
+
+/*QWidget */
+QWidget {
+	background-color: #161613;
+}
+
+/*QMenu*/
+QMenu {
+	color: #ffffff;
+	margin: 2px;
+}
+QMenu::item {
+	background-color: #3e3e3e;
+}
+QMenu::item:selected {
+	background-color: rgba(255, 255, 255, 100);
+}
+QMenu::separator {
+	background-color: #ffffff;
+	height: 1px;
+	margin-left: 10px;
+	margin-right: 5px;
+}
+
+/*QMenuBar*/
+QMenuBar {
+	color: #ffffff;
+	spacing: 3px; /* spacing between menu bar items */
+	padding: 3px;
+}
+QMenuBar::item {
+	padding: 1px 4px;
+	background-color: #3e3e3e;
+}
+QMenuBar::item:hover {
+	background: rgba(255, 255, 255, 50);
+} 
+
+
+/*QToolBar*/
+QToolBar {
+	spacing: 3px;
+}
+
+/*QToolButton*/
+QToolButton {
+	color: #ffffff;
+	padding: 6px;
+}
+QToolButton:hover {
+	color: rgba(255, 255, 255, 50);
+}
+QToolButton:disabled {
+	background-color: #d5d4d5;
+	color: #ffffff;
+}
+
+/*QScrollArea */
+QScrollArea {
+	background-color: #3e3e3e
+}
+
+/*QLabel */
+QLabel {
+	color: #A6E22E;
+}
+
+ /*QGroupBox */
+QGroupBox {
+	margin-top: 2.5ex; /* leave space at the top for the title */
+}
+QGroupBox::title {
+	subcontrol-origin: margin;
+	subcontrol-position: top center; /* position at the top center */
+	color: #8f8f91;
+ }
+
+/*QPushButton*/
+QPushButton {
+	background-color: #3e3e3e;
+	color: #F92672;
+	border: 1px solid #8f8f91;
+	padding: 2px;
+}
+QPushButton:hover {
+	background-color: #E6DB74;
+	color: #F92672;
+}
+QPushButton:disabled {
+	background-color: #d5d4d5;
+	color: #ffffff;
+}
+
+ /*QListView */
+QListView, QTableView {
+	color: #66D9EF;
+	background-color: rgba(45, 42, 46, 200);
+	alternate-background-color: #2d3336;
+	show-decoration-selected: 1; /* make the selection span the entire width of the view */
+}
+QListView::item:alternate, QTableView::item:alternate {
+	background-color: rgba(255, 255, 255, 30);
+}
+
+QListView::item:selected, QTableView::item:selected {
+	background: rgba(255, 255, 255, 50);
+}
+QListView::item:selected:!active, QTableView::item:selected:!active {
+	color: #fd971f;
+}
+QListView::item:selected:active, QTableView::item:selected:active {
+	color: #f92672;
+}
+QListView::item:hover, QTableView::item:hover {
+      background: rgba(255, 255, 255, 30);
+}
+
+ /*QLineEdit */
+QLineEdit {
+	background-color: rgba(255, 255, 255, 50);
+	padding: 3px;
+	color: #ffffff;
+}
+QLineEdit::focus {
+	border: 1px solid #8f8f91;
+}
+
+/*QScrollBar*/
+QScrollBar {
+	background: rgba(0, 0, 0, 0);
+	height: 10px;
+}
+QScrollBar::handle:active {
+	background: rgba(255, 255, 255, 50);
+}
+QScrollBar::handle:!active {
+	background: rgba(0, 0, 0, 0);
+}
+QScrollBar::handle:pressed {
+	background: rgba(255, 255, 255, 80);
+}
+QScrollBar::right-arrow, QScrollBar::left-arrow {
+      border: none;
+      background: none;
+      color: none;
+}
+QScrollBar::add-line {
+      border: none;
+      background: none;
+}
+QScrollBar::sub-line {
+      border: none;
+      background: none;
+}
+
+/*QStatusBar*/
+QStatusBar {
+	color: #8f8f91;
+	border-top: #8f8f91;
+}
+
+/*QToolTip*/
+QToolTip {
+	background-color: #000000;
+	color: #ffffff;
+	border: 1px solid #ffffff;
+	padding: 3px;
+}</string>
+  </property>
+  <property name="dockOptions">
+   <set>QMainWindow::AllowTabbedDocks|QMainWindow::AnimatedDocks</set>
   </property>
   <widget class="QWidget" name="centralwidget">
    <layout class="QHBoxLayout" name="horizontalLayout">
@@ -52,88 +229,16 @@
         <rect>
          <x>0</x>
          <y>0</y>
-         <width>1280</width>
-         <height>545</height>
+         <width>1015</width>
+         <height>564</height>
         </rect>
        </property>
        <layout class="QGridLayout" name="gridLayout_3">
-        <item row="0" column="3">
+        <item row="0" column="1">
          <layout class="QGridLayout" name="gridLayout">
           <property name="spacing">
            <number>0</number>
           </property>
-          <item row="1" column="1">
-           <widget class="QPushButton" name="uiSubmitCalcButton">
-            <property name="enabled">
-             <bool>false</bool>
-            </property>
-            <property name="sizePolicy">
-             <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
-              <horstretch>0</horstretch>
-              <verstretch>0</verstretch>
-             </sizepolicy>
-            </property>
-            <property name="minimumSize">
-             <size>
-              <width>60</width>
-              <height>60</height>
-             </size>
-            </property>
-            <property name="toolTip">
-             <string>Submit Calculation</string>
-            </property>
-            <property name="text">
-             <string/>
-            </property>
-           </widget>
-          </item>
-          <item row="3" column="1">
-           <widget class="QPushButton" name="uiIRManager">
-            <property name="sizePolicy">
-             <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
-              <horstretch>0</horstretch>
-              <verstretch>0</verstretch>
-             </sizepolicy>
-            </property>
-            <property name="minimumSize">
-             <size>
-              <width>60</width>
-              <height>60</height>
-             </size>
-            </property>
-            <property name="text">
-             <string/>
-            </property>
-           </widget>
-          </item>
-          <item row="0" column="0" colspan="4">
-           <widget class="QLineEdit" name="uiName">
-            <property name="enabled">
-             <bool>false</bool>
-            </property>
-            <property name="sizePolicy">
-             <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
-              <horstretch>0</horstretch>
-              <verstretch>0</verstretch>
-             </sizepolicy>
-            </property>
-            <property name="minimumSize">
-             <size>
-              <width>220</width>
-              <height>0</height>
-             </size>
-            </property>
-            <property name="baseSize">
-             <size>
-              <width>0</width>
-              <height>0</height>
-             </size>
-            </property>
-            <property name="toolTip">
-             <string/>
-            </property>
-           </widget>
-          </item>
           <item row="2" column="2">
            <widget class="QPushButton" name="pushButton_7">
             <property name="sizePolicy">
@@ -172,42 +277,8 @@
             </property>
            </widget>
           </item>
-          <item row="1" column="0" rowspan="4">
-           <widget class="QLabel" name="ui2DImage">
-            <property name="enabled">
-             <bool>false</bool>
-            </property>
-            <property name="sizePolicy">
-             <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
-              <horstretch>0</horstretch>
-              <verstretch>0</verstretch>
-             </sizepolicy>
-            </property>
-            <property name="minimumSize">
-             <size>
-              <width>200</width>
-              <height>200</height>
-             </size>
-            </property>
-            <property name="maximumSize">
-             <size>
-              <width>220</width>
-              <height>220</height>
-             </size>
-            </property>
-            <property name="autoFillBackground">
-             <bool>false</bool>
-            </property>
-            <property name="text">
-             <string/>
-            </property>
-            <property name="scaledContents">
-             <bool>true</bool>
-            </property>
-           </widget>
-          </item>
-          <item row="1" column="3">
-           <widget class="QPushButton" name="pushButton_10">
+          <item row="3" column="1">
+           <widget class="QPushButton" name="uiIRManager">
             <property name="sizePolicy">
              <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
               <horstretch>0</horstretch>
@@ -225,46 +296,8 @@
             </property>
            </widget>
           </item>
-          <item row="4" column="3">
-           <widget class="QPushButton" name="pushButton_8">
-            <property name="sizePolicy">
-             <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
-              <horstretch>0</horstretch>
-              <verstretch>0</verstretch>
-             </sizepolicy>
-            </property>
-            <property name="minimumSize">
-             <size>
-              <width>60</width>
-              <height>60</height>
-             </size>
-            </property>
-            <property name="text">
-             <string/>
-            </property>
-           </widget>
-          </item>
-          <item row="3" column="3">
-           <widget class="QPushButton" name="pushButton_9">
-            <property name="sizePolicy">
-             <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
-              <horstretch>0</horstretch>
-              <verstretch>0</verstretch>
-             </sizepolicy>
-            </property>
-            <property name="minimumSize">
-             <size>
-              <width>60</width>
-              <height>60</height>
-             </size>
-            </property>
-            <property name="text">
-             <string/>
-            </property>
-           </widget>
-          </item>
-          <item row="3" column="2">
-           <widget class="QPushButton" name="pushButton_3">
+          <item row="1" column="2">
+           <widget class="QPushButton" name="pushButton_6">
             <property name="sizePolicy">
              <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
               <horstretch>0</horstretch>
@@ -310,8 +343,86 @@
             </property>
            </widget>
           </item>
-          <item row="1" column="2">
-           <widget class="QPushButton" name="pushButton_6">
+          <item row="3" column="2">
+           <widget class="QPushButton" name="pushButton_3">
+            <property name="sizePolicy">
+             <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+              <horstretch>0</horstretch>
+              <verstretch>0</verstretch>
+             </sizepolicy>
+            </property>
+            <property name="minimumSize">
+             <size>
+              <width>60</width>
+              <height>60</height>
+             </size>
+            </property>
+            <property name="text">
+             <string/>
+            </property>
+           </widget>
+          </item>
+          <item row="1" column="1">
+           <widget class="QPushButton" name="uiSubmitCalcButton">
+            <property name="enabled">
+             <bool>false</bool>
+            </property>
+            <property name="sizePolicy">
+             <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+              <horstretch>0</horstretch>
+              <verstretch>0</verstretch>
+             </sizepolicy>
+            </property>
+            <property name="minimumSize">
+             <size>
+              <width>60</width>
+              <height>60</height>
+             </size>
+            </property>
+            <property name="toolTip">
+             <string>Submit Calculation</string>
+            </property>
+            <property name="text">
+             <string/>
+            </property>
+           </widget>
+          </item>
+          <item row="1" column="0" rowspan="4">
+           <widget class="QLabel" name="ui2DImage">
+            <property name="enabled">
+             <bool>false</bool>
+            </property>
+            <property name="sizePolicy">
+             <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
+              <horstretch>0</horstretch>
+              <verstretch>0</verstretch>
+             </sizepolicy>
+            </property>
+            <property name="minimumSize">
+             <size>
+              <width>200</width>
+              <height>200</height>
+             </size>
+            </property>
+            <property name="maximumSize">
+             <size>
+              <width>220</width>
+              <height>220</height>
+             </size>
+            </property>
+            <property name="autoFillBackground">
+             <bool>false</bool>
+            </property>
+            <property name="text">
+             <string/>
+            </property>
+            <property name="scaledContents">
+             <bool>true</bool>
+            </property>
+           </widget>
+          </item>
+          <item row="3" column="3">
+           <widget class="QPushButton" name="pushButton_9">
             <property name="sizePolicy">
              <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
               <horstretch>0</horstretch>
@@ -348,6 +459,25 @@
             </property>
            </widget>
           </item>
+          <item row="4" column="3">
+           <widget class="QPushButton" name="pushButton_8">
+            <property name="sizePolicy">
+             <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+              <horstretch>0</horstretch>
+              <verstretch>0</verstretch>
+             </sizepolicy>
+            </property>
+            <property name="minimumSize">
+             <size>
+              <width>60</width>
+              <height>60</height>
+             </size>
+            </property>
+            <property name="text">
+             <string/>
+            </property>
+           </widget>
+          </item>
           <item row="4" column="1">
            <widget class="QPushButton" name="pushButton_4">
             <property name="sizePolicy">
@@ -367,150 +497,76 @@
             </property>
            </widget>
           </item>
+          <item row="0" column="0" colspan="4">
+           <widget class="QLineEdit" name="uiName">
+            <property name="enabled">
+             <bool>false</bool>
+            </property>
+            <property name="sizePolicy">
+             <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
+              <horstretch>0</horstretch>
+              <verstretch>0</verstretch>
+             </sizepolicy>
+            </property>
+            <property name="minimumSize">
+             <size>
+              <width>220</width>
+              <height>0</height>
+             </size>
+            </property>
+            <property name="baseSize">
+             <size>
+              <width>0</width>
+              <height>0</height>
+             </size>
+            </property>
+            <property name="toolTip">
+             <string/>
+            </property>
+           </widget>
+          </item>
+          <item row="1" column="3">
+           <widget class="QPushButton" name="pushButton_10">
+            <property name="sizePolicy">
+             <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+              <horstretch>0</horstretch>
+              <verstretch>0</verstretch>
+             </sizepolicy>
+            </property>
+            <property name="minimumSize">
+             <size>
+              <width>60</width>
+              <height>60</height>
+             </size>
+            </property>
+            <property name="text">
+             <string/>
+            </property>
+           </widget>
+          </item>
          </layout>
         </item>
-        <item row="0" column="2" rowspan="3">
-         <widget class="Line" name="line_2">
-          <property name="orientation">
-           <enum>Qt::Vertical</enum>
-          </property>
-         </widget>
-        </item>
-        <item row="0" column="1" rowspan="3">
-         <widget class="QGroupBox" name="groupBox">
-          <property name="minimumSize">
-           <size>
-            <width>220</width>
-            <height>0</height>
-           </size>
-          </property>
-          <property name="maximumSize">
-           <size>
-            <width>220</width>
-            <height>16777215</height>
-           </size>
-          </property>
-          <property name="title">
-           <string>Molecules</string>
-          </property>
-          <layout class="QGridLayout" name="gridLayout_4">
-           <property name="leftMargin">
-            <number>0</number>
-           </property>
-           <property name="topMargin">
-            <number>0</number>
-           </property>
-           <property name="rightMargin">
-            <number>0</number>
-           </property>
-           <property name="bottomMargin">
-            <number>0</number>
-           </property>
-           <property name="spacing">
-            <number>0</number>
-           </property>
-           <item row="1" column="0">
-            <widget class="QListView" name="uiMoleculesList">
-             <property name="sizePolicy">
-              <sizepolicy hsizetype="Fixed" vsizetype="Expanding">
-               <horstretch>0</horstretch>
-               <verstretch>0</verstretch>
-              </sizepolicy>
-             </property>
-             <property name="minimumSize">
-              <size>
-               <width>215</width>
-               <height>0</height>
-              </size>
-             </property>
-             <property name="maximumSize">
-              <size>
-               <width>200</width>
-               <height>16777215</height>
-              </size>
-             </property>
-             <property name="selectionBehavior">
-              <enum>QAbstractItemView::SelectRows</enum>
-             </property>
-            </widget>
-           </item>
-           <item row="0" column="2">
-            <widget class="QPushButton" name="uiDeleteMoleculeButton">
-             <property name="enabled">
-              <bool>false</bool>
-             </property>
-             <property name="sizePolicy">
-              <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
-               <horstretch>0</horstretch>
-               <verstretch>0</verstretch>
-              </sizepolicy>
-             </property>
-             <property name="text">
-              <string>Delete</string>
-             </property>
-            </widget>
-           </item>
-           <item row="0" column="0">
-            <widget class="QPushButton" name="uiLoadMoleculeButton">
-             <property name="text">
-              <string>Load</string>
-             </property>
-            </widget>
-           </item>
-           <item row="0" column="3">
-            <widget class="QPushButton" name="uiResetButton">
-             <property name="enabled">
-              <bool>false</bool>
-             </property>
-             <property name="text">
-              <string>Reset</string>
-             </property>
-            </widget>
-           </item>
-          </layout>
-         </widget>
-        </item>
-        <item row="1" column="3" colspan="5">
+        <item row="1" column="1" colspan="5">
          <widget class="QGroupBox" name="uiCalculationFlowGroupBox">
           <property name="title">
            <string>Calculation Flow</string>
           </property>
           <layout class="QGridLayout" name="gridLayout_2">
            <property name="leftMargin">
-            <number>0</number>
+            <number>1</number>
            </property>
            <property name="topMargin">
-            <number>0</number>
+            <number>1</number>
            </property>
            <property name="rightMargin">
-            <number>0</number>
+            <number>1</number>
            </property>
            <property name="bottomMargin">
-            <number>0</number>
+            <number>1</number>
            </property>
            <property name="spacing">
-            <number>0</number>
+            <number>1</number>
            </property>
-           <item row="0" column="3">
-            <widget class="QPushButton" name="uiRemoveButton">
-             <property name="enabled">
-              <bool>false</bool>
-             </property>
-             <property name="text">
-              <string>Remove</string>
-             </property>
-            </widget>
-           </item>
-           <item row="0" column="2">
-            <widget class="QPushButton" name="uiStopCalcButton">
-             <property name="enabled">
-              <bool>false</bool>
-             </property>
-             <property name="text">
-              <string>Stop</string>
-             </property>
-            </widget>
-           </item>
            <item row="0" column="0" colspan="2">
             <widget class="QPushButton" name="uiStartCalcButton">
              <property name="enabled">
@@ -521,25 +577,12 @@
              </property>
             </widget>
            </item>
-           <item row="0" column="4">
-            <spacer name="horizontalSpacer">
-             <property name="orientation">
-              <enum>Qt::Horizontal</enum>
-             </property>
-             <property name="sizeHint" stdset="0">
-              <size>
-               <width>40</width>
-               <height>20</height>
-              </size>
-             </property>
-            </spacer>
-           </item>
            <item row="1" column="0" colspan="5">
             <widget class="QTableView" name="uiCalculationFlowTable">
              <property name="font">
               <font>
                <family>Cascadia Code</family>
-               <pointsize>10</pointsize>
+               <pointsize>11</pointsize>
                <weight>50</weight>
                <italic>false</italic>
                <bold>false</bold>
@@ -559,17 +602,50 @@
              </attribute>
             </widget>
            </item>
+           <item row="0" column="2">
+            <widget class="QPushButton" name="uiStopCalcButton">
+             <property name="enabled">
+              <bool>false</bool>
+             </property>
+             <property name="text">
+              <string>Stop</string>
+             </property>
+            </widget>
+           </item>
+           <item row="0" column="3">
+            <widget class="QPushButton" name="uiRemoveButton">
+             <property name="enabled">
+              <bool>false</bool>
+             </property>
+             <property name="text">
+              <string>Remove</string>
+             </property>
+            </widget>
+           </item>
+           <item row="0" column="4">
+            <spacer name="horizontalSpacer">
+             <property name="orientation">
+              <enum>Qt::Horizontal</enum>
+             </property>
+             <property name="sizeHint" stdset="0">
+              <size>
+               <width>40</width>
+               <height>20</height>
+              </size>
+             </property>
+            </spacer>
+           </item>
           </layout>
          </widget>
         </item>
-        <item row="0" column="4">
+        <item row="0" column="2">
          <widget class="Line" name="line">
           <property name="orientation">
            <enum>Qt::Vertical</enum>
           </property>
          </widget>
         </item>
-        <item row="0" column="5" colspan="3">
+        <item row="0" column="3" colspan="3">
          <widget class="QGroupBox" name="groupBox_2">
           <property name="minimumSize">
            <size>
@@ -582,36 +658,20 @@
           </property>
           <layout class="QGridLayout" name="gridLayout_5">
            <property name="leftMargin">
-            <number>0</number>
+            <number>1</number>
            </property>
            <property name="topMargin">
-            <number>0</number>
+            <number>1</number>
            </property>
            <property name="rightMargin">
-            <number>0</number>
+            <number>1</number>
            </property>
            <property name="bottomMargin">
-            <number>0</number>
+            <number>1</number>
            </property>
            <property name="spacing">
-            <number>0</number>
+            <number>1</number>
            </property>
-           <item row="1" column="0" colspan="2">
-            <widget class="QTableView" name="uiAvailableCalcsTableView">
-             <property name="font">
-              <font>
-               <family>Cascadia Code</family>
-               <pointsize>10</pointsize>
-               <weight>50</weight>
-               <italic>false</italic>
-               <bold>false</bold>
-              </font>
-             </property>
-             <property name="alternatingRowColors">
-              <bool>true</bool>
-             </property>
-            </widget>
-           </item>
            <item row="0" column="0">
             <widget class="QPushButton" name="uiShowResultsButton">
              <property name="enabled">
@@ -619,6 +679,22 @@
              </property>
              <property name="text">
               <string>Show Results</string>
+             </property>
+            </widget>
+           </item>
+           <item row="1" column="0" colspan="2">
+            <widget class="QTableView" name="uiAvailableCalcsTableView">
+             <property name="font">
+              <font>
+               <family>Cascadia Code</family>
+               <pointsize>11</pointsize>
+               <weight>50</weight>
+               <italic>false</italic>
+               <bold>false</bold>
+              </font>
+             </property>
+             <property name="alternatingRowColors">
+              <bool>true</bool>
              </property>
             </widget>
            </item>
@@ -636,8 +712,8 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>1300</width>
-     <height>22</height>
+     <width>1298</width>
+     <height>25</height>
     </rect>
    </property>
    <widget class="QMenu" name="uiMenuFile">
@@ -676,9 +752,19 @@
      <string>About</string>
     </property>
    </widget>
+   <widget class="QMenu" name="menuView">
+    <property name="title">
+     <string>View</string>
+    </property>
+    <addaction name="uiViewMoleculesList"/>
+    <addaction name="actionMolecules_properties"/>
+    <addaction name="actionCalculations_Queue"/>
+    <addaction name="actionAvailable_Calculations"/>
+   </widget>
    <addaction name="uiMenuFile"/>
    <addaction name="menuEdit"/>
    <addaction name="menuTools"/>
+   <addaction name="menuView"/>
    <addaction name="menuHelp"/>
    <addaction name="menuAbout"/>
   </widget>
@@ -690,8 +776,14 @@
    <property name="movable">
     <bool>false</bool>
    </property>
+   <property name="iconSize">
+    <size>
+     <width>50</width>
+     <height>30</height>
+    </size>
+   </property>
    <attribute name="toolBarArea">
-    <enum>TopToolBarArea</enum>
+    <enum>LeftToolBarArea</enum>
    </attribute>
    <attribute name="toolBarBreak">
     <bool>false</bool>
@@ -701,6 +793,124 @@
    <addaction name="uiSave"/>
    <addaction name="separator"/>
    <addaction name="uiSaveToDB"/>
+  </widget>
+  <widget class="QDockWidget" name="uiMoleculesDock">
+   <property name="sizePolicy">
+    <sizepolicy hsizetype="Fixed" vsizetype="Preferred">
+     <horstretch>0</horstretch>
+     <verstretch>0</verstretch>
+    </sizepolicy>
+   </property>
+   <property name="minimumSize">
+    <size>
+     <width>258</width>
+     <height>36</height>
+    </size>
+   </property>
+   <property name="font">
+    <font>
+     <family>Cascadia Code PL</family>
+     <weight>75</weight>
+     <bold>true</bold>
+    </font>
+   </property>
+   <property name="floating">
+    <bool>false</bool>
+   </property>
+   <property name="allowedAreas">
+    <set>Qt::AllDockWidgetAreas</set>
+   </property>
+   <attribute name="dockWidgetArea">
+    <number>1</number>
+   </attribute>
+   <widget class="QWidget" name="dockWidgetContents">
+    <widget class="QFrame" name="frame">
+     <property name="geometry">
+      <rect>
+       <x>0</x>
+       <y>0</y>
+       <width>251</width>
+       <height>561</height>
+      </rect>
+     </property>
+     <property name="frameShape">
+      <enum>QFrame::Box</enum>
+     </property>
+     <property name="frameShadow">
+      <enum>QFrame::Raised</enum>
+     </property>
+     <widget class="QWidget" name="layoutWidget">
+      <property name="geometry">
+       <rect>
+        <x>0</x>
+        <y>0</y>
+        <width>258</width>
+        <height>571</height>
+       </rect>
+      </property>
+      <layout class="QGridLayout" name="gridLayout_4">
+       <property name="spacing">
+        <number>0</number>
+       </property>
+       <item row="0" column="0">
+        <widget class="QPushButton" name="uiLoadMoleculeButton">
+         <property name="text">
+          <string>Load</string>
+         </property>
+        </widget>
+       </item>
+       <item row="0" column="1">
+        <widget class="QPushButton" name="uiDeleteMoleculeButton">
+         <property name="enabled">
+          <bool>false</bool>
+         </property>
+         <property name="text">
+          <string>Delete</string>
+         </property>
+        </widget>
+       </item>
+       <item row="0" column="2">
+        <widget class="QPushButton" name="uiResetButton">
+         <property name="enabled">
+          <bool>false</bool>
+         </property>
+         <property name="text">
+          <string>Reset</string>
+         </property>
+        </widget>
+       </item>
+       <item row="1" column="0" colspan="3">
+        <widget class="QListView" name="uiMoleculesList">
+         <property name="sizePolicy">
+          <sizepolicy hsizetype="Fixed" vsizetype="Expanding">
+           <horstretch>0</horstretch>
+           <verstretch>0</verstretch>
+          </sizepolicy>
+         </property>
+         <property name="maximumSize">
+          <size>
+           <width>16777215</width>
+           <height>546</height>
+          </size>
+         </property>
+         <property name="font">
+          <font>
+           <family>Cascadia Code</family>
+           <pointsize>11</pointsize>
+          </font>
+         </property>
+         <property name="cursor" stdset="0">
+          <cursorShape>PointingHandCursor</cursorShape>
+         </property>
+         <property name="selectionBehavior">
+          <enum>QAbstractItemView::SelectRows</enum>
+         </property>
+        </widget>
+       </item>
+      </layout>
+     </widget>
+    </widget>
+   </widget>
   </widget>
   <action name="uiOpen">
    <property name="text">
@@ -771,6 +981,50 @@
    </property>
    <property name="toolTip">
     <string>add to DB</string>
+   </property>
+  </action>
+  <action name="uiViewMoleculesList">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="checked">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Molecules list</string>
+   </property>
+  </action>
+  <action name="actionMolecules_properties">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="checked">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Molecules properties</string>
+   </property>
+  </action>
+  <action name="actionCalculations_Queue">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="checked">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Calculations Queue</string>
+   </property>
+  </action>
+  <action name="actionAvailable_Calculations">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="checked">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Available Calculations</string>
    </property>
   </action>
  </widget>

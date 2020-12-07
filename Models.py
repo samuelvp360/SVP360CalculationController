@@ -25,11 +25,6 @@ class MoleculesModel(qtc.QAbstractListModel):
     def rowCount(self, index):
         return len(self.moleculesList)
 
-    def headerData(self, section, orientation, role):
-        if role == qtc.Qt.DisplayRole:
-            if section == 0:
-                return 'Molecules'
-
     def flags(self, index):
         return qtc.Qt.ItemIsEnabled | qtc.Qt.ItemIsSelectable
 
@@ -41,7 +36,8 @@ class AvailableCalcModel(qtc.QAbstractTableModel):
         super(AvailableCalcModel, self).__init__()
         self._calculations = molecule.GetCalculations
         self._headers = (
-            'JOB TYPE', 'DESCRIPTION', 'CHARGE/MULT', 'RESULTS', 'STATUS', 'DATE OF RUN', 'ELAPSED TIME'
+            'JOB TYPE', 'DESCRIPTION', 'CHARGE/MULT', 'RESULTS', 
+            'STATUS', 'DATE OF RUN', 'ELAPSED TIME'
         )
 
     def data(self, index, role):
@@ -56,7 +52,6 @@ class AvailableCalcModel(qtc.QAbstractTableModel):
 
     def columnCount(self, index):
         return len(self._headers)
-        # return len(self._calculations[index.row()])
 
     def headerData(self, section, orientation, role):
         if role == qtc.Qt.DisplayRole:
@@ -64,6 +59,9 @@ class AvailableCalcModel(qtc.QAbstractTableModel):
                 return self._headers[section]
             if orientation == qtc.Qt.Vertical:
                 return section
+
+        if role == qtc.Qt.ForegroundRole:
+            return qtg.QColor('#66D9EF')
 
     def flags(self, index):
         return qtc.Qt.ItemIsEnabled | qtc.Qt.ItemIsSelectable
@@ -89,13 +87,13 @@ class StatusModel(qtc.QAbstractTableModel):
 
         if role == qtc.Qt.ForegroundRole:
             if self.calcToDoList[index.row()][3] == 'Pending':
-                return qtg.QColor('orange')
+                return qtg.QColor('#FD971F')
             elif self.calcToDoList[index.row()][3] == 'Running':
-                return qtg.QColor('blue')
+                return qtg.QColor('#66D9EF')
             elif self.calcToDoList[index.row()][3] == 'Finished':
-                return qtg.QColor('green')
+                return qtg.QColor('#A6E22E')
             elif self.calcToDoList[index.row()][3] == 'Failed':
-                return qtg.QColor('red')
+                return qtg.QColor('#F92672')
 
     def rowCount(self, index):
         return len(self.calcToDoList)
@@ -110,6 +108,9 @@ class StatusModel(qtc.QAbstractTableModel):
                 return self._headers[section]
             if orientation == qtc.Qt.Vertical:
                 return section
+
+        if role == qtc.Qt.ForegroundRole:
+            return qtg.QColor('#66D9EF')
 
     def flags(self, index):
         return qtc.Qt.ItemIsEnabled | qtc.Qt.ItemIsSelectable
@@ -142,6 +143,66 @@ class ResultsModel(qtc.QAbstractTableModel):
             if orientation == qtc.Qt.Vertical:
                 return section + 1
         return None
+
+        if role == qtc.Qt.ForegroundRole:
+            return qtg.QColor('#66D9EF')
+
+    def flags(self, index):
+        return qtc.Qt.ItemIsEnabled | qtc.Qt.ItemIsSelectable
+
+
+class IRDataModel(qtc.QAbstractTableModel):
+    '''Model to populate the IR Bands Table'''
+
+    def __init__(self, bandsDict, yAxis):
+        super(IRDataModel, self).__init__()
+        self._bands = bandsDict
+        self._axis = yAxis
+        print(self._axis)
+
+    def data(self, index, role):
+        if role == qtc.Qt.DisplayRole:
+            if index.column() == 0:
+                return str(self._bands.iloc[index.row(), index.column()])
+            elif index.column() == 1:
+                if self._axis == 'Transmittance':
+                    return str(self._bands.iloc[index.row(), index.column()])
+                elif self._axis == '%Transmittance':
+                    return str(self._bands.iloc[index.row(), (index.column() + 1)])
+                else:
+                    return str(self._bands.iloc[index.row(), (index.column() + 2)])
+            elif index.column() == 2:
+                if self._axis == 'Transmittance':
+                    return str(self._bands.iloc[index.row(), (index.column() + 2)])
+                elif self._axis == '%Transmittance':
+                    return str(self._bands.iloc[index.row(), (index.column() + 3)])
+                else:
+                    return str(self._bands.iloc[index.row(), (index.column() + 4)])
+            elif index.column() == 3:
+                return str(self._bands.iloc[index.row(), (index.column() + 4)])
+
+    def rowCount(self, index):
+        return self._bands.shape[0]
+
+    def columnCount(self, index):
+        return 4
+
+    def headerData(self, section, orientation, role):
+        if role == qtc.Qt.DisplayRole:
+            if orientation == qtc.Qt.Horizontal:
+                if section == 0:
+                    return 'Wavenumber'
+                elif section == 1:
+                    return self._axis
+                elif section == 2:
+                    return 'Height'
+                else:
+                    return 'HWHM'
+            if orientation == qtc.Qt.Vertical:
+                return section + 1
+
+        if role == qtc.Qt.ForegroundRole:
+            return qtg.QColor('#66D9EF')
 
     def flags(self, index):
         return qtc.Qt.ItemIsEnabled | qtc.Qt.ItemIsSelectable

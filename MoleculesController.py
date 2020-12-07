@@ -41,7 +41,7 @@ class MainWindow(qtw.QMainWindow):
     # --------------------------------------------------STYLE-------------------------------------------------------
         self.fontDB = qtg.QFontDatabase()
         self.fontDB.addApplicationFont(":/fonts/CascadiaCode.ttf")
-        self.setFont(qtg.QFont("CascadiaCode", 10))
+        self.setFont(qtg.QFont("CascadiaCode", 11))
         self.uiOpen.setIcon(qtg.QIcon(':/icons/openIcon.png'))
         self.uiSave.setIcon(qtg.QIcon(':/icons/saveIcon.png'))
         self.uiDeleteMoleculeButton.setIcon(qtg.QIcon(':/icons/trashIcon.png'))
@@ -135,12 +135,12 @@ class MainWindow(qtw.QMainWindow):
                     f'{self._selectedMolecule.GetName} succesfully added to DB!'
                 )
                 self.uiSubmitCalcButton.setChecked(False)
-                self.listModel = MoleculesModel(self._molecules)  # ojo
-                self.uiMoleculesList.setModel(self.listModel)  # ojo
+                self.listModel = MoleculesModel(self._molecules)
+                self.uiMoleculesList.setModel(self.listModel)
             except:
-                print('algo salió mal')
+                print('Something was wrong')
         else:
-            pass  # self.statusBar().showMessage(f'{self._selectedMolecule.GetName} is already in DB!')
+            self.statusBar().showMessage(f'{self._selectedMolecule.GetName} is already in DB!')
 
     def SaveFiles(self):
 
@@ -185,7 +185,7 @@ class MainWindow(qtw.QMainWindow):
         else:
             self._propertiesWidgets[1].setEnabled(False)
         self._propertiesWidgets[0].setText(name)
-        self.statusBar().showMessage(f'{name}  {formula}  FW:{weight}  InchiKey:{inchikey}  Smiles:{smiles}')
+        self.statusBar().showMessage(f'{name}  {formula}  FW:{weight} uma  InchiKey:{inchikey}  Smiles:{smiles}')
         self.ui2DImage.setPixmap(
             qtg.QPixmap.fromImage(ImageQt.ImageQt(self._selectedMolecule.Get2DImage))
         )
@@ -201,27 +201,35 @@ class MainWindow(qtw.QMainWindow):
     def DeleteMolecule(self):
         """
         Remove the selected molecule object from the main list of them,
-        along with the path to it and the widgets to handle its calculations.
+        along with the path through.
         """
         indexes = self.uiMoleculesList.selectedIndexes()
         if indexes:
             thisIndex = indexes[0]
+            newMasteQueue = []
+            for idx, i in enumerate(self.masterQueue):
+                if i[0].GetName == self._molecules[thisIndex.row()].GetName:
+                    os.remove(self.masterQueue[idx][5])
+                    del i
+                else:
+                    newMasteQueue.append(i)
+            self.masterQueue = newMasteQueue
             del self._molecules[thisIndex.row()]
             del self._filePathList[thisIndex.row()]
             newIndex = thisIndex.row() - 1
+            self.statusModel = StatusModel(self.masterQueue)
+            self.uiCalculationFlowTable.setModel(self.statusModel)
             self.listModel.layoutChanged.emit()
-            if newIndex >= 0:
+            if len(self._molecules) > 0:
                 self.uiMoleculesList.setCurrentIndex(self.listModel.index(newIndex))
+                self.ShowProperties()
             else:
                 self.uiSaveToDB.setEnabled(False)
                 self.uiSave.setEnabled(False)
                 self.uiDeleteMoleculeButton.setEnabled(False)
                 self.uiResetButton.setEnabled(False)
-            for w in self._propertiesWidgets:
-                w.setVisible(False)
+
             self.statusBar().showMessage('1 Molecule deleted!')
-            self.QueueManager()
-            self.statusModel.layoutChanged.emit()
 
     def ResetListOfMolecules(self):
         """
@@ -231,14 +239,17 @@ class MainWindow(qtw.QMainWindow):
         del self._molecules[:]
         del self._filePathList[:]
         self.listModel.layoutChanged.emit()
-        for w in self._propertiesWidgets:
-            w.setVisible(False)
+        self.uiName.setText('')
+        self.uiDisplayAvailableCalcButton.setEnabled(False)
+        self.uiSubmitCalcButton.setEnabled(False)
+        self.ui2DImage.clear()
         self.uiSaveToDB.setEnabled(False)
         self.uiSave.setEnabled(False)
         self.uiDeleteMoleculeButton.setEnabled(False)
         self.uiResetButton.setEnabled(False)
         self.statusBar().showMessage(f'{totalMolecules} Molecule(s) deleted!')
-        self.QueueManager()
+        self.masterQueue = []
+        self.uiCalculationFlowTable.setModel(None)
         self.statusModel.layoutChanged.emit()
 
     def RemoveFromQueue(self):
@@ -246,7 +257,7 @@ class MainWindow(qtw.QMainWindow):
         indexes = self.uiCalculationFlowTable.selectedIndexes()
         if indexes:
             thisIndex = indexes[0]
-            os.remove(self.masterQueue[thisIndex.row()][4])
+            os.remove(self.masterQueue[thisIndex.row()][5])
             del self.masterQueue[thisIndex.row()]
             self.statusModel.layoutChanged.emit()
         if len(self.masterQueue) == 0:
@@ -336,7 +347,13 @@ class MainWindow(qtw.QMainWindow):
         """
         docstring
         """
-        self.IRPlotter = IRPlotter('SVP-UREA-01.csv')
+        filePath, _ = qtw.QFileDialog.getOpenFileName(
+            self,
+            'Select your IR csv data',
+            options=qtw.QFileDialog.DontUseNativeDialog,
+            filter='Mol files(*.csv)'
+        )
+        self.IRPlotter = IRPlotter(filePath)
         self.IRPlotter.show()
 
     def closeEvent(self, event):
