@@ -3,7 +3,6 @@
 
 from PyQt5 import QtCore as qtc
 from PyQt5 import QtGui as qtg
-from PyQt5 import QtWidgets as qtw
 from Views import resources
 
 
@@ -36,7 +35,7 @@ class AvailableCalcModel(qtc.QAbstractTableModel):
         super(AvailableCalcModel, self).__init__()
         self._calculations = molecule.GetCalculations
         self._headers = (
-            'JOB TYPE', 'DESCRIPTION', 'CHARGE/MULT', 'RESULTS', 
+            'JOB TYPE', 'DESCRIPTION', 'CHARGE/MULT', 'RESULTS',
             'STATUS', 'DATE OF RUN', 'ELAPSED TIME'
         )
 
@@ -158,7 +157,6 @@ class IRDataModel(qtc.QAbstractTableModel):
         super(IRDataModel, self).__init__()
         self._bands = bandsDict
         self._axis = yAxis
-        print(self._axis)
 
     def data(self, index, role):
         if role == qtc.Qt.DisplayRole:
@@ -198,6 +196,50 @@ class IRDataModel(qtc.QAbstractTableModel):
                     return 'Height'
                 else:
                     return 'HWHM'
+            if orientation == qtc.Qt.Vertical:
+                return section + 1
+
+        if role == qtc.Qt.ForegroundRole:
+            return qtg.QColor('#66D9EF')
+
+    def flags(self, index):
+        return qtc.Qt.ItemIsEnabled | qtc.Qt.ItemIsSelectable
+
+
+class AvailableSpectraModel(qtc.QAbstractTableModel):
+    '''Model to populate the IR available data'''
+
+    def __init__(self, availableIRData):
+        super(AvailableSpectraModel, self).__init__()
+        self._availableIRData = availableIRData
+
+    def data(self, index, role):
+        keys = [i for i in self._availableIRData.keys()]
+        data = self._availableIRData.get(keys[index.row()])
+        if role == qtc.Qt.DisplayRole:
+            if index.column() == 0:
+                return data['TYPE']
+            elif index.column() == 1:
+                return data['SOLVENT']
+            elif index.column() == 2:
+                return data['DATE']
+
+    def rowCount(self, index):
+        return len(self._availableIRData.items())
+
+    def columnCount(self, index):
+        return 3
+
+    def headerData(self, section, orientation, role):
+        if role == qtc.Qt.DisplayRole:
+            if orientation == qtc.Qt.Horizontal:
+                if section == 0:
+                    return 'Type'
+                elif section == 1:
+                    return 'Solvent'
+                elif section == 2:
+                    return 'Date'
+
             if orientation == qtc.Qt.Vertical:
                 return section + 1
 

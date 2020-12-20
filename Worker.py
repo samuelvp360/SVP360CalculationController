@@ -59,7 +59,6 @@ class IRWorkerThread(qtc.QObject):
     @qtc.pyqtSlot()
     def Fit(self):
 
-        print('entró')
         n = self.bands.shape[0]
         position = self.bands['Wavenumber'].to_list()
         amplitude = self.bands['Height (A)'].to_list()
@@ -90,10 +89,8 @@ class IRWorkerThread(qtc.QObject):
             self.predictedBands['Transmittance']['Fitted Curve Lorentzian'] = self.predictedBands['Absorbance']['Fitted Curve Lorentzian'].apply(lambda x: (10 ** (2 - x)) / 100)
             self.predictedBands['%Transmittance']['Fitted Curve Lorentzian'] = self.predictedBands['Transmittance']['Fitted Curve Lorentzian'].apply(lambda x: 100 * x)
             self.okFit.emit(self.predictedBands, self.bands, self.df)
-            print('pudo')
         except RuntimeError:
             self.error.emit()
-            print('no pudo')
         finally:
             self.finished.emit()
             self.deleteLater()

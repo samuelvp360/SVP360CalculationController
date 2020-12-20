@@ -16,12 +16,6 @@
     <height>0</height>
    </size>
   </property>
-  <property name="font">
-   <font>
-    <family>Cascadia Code PL</family>
-    <pointsize>12</pointsize>
-   </font>
-  </property>
   <property name="cursor">
    <cursorShape>ArrowCursor</cursorShape>
   </property>
@@ -43,6 +37,9 @@ QMainWindow {
 /*QWidget */
 QWidget {
 	background-color: #161613;
+	background-color: #161613;
+	font-family: &quot;Cascadia Code PL&quot;;
+	font-size: 13px;
 }
 
 /*QMenu*/
@@ -159,6 +156,7 @@ QListView::item:hover, QTableView::item:hover {
  /*QLineEdit */
 QLineEdit {
 	background-color: rgba(255, 255, 255, 50);
+	border-radius: 0px;
 	padding: 3px;
 	color: #ffffff;
 }
@@ -217,8 +215,7 @@ QToolTip {
      <widget class="QScrollArea" name="scrollArea">
       <property name="font">
        <font>
-        <family>Cascadia Code</family>
-        <pointsize>10</pointsize>
+        <family>Cascadia Code PL</family>
        </font>
       </property>
       <property name="widgetResizable">
@@ -239,111 +236,7 @@ QToolTip {
           <property name="spacing">
            <number>0</number>
           </property>
-          <item row="2" column="2">
-           <widget class="QPushButton" name="pushButton_7">
-            <property name="sizePolicy">
-             <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
-              <horstretch>0</horstretch>
-              <verstretch>0</verstretch>
-             </sizepolicy>
-            </property>
-            <property name="minimumSize">
-             <size>
-              <width>60</width>
-              <height>60</height>
-             </size>
-            </property>
-            <property name="text">
-             <string/>
-            </property>
-           </widget>
-          </item>
-          <item row="2" column="3">
-           <widget class="QPushButton" name="pushButton_11">
-            <property name="sizePolicy">
-             <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
-              <horstretch>0</horstretch>
-              <verstretch>0</verstretch>
-             </sizepolicy>
-            </property>
-            <property name="minimumSize">
-             <size>
-              <width>60</width>
-              <height>60</height>
-             </size>
-            </property>
-            <property name="text">
-             <string/>
-            </property>
-           </widget>
-          </item>
-          <item row="3" column="1">
-           <widget class="QPushButton" name="uiIRManager">
-            <property name="sizePolicy">
-             <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
-              <horstretch>0</horstretch>
-              <verstretch>0</verstretch>
-             </sizepolicy>
-            </property>
-            <property name="minimumSize">
-             <size>
-              <width>60</width>
-              <height>60</height>
-             </size>
-            </property>
-            <property name="text">
-             <string/>
-            </property>
-           </widget>
-          </item>
-          <item row="1" column="2">
-           <widget class="QPushButton" name="pushButton_6">
-            <property name="sizePolicy">
-             <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
-              <horstretch>0</horstretch>
-              <verstretch>0</verstretch>
-             </sizepolicy>
-            </property>
-            <property name="minimumSize">
-             <size>
-              <width>60</width>
-              <height>60</height>
-             </size>
-            </property>
-            <property name="text">
-             <string/>
-            </property>
-           </widget>
-          </item>
-          <item row="2" column="1">
-           <widget class="QPushButton" name="uiDisplayAvailableCalcButton">
-            <property name="enabled">
-             <bool>false</bool>
-            </property>
-            <property name="sizePolicy">
-             <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
-              <horstretch>0</horstretch>
-              <verstretch>0</verstretch>
-             </sizepolicy>
-            </property>
-            <property name="minimumSize">
-             <size>
-              <width>60</width>
-              <height>60</height>
-             </size>
-            </property>
-            <property name="toolTip">
-             <string>Display Available Calculations</string>
-            </property>
-            <property name="text">
-             <string/>
-            </property>
-            <property name="checkable">
-             <bool>true</bool>
-            </property>
-           </widget>
-          </item>
-          <item row="3" column="2">
+          <item row="4" column="2">
            <widget class="QPushButton" name="pushButton_3">
             <property name="sizePolicy">
              <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
@@ -362,11 +255,8 @@ QToolTip {
             </property>
            </widget>
           </item>
-          <item row="1" column="1">
-           <widget class="QPushButton" name="uiSubmitCalcButton">
-            <property name="enabled">
-             <bool>false</bool>
-            </property>
+          <item row="4" column="3">
+           <widget class="QPushButton" name="pushButton_9">
             <property name="sizePolicy">
              <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
               <horstretch>0</horstretch>
@@ -379,15 +269,69 @@ QToolTip {
               <height>60</height>
              </size>
             </property>
-            <property name="toolTip">
-             <string>Submit Calculation</string>
+            <property name="text">
+             <string/>
+            </property>
+           </widget>
+          </item>
+          <item row="2" column="2">
+           <widget class="QPushButton" name="pushButton_6">
+            <property name="sizePolicy">
+             <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+              <horstretch>0</horstretch>
+              <verstretch>0</verstretch>
+             </sizepolicy>
+            </property>
+            <property name="minimumSize">
+             <size>
+              <width>60</width>
+              <height>60</height>
+             </size>
             </property>
             <property name="text">
              <string/>
             </property>
            </widget>
           </item>
-          <item row="1" column="0" rowspan="4">
+          <item row="2" column="3">
+           <widget class="QPushButton" name="pushButton_10">
+            <property name="sizePolicy">
+             <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+              <horstretch>0</horstretch>
+              <verstretch>0</verstretch>
+             </sizepolicy>
+            </property>
+            <property name="minimumSize">
+             <size>
+              <width>60</width>
+              <height>60</height>
+             </size>
+            </property>
+            <property name="text">
+             <string/>
+            </property>
+           </widget>
+          </item>
+          <item row="5" column="3">
+           <widget class="QPushButton" name="pushButton_8">
+            <property name="sizePolicy">
+             <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+              <horstretch>0</horstretch>
+              <verstretch>0</verstretch>
+             </sizepolicy>
+            </property>
+            <property name="minimumSize">
+             <size>
+              <width>60</width>
+              <height>60</height>
+             </size>
+            </property>
+            <property name="text">
+             <string/>
+            </property>
+           </widget>
+          </item>
+          <item row="2" column="0" rowspan="4">
            <widget class="QLabel" name="ui2DImage">
             <property name="enabled">
              <bool>false</bool>
@@ -421,8 +365,8 @@ QToolTip {
             </property>
            </widget>
           </item>
-          <item row="3" column="3">
-           <widget class="QPushButton" name="pushButton_9">
+          <item row="5" column="1">
+           <widget class="QPushButton" name="pushButton_4">
             <property name="sizePolicy">
              <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
               <horstretch>0</horstretch>
@@ -438,9 +382,15 @@ QToolTip {
             <property name="text">
              <string/>
             </property>
+            <property name="iconSize">
+             <size>
+              <width>50</width>
+              <height>50</height>
+             </size>
+            </property>
            </widget>
           </item>
-          <item row="4" column="2">
+          <item row="5" column="2">
            <widget class="QPushButton" name="pushButton_5">
             <property name="sizePolicy">
              <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
@@ -459,8 +409,39 @@ QToolTip {
             </property>
            </widget>
           </item>
-          <item row="4" column="3">
-           <widget class="QPushButton" name="pushButton_8">
+          <item row="2" column="1">
+           <widget class="QPushButton" name="uiSubmitCalcButton">
+            <property name="enabled">
+             <bool>false</bool>
+            </property>
+            <property name="sizePolicy">
+             <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+              <horstretch>0</horstretch>
+              <verstretch>0</verstretch>
+             </sizepolicy>
+            </property>
+            <property name="minimumSize">
+             <size>
+              <width>60</width>
+              <height>60</height>
+             </size>
+            </property>
+            <property name="toolTip">
+             <string>Submit Calculation</string>
+            </property>
+            <property name="text">
+             <string/>
+            </property>
+            <property name="iconSize">
+             <size>
+              <width>50</width>
+              <height>50</height>
+             </size>
+            </property>
+           </widget>
+          </item>
+          <item row="3" column="2">
+           <widget class="QPushButton" name="pushButton_7">
             <property name="sizePolicy">
              <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
               <horstretch>0</horstretch>
@@ -479,7 +460,35 @@ QToolTip {
            </widget>
           </item>
           <item row="4" column="1">
-           <widget class="QPushButton" name="pushButton_4">
+           <widget class="QPushButton" name="uiSpectraManagerButton">
+            <property name="enabled">
+             <bool>false</bool>
+            </property>
+            <property name="sizePolicy">
+             <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+              <horstretch>0</horstretch>
+              <verstretch>0</verstretch>
+             </sizepolicy>
+            </property>
+            <property name="minimumSize">
+             <size>
+              <width>60</width>
+              <height>60</height>
+             </size>
+            </property>
+            <property name="text">
+             <string/>
+            </property>
+            <property name="iconSize">
+             <size>
+              <width>50</width>
+              <height>50</height>
+             </size>
+            </property>
+           </widget>
+          </item>
+          <item row="3" column="3">
+           <widget class="QPushButton" name="pushButton_11">
             <property name="sizePolicy">
              <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
               <horstretch>0</horstretch>
@@ -497,7 +506,41 @@ QToolTip {
             </property>
            </widget>
           </item>
-          <item row="0" column="0" colspan="4">
+          <item row="3" column="1">
+           <widget class="QPushButton" name="uiDisplayAvailableCalcButton">
+            <property name="enabled">
+             <bool>false</bool>
+            </property>
+            <property name="sizePolicy">
+             <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+              <horstretch>0</horstretch>
+              <verstretch>0</verstretch>
+             </sizepolicy>
+            </property>
+            <property name="minimumSize">
+             <size>
+              <width>60</width>
+              <height>60</height>
+             </size>
+            </property>
+            <property name="toolTip">
+             <string>Display Available Calculations</string>
+            </property>
+            <property name="text">
+             <string/>
+            </property>
+            <property name="iconSize">
+             <size>
+              <width>50</width>
+              <height>50</height>
+             </size>
+            </property>
+            <property name="checkable">
+             <bool>true</bool>
+            </property>
+           </widget>
+          </item>
+          <item row="0" column="0" colspan="3">
            <widget class="QLineEdit" name="uiName">
             <property name="enabled">
              <bool>false</bool>
@@ -525,22 +568,19 @@ QToolTip {
             </property>
            </widget>
           </item>
-          <item row="1" column="3">
-           <widget class="QPushButton" name="pushButton_10">
-            <property name="sizePolicy">
-             <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
-              <horstretch>0</horstretch>
-              <verstretch>0</verstretch>
-             </sizepolicy>
+          <item row="0" column="3">
+           <widget class="QPushButton" name="uiChangeNameButton">
+            <property name="enabled">
+             <bool>false</bool>
             </property>
             <property name="minimumSize">
              <size>
-              <width>60</width>
-              <height>60</height>
+              <width>0</width>
+              <height>25</height>
              </size>
             </property>
             <property name="text">
-             <string/>
+             <string>Change</string>
             </property>
            </widget>
           </item>
@@ -581,8 +621,7 @@ QToolTip {
             <widget class="QTableView" name="uiCalculationFlowTable">
              <property name="font">
               <font>
-               <family>Cascadia Code</family>
-               <pointsize>11</pointsize>
+               <family>Cascadia Code PL</family>
                <weight>50</weight>
                <italic>false</italic>
                <bold>false</bold>
@@ -686,8 +725,7 @@ QToolTip {
             <widget class="QTableView" name="uiAvailableCalcsTableView">
              <property name="font">
               <font>
-               <family>Cascadia Code</family>
-               <pointsize>11</pointsize>
+               <family>Cascadia Code PL</family>
                <weight>50</weight>
                <italic>false</italic>
                <bold>false</bold>
@@ -793,6 +831,7 @@ QToolTip {
    <addaction name="uiSave"/>
    <addaction name="separator"/>
    <addaction name="uiSaveToDB"/>
+   <addaction name="uiUpdateDB"/>
   </widget>
   <widget class="QDockWidget" name="uiMoleculesDock">
    <property name="sizePolicy">
@@ -895,8 +934,7 @@ QToolTip {
          </property>
          <property name="font">
           <font>
-           <family>Cascadia Code</family>
-           <pointsize>11</pointsize>
+           <family>Cascadia Code PL</family>
           </font>
          </property>
          <property name="cursor" stdset="0">
@@ -1025,6 +1063,14 @@ QToolTip {
    </property>
    <property name="text">
     <string>Available Calculations</string>
+   </property>
+  </action>
+  <action name="uiUpdateDB">
+   <property name="text">
+    <string>Update DB info</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+U</string>
    </property>
   </action>
  </widget>

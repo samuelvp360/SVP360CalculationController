@@ -3,6 +3,7 @@
 
 from PyQt5 import QtWidgets as qtw
 from PyQt5 import QtCore as qtc
+from PyQt5 import QtGui as qtg
 from PyQt5 import uic
 import pandas as pd
 import numpy as np
@@ -12,8 +13,10 @@ from matplotlib.figure import Figure
 from matplotlib.gridspec import GridSpec
 from scipy.signal import argrelextrema
 import math
-from Models import IRDataModel
+from Models import IRDataModel, AvailableSpectraModel
 from Worker import IRWorkerThread
+from Views import resources
+from datetime import datetime
 
 matplotlib.use('Qt5Agg')
 
@@ -25,8 +28,8 @@ class IRCanvas(FigureCanvasQTAgg):
     def __init__(self, parent=None):
         self.fig = Figure(figsize=(22, 4), dpi=100, facecolor='#2d2a2e')
         self.grid = GridSpec(17, 1, left=0.1, bottom=0.15, right=0.94, top=0.94, wspace=0.3, hspace=0.3)
-        self.axes = self.fig.add_subplot(self.grid[0:12, 0])
-        self.axes2 = self.fig.add_subplot(self.grid[14:, 0])
+        self.ax = self.fig.add_subplot(self.grid[0:11, 0])
+        self.ax2 = self.fig.add_subplot(self.grid[14:, 0])
         super(IRCanvas, self).__init__(self.fig)
 
 
@@ -34,20 +37,48 @@ class IRPlotter(qtw.QMainWindow):
     """
     docstring
     """
-    def __init__(self, csvData1):
+    dataSent = qtc.pyqtSignal(dict)
+
+    def __init__(
+        self,
+        title,
+        solvent,
+        csvData1=None,
+        df=None,
+        bandsDict=None,
+        predictedBands=None
+    ):
         super(IRPlotter, self).__init__()
         uic.loadUi('Views/uiIRPlotter.ui', self)
-        self.df = pd.read_csv(csvData1, names=('Wavenumber', 'Raw Data'))
-        self._title = csvData1.split('/')[-1].replace('.csv', '')
+        self.uiTransButton.setIcon(qtg.QIcon(':/icons/transIcon.png'))
+        self.uiAbsorbanceButton.setIcon(qtg.QIcon(':/icons/absIcon.png'))
+        self.uiPercentTransButton.setIcon(qtg.QIcon(':/icons/percentIcon.png'))
+        self.uiDetectBaselineButton.setIcon(qtg.QIcon(':/icons/baselineIcon.png'))
+        self.uiNormalizeButton.setIcon(qtg.QIcon(':/icons/normalizeIcon.png'))
+        self.uiShowGridButton.setIcon(qtg.QIcon(':/icons/gridIcon.png'))
+
+        self.canvas = IRCanvas(self)
+        self.toolbar = NavigationToolbar(self.canvas, self)
+        self.uiToolbarLayout.addWidget(self.toolbar)
+        self.uiSpectraLayout.addWidget(self.canvas)
+        self.cid = self.canvas.fig.canvas.mpl_connect('button_press_event', self.BandsDetectionManual)
+        self._title = title
+        self._solvent = solvent
         self.statusBar().showMessage(f'Showing IR spectrum from {self._title}')
+        if bandsDict is not None:
+            self.uiBandFittingAutoButton.setEnabled(True)
+            self.uiRemoveBandButton.setEnabled(True)
+
         self._baseThreshold = self.uiBaseThresholdSpinBox.value()
         self._bandThreshold = self.uiBandsThresholdSpinBox.value()
         self._orderBase = self.uiOrderBaseSpinBox.value()
         self._orderBands = self.uiOrderBandsSpinBox.value()
         self._showGrid = self.uiShowGridButton.isChecked()
         self._baseline = False
-        self._bandFitting = False
         self._normalized = False
+
+        self.df = pd.read_csv(csvData1, names=('Wavenumber', 'Raw Data')) if df is None else df
+
         self._bandsDict = pd.DataFrame({
             'Wavenumber': [],
             'Transmittance': [],
@@ -56,16 +87,11 @@ class IRPlotter(qtw.QMainWindow):
             'Height (T)': [],
             'Height (%T)': [],
             'Height (A)': []
-        })
-        # self._bandsModel = IRDataModel(self._bandsDict)
-        # self.uiIRBandsTableView.setModel(self._bandsModel)
-        self._predictedBands = {}
-        self.canvas = IRCanvas(self)
-        self.toolbar = NavigationToolbar(self.canvas, self)
-        self.uiToolbarLayout.addWidget(self.toolbar)
-        self.uiSpectraLayout.addWidget(self.canvas)
-        self.cid = self.canvas.fig.canvas.mpl_connect('button_press_event', self.BandsDetectionManual)
-        self.SetYAxis()
+        }) if bandsDict is None else bandsDict
+        self._predictedBands = {} if predictedBands is None else predictedBands
+        self._bandFitting = False if predictedBands is None else True
+        if csvData1 is not None:
+            self.SetYAxis()
         self.SelectYAxis('T')
 # ------------------------------------SIGNALS---------------------------------------------------------------
         self.uiDetectBaselineButton.clicked.connect(self.BaselineDetection)
@@ -82,62 +108,61 @@ class IRPlotter(qtw.QMainWindow):
         self.uiBandAutoButton.clicked.connect(self.BandsDetectionAuto)
         self.uiBandFittingAutoButton.clicked.connect(self.BandFitting)
         self.uiNormalizeButton.clicked.connect(self.SetNormalization)
+        self.uiSaveDataButton.clicked.connect(self.SaveData)
+        self.uiRemoveBandButton.clicked.connect(self.RemoveBand)
 # ------------------------------------METHODS---------------------------------------------------------------
 
     def Plot(self, yAxis):
         """
         docstring
         """
-        self.canvas.axes.clear()
-        self.canvas.axes2.clear()
-        self.canvas.axes.plot(self.df['Wavenumber'], self.df[yAxis], linewidth=1.5, color='#272822')
-        self.canvas.axes.set_title(self._title, color='#ae81ff')
-        self.canvas.axes.set_xlabel('Wavenumber [cm-1]', color='#f92672')
-        self.canvas.axes.set_ylabel(yAxis, color='#f92672')
-        self.canvas.axes.tick_params(axis='x', colors='#66d9ef')
-        self.canvas.axes.tick_params(axis='y', colors='#66d9ef')
-        self.canvas.axes2.set_ylabel('Residuals', color='#f92672')
-        self.canvas.axes2.tick_params(axis='x', colors='#66d9ef')
-        self.canvas.axes2.tick_params(axis='y', colors='#66d9ef')
-        self.canvas.axes2.axhline()
-        self.canvas.axes.set_xlim(4000, 500)
-        self.canvas.axes2.set_xlim(4000, 500)
-        self.canvas.axes.grid(True, color='#2d2a2e', linestyle=':', linewidth=0.5) if self._showGrid else self.canvas.axes.grid(False)
+        self.canvas.ax.clear()
+        self.canvas.ax2.clear()
+        self.canvas.ax.plot(self.df['Wavenumber'], self.df[yAxis], linewidth=1.5, color='#272822')
+        self.canvas.ax.set_title(self._title, color='#ae81ff')
+        self.canvas.ax.set_xlabel('Wavenumber [cm-1]', color='#f92672')
+        self.canvas.ax.set_ylabel(yAxis, color='#f92672')
+        self.canvas.ax.tick_params(axis='x', colors='#66d9ef')
+        self.canvas.ax.tick_params(axis='y', colors='#66d9ef')
+        self.canvas.ax2.set_ylabel('Residuals', color='#f92672')
+        self.canvas.ax2.tick_params(axis='x', colors='#66d9ef')
+        self.canvas.ax2.tick_params(axis='y', colors='#66d9ef')
+        self.canvas.ax2.axhline()
+        self.canvas.ax.set_xlim(4000, 500)
+        self.canvas.ax2.set_xlim(4000, 500)
+        self.canvas.ax.grid(True, color='#2d2a2e', linestyle=':', linewidth=0.5) if self._showGrid else self.canvas.ax.grid(False)
         if self._baseline:
-            self.canvas.axes.plot(self.df['Wavenumber'], self.df['baseline'], linewidth=1.0, color='#f92672')
+            self.canvas.ax.plot(self.df['Wavenumber'], self.df['baseline'], linewidth=1.0, color='#f92672')
         if self._bandFitting:
-            print(self.df)
-            print(self._bandsDict)
-            print(self._predictedBands)
             for _, predicted in self._predictedBands[yAxis].iteritems():
-                self.canvas.axes.plot(self.df['Wavenumber'], predicted, linewidth=0.0)
-                self.canvas.axes2.plot(
+                self.canvas.ax.plot(self.df['Wavenumber'], predicted, linewidth=0.0)
+                self.canvas.ax2.plot(
                     self.df['Wavenumber'], self._predictedBands['Residuals'], 'o',
                     markersize=0.2, linewidth=0.1, color='#ae81ff'
                 )
                 if yAxis == 'Transmittance':
-                    self.canvas.axes.plot(
+                    self.canvas.ax.plot(
                         self.df['Wavenumber'], self._predictedBands['Transmittance']['Fitted Curve Lorentzian'],
                         color='#ae81ff', linewidth=0.5, linestyle=':'
                     )
-                    self.canvas.axes.fill_between(self.df['Wavenumber'], predicted, 1, alpha=0.2)
+                    self.canvas.ax.fill_between(self.df['Wavenumber'], predicted, 1, alpha=0.2)
                 elif yAxis == '%Transmittance':
-                    self.canvas.axes.plot(
+                    self.canvas.ax.plot(
                         self.df['Wavenumber'], self._predictedBands['%Transmittance']['Fitted Curve Lorentzian'],
                         color='#ae81ff', linewidth=0.5, linestyle=':'
                     )
-                    self.canvas.axes.fill_between(self.df['Wavenumber'], predicted, 100, alpha=0.2)
+                    self.canvas.ax.fill_between(self.df['Wavenumber'], predicted, 100, alpha=0.2)
                 else:
-                    self.canvas.axes.plot(
+                    self.canvas.ax.plot(
                         self.df['Wavenumber'], self._predictedBands['Absorbance']['Fitted Curve Lorentzian'],
                         color='#ae81ff', linewidth=0.5, linestyle=':'
                     )
-                    self.canvas.axes.fill_between(
+                    self.canvas.ax.fill_between(
                         self.df['Wavenumber'], predicted, 0, alpha=0.2
                     )
         if self._bandsDict.shape[0] > 0:
             for index, row in self._bandsDict.iterrows():
-                self.canvas.axes.annotate(
+                self.canvas.ax.annotate(
                     str(round(row['Wavenumber'], 0)), xy=(row['Wavenumber'], row[yAxis]), xytext=(0, -50),
                     textcoords='offset points', ha='center', va='bottom', rotation=90,
                     bbox=dict(boxstyle='round', color='white', alpha=0.5, ec="white"),
@@ -146,6 +171,7 @@ class IRPlotter(qtw.QMainWindow):
         self.canvas.draw()
         self._bandsModel = IRDataModel(self._bandsDict, yAxis)
         self.uiIRBandsTableView.setModel(self._bandsModel)
+        self.uiIRBandsTableView.resizeColumnsToContents()
         self._bandsModel.layoutChanged.emit()
 
     def SetBaseThreshold(self):
@@ -287,6 +313,7 @@ class IRPlotter(qtw.QMainWindow):
         self.uiSubsBaselineButton.setEnabled(False)
         self.uiBandManualButton.setChecked(False)
         self.uiBandFittingAutoButton.setEnabled(False)
+        self.uiRemoveBandButton.setEnabled(False)
         self.uiNormalizeButton.setChecked(False)
         self._bandFitting = False
         self._normalized = False
@@ -319,7 +346,9 @@ class IRPlotter(qtw.QMainWindow):
         self._bandsDict['Height (%T)'] = pd.Series([100 - i for i in self._bandsDict['%Transmittance']])
         self._bandsDict['Height (A)'] = self._bandsDict['Absorbance']
         self._bandsDict['HWHM'] = pd.Series(map(self.HWHM, self._bandsDict['Wavenumber'], self._bandsDict['Transmittance']))
+        self._bandsDict = self._bandsDict.round(6)
         self.uiBandFittingAutoButton.setEnabled(True)
+        self.uiRemoveBandButton.setEnabled(True)
         if self.uiTransButton.isChecked():
             self.SelectYAxis('T')
         elif self.uiPercentTransButton.isChecked():
@@ -332,50 +361,87 @@ class IRPlotter(qtw.QMainWindow):
         docstring
         """
         if self.uiBandManualButton.isChecked():
-            ix, iy = event.xdata, event.ydata
+            ix, _ = event.xdata, event.ydata
+            tolerance = 1  # this value can be moved to avoid errors if the x
+            # sample data changes.
+            mask = self.df['Wavenumber'].between(ix - tolerance, ix + tolerance)
             if self.uiTransButton.isChecked():
+                found = self.df.loc[mask, 'Transmittance'].values
+                y = found[0]
                 newBand = pd.DataFrame({
                     'Wavenumber': [ix],
-                    'Transmittance': [iy],
-                    '%Transmittance': [iy * 100],
-                    'Absorbance': [2.0 - math.log10(iy * 100)],
-                    'Height (T)': [1 - iy],
-                    'Height (%T)': [100 - (iy * 100)],
-                    'Height (A)': [2.0 - math.log10(iy * 100)],
-                    'HWHM': [self.HWHM(ix, iy)]
+                    'Transmittance': [y],
+                    '%Transmittance': [y * 100],
+                    'Absorbance': [2.0 - math.log10(y * 100)],
+                    'Height (T)': [1 - y],
+                    'Height (%T)': [100 - (y * 100)],
+                    'Height (A)': [2.0 - math.log10(y * 100)],
+                    'HWHM': [self.HWHM(ix, y)]
                 })
                 self._bandsDict = self._bandsDict.append(newBand, ignore_index=True)
             elif self.uiPercentTransButton.isChecked():
+                found = self.df.loc[mask, '%Transmittance'].values
+                y = found[0]
                 newBand = pd.DataFrame({
                     'Wavenumber': [ix],
-                    'Transmittance': [iy / 100],
-                    '%Transmittance': [iy],
-                    'Absorbance': [2.0 - math.log10(iy)],
-                    'Height (T)': [1 - (iy / 100)],
-                    'Height (%T)': [100 - iy],
-                    'Height (A)': [2.0 - math.log10(iy)],
-                    'HWHM': [self.HWHM(ix, (iy / 100))]
+                    'Transmittance': [y / 100],
+                    '%Transmittance': [y],
+                    'Absorbance': [2.0 - math.log10(y)],
+                    'Height (T)': [1 - (y / 100)],
+                    'Height (%T)': [100 - y],
+                    'Height (A)': [2.0 - math.log10(y)],
+                    'HWHM': [self.HWHM(ix, (y / 100))]
                 })
                 self._bandsDict = self._bandsDict.append(newBand, ignore_index=True)
             elif self.uiAbsorbanceButton.isChecked():
+                found = self.df.loc[mask, '%Transmittance'].values
+                y = found[0]
                 newBand = pd.DataFrame({
                     'Wavenumber': [ix],
-                    'Transmittance': [(10 ** (2 - iy)) / 100],
-                    '%Transmittance': [10 ** (2 - iy)],
-                    'Absorbance': [iy],
-                    'Height (T)': [1 - (10 ** (2 - iy)) / 100],
-                    'Height (%T)': [100 - (10 ** (2 - iy))],
-                    'Height (A)': [iy],
-                    'HWHM': [self.HWHM(ix, (10 ** (2 - iy)) / 100)]
+                    'Transmittance': [(10 ** (2 - y)) / 100],
+                    '%Transmittance': [10 ** (2 - y)],
+                    'Absorbance': [y],
+                    'Height (T)': [1 - (10 ** (2 - y)) / 100],
+                    'Height (%T)': [100 - (10 ** (2 - y))],
+                    'Height (A)': [y],
+                    'HWHM': [self.HWHM(ix, (10 ** (2 - y)) / 100)]
                 })
                 self._bandsDict = self._bandsDict.append(newBand, ignore_index=True)
+            self._bandsDict = self._bandsDict.round(6)
             self.uiBandFittingAutoButton.setEnabled(True)
+            self.uiRemoveBandButton.setEnabled(True)
             if self.uiTransButton.isChecked():
                 self.SelectYAxis('T')
             elif self.uiPercentTransButton.isChecked():
                 self.SelectYAxis('%T')
             else:
                 self.SelectYAxis('A')
+
+    def RemoveBand(self):
+
+        indexes = self.uiIRBandsTableView.selectedIndexes()
+        if indexes:
+            index = indexes[0]
+            self._bandsDict.drop([index.row()], inplace=True)
+            self._bandsDict.reset_index(drop=True)
+            self._bandsModel.layoutChanged.emit()
+            if self.uiTransButton.isChecked():
+                self.SelectYAxis('T')
+            elif self.uiPercentTransButton.isChecked():
+                self.SelectYAxis('%T')
+            else:
+                self.SelectYAxis('A')
+
+        if self._bandFitting:
+            reply = qtw.QMessageBox.question(
+                self, 'Redo Fitting',
+                'You have removed a band, do you want to redo the fitting?',
+                qtw.QMessageBox.Yes | qtw.QMessageBox.No,
+                qtw.QMessageBox.No
+            )
+
+            if reply == qtw.QMessageBox.Yes:
+                self.BandFitting()
 
     def HWHM(self, x, y):
         """HWHM.
@@ -438,6 +504,7 @@ class IRPlotter(qtw.QMainWindow):
         docstring
         """
         self.uiBandFittingAutoButton.setEnabled(False)
+        self.uiRemoveBandButton.setEnabled(False)
         self.worker = IRWorkerThread(self._bandsDict, self.df)
         self.thread = qtc.QThread()
         self.worker.moveToThread(self.thread)
@@ -468,9 +535,117 @@ class IRPlotter(qtw.QMainWindow):
     def ErrorFitManager(self):
         self.statusBar().showMessage(f'Unsuccessful fitting for {self._title}')
         self.uiBandFittingAutoButton.setEnabled(True)
+        self.uiRemoveBandButton.setEnabled(True)
 
     def FirstDerivative(self):
         pass
 
     def SecondDerivative(self):
         pass
+
+    def SaveData(self):
+        date = datetime.now()
+        bandsDict = self._bandsDict if self._bandsDict.shape[0] > 0 else None
+        predicted = self._predictedBands if len(self._predictedBands.items()) > 0 else None
+        self.dataSent.emit({
+            'TYPE': 'FTIR',
+            'DATE': str(date),
+            'SOLVENT': self._solvent,
+            'DATA FRAME': self.df,
+            'BANDS': bandsDict,
+            'PREDICTED': predicted
+        })
+        reply = qtw.QMessageBox.question(
+            self, 'Window Close',
+            'The spectrum has been stored, do you want to close the window?',
+            qtw.QMessageBox.Yes | qtw.QMessageBox.No,
+            qtw.QMessageBox.No
+        )
+
+        if reply == qtw.QMessageBox.Yes:
+            self.close()
+
+
+class SpectrumSelector(qtw.QWidget):
+    """
+    docstring
+    """
+    def __init__(self, molecule):
+        super(SpectrumSelector, self).__init__()
+        uic.loadUi('Views/uiSpectrumSelector.ui', self)
+        self._molecule = molecule
+        self._model = AvailableSpectraModel(self._molecule.GetExperimental)
+        self.uiAvailableSpectraTableView.setModel(self._model)
+        self.uiAvailableSpectraTableView.resizeColumnsToContents()
+        self.uiLoadButton.clicked.connect(self.LoadSpectrum)
+        self.uiRemoveButton.clicked.connect(self.RemoveSpectrum)
+        self.uiShowButton.clicked.connect(self.ShowSpectrum)
+        if len(self._molecule.GetExperimental.items()) > 0:
+            self.uiRemoveButton.setEnabled(True)
+            self.uiShowButton.setEnabled(True)
+
+    def LoadSpectrum(self):
+
+        filePath, ok1 = qtw.QFileDialog.getOpenFileName(
+            self,
+            'Select your IR csv data',
+            options=qtw.QFileDialog.DontUseNativeDialog,
+            filter='CSV files(*.csv)'
+        )
+
+        slv = ['KBr', 'CHCl3', 'CH2Cl2', 'Neat', 'Other']
+        if ok1:
+            solvent, ok2 = qtw.QInputDialog.getItem(
+                self, 'Solvent', 'Please select the used solvent', slv, 0, False
+            )
+
+        if ok1 and ok2 and solvent:
+            self.IRPlotter = IRPlotter(
+                self._molecule.GetName, solvent, csvData1=filePath
+            )
+            self.IRPlotter.show()
+            self.IRPlotter.dataSent.connect(self.SaveSpectrum)
+
+    def ShowSpectrum(self):
+
+        indexes = self.uiAvailableSpectraTableView.selectedIndexes()
+        if indexes:
+            index = indexes[0]
+            keys = [i for i in self._molecule.GetExperimental.keys()]
+            data = self._molecule.GetExperimental.get(keys[index.row()])
+            if data['TYPE'] == 'FTIR':
+                solvent = data['SOLVENT']
+                dataFrame = data['DATA FRAME']
+                bands = data['BANDS']
+                predicted = data['PREDICTED']
+                self.IRPlotter = IRPlotter(
+                    self._molecule.GetName,
+                    solvent,
+                    df=dataFrame,
+                    bandsDict=bands,
+                    predictedBands=predicted
+                )
+                self.IRPlotter.show()
+                self.IRPlotter.dataSent.connect(self.SaveSpectrum)
+
+    @qtc.pyqtSlot(dict)
+    def SaveSpectrum(self, data):
+
+        self._molecule.SetIR(data)
+        self._model.layoutChanged.emit()
+        self.uiAvailableSpectraTableView.resizeColumnsToContents()
+        self.uiShowButton.setEnabled(True)
+        self.uiRemoveButton.setEnabled(True)
+
+    def RemoveSpectrum(self):
+
+        indexes = self.uiAvailableSpectraTableView.selectedIndexes()
+        if indexes:
+            index = indexes[0]
+            self._molecule.RemoveExperimental(index.row())
+            self._model.layoutChanged.emit()
+            self.uiAvailableSpectraTableView.resizeColumnsToContents()
+
+        if len(self._molecule.GetExperimental.items()) == 0:
+            self.uiRemoveButton.setEnabled(False)
+            self.uiShowButton.setEnabled(False)

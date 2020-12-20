@@ -10,11 +10,11 @@ from rdkit.Chem import Draw, Descriptors
 # from rdkit.Chem.Draw import rdMolDraw2D
 from rdkit import RDLogger
 import pandas as pd
-import numpy as np
 from persistent import Persistent
+import transaction
 
 
-class Gaussian(Persistent):
+class Molecules(Persistent):
 
     def __init__(self, moleculePath):
 
@@ -52,6 +52,7 @@ class Gaussian(Persistent):
         self.__properties['INCHIKEY'] = re.sub('\n', '', re.sub('-', '_', Chem.inchi.MolToInchiKey(self.mol)))
         self.Set2DImage()
         self.__calculations = {}
+        self.__experimental = {}
 
     def SetName(self, nameMol=None):
 
@@ -60,7 +61,6 @@ class Gaussian(Persistent):
             self.mol.SetProp('_Name', self.__properties['NAME'])
             if self.stored:
                 self._p_changed = True
-                transaction.commit()
         else:
             self.__properties['NAME'] = self.path.split('/')[-1].split('.')[0]
             self.mol.SetProp('_Name', self.__properties['NAME'])
@@ -100,7 +100,7 @@ class Gaussian(Persistent):
             self.__initialMatrix[['X', 'Y', 'Z', 'CHARGE']] = self.__initialMatrix[['X', 'Y', 'Z', 'CHARGE']].astype(float)
             self.__initialMatrix['ATOM'] = self.__initialMatrix['ATOM'].astype(str)
             doubleLetterSymbol = self.__initialMatrix['ATOM'].copy().str.len() == 2
-            self.__initialMatrix.loc[doubleLetterSymbol, 'ATOM'] = [''.join([i[0], i[1].lower()]) for i in self.__initialMatrix['ATOM'] if len(i) == 2]  # ojo aquí
+            self.__initialMatrix.loc[doubleLetterSymbol, 'ATOM'] = [''.join([i[0], i[1].lower()]) for i in self.__initialMatrix['ATOM'] if len(i) == 2]
             self.__initialMatrix.set_index('ID', inplace=True)
 
     def SetZMatrix(self):
@@ -136,9 +136,17 @@ class Gaussian(Persistent):
         elapsedTime = end - start
         self.__calculations[position]['DATE OF RUN'] = str(datetime.datetime.now())
         self.__calculations[position]['ELAPSED TIME'] = str(elapsedTime)
-        if self.stored:  # arreglar
+        if self.stored:
+            self._p_changed = True
+
+    def SetIR(self, data):
+
+        position = len(self.__experimental)
+        self.__experimental[position] = data
+        if self.stored:
             self._p_changed = True
 #  ----------------------------------------------------GETTERS---------------------------------------
+
     @property
     def GetProperties(self):
         return self.__properties
@@ -198,6 +206,13 @@ class Gaussian(Persistent):
     @property
     def GetCalculations(self):
         return self.__calculations
+
+    @property
+    def GetExperimental(self):
+        return self.__experimental
+
+    def RemoveExperimental(self, index):
+        del self.__experimental[index]
 
     def __str__(self):
         return f"""NAME: {self.__properties['NAME']}
@@ -285,18 +300,7 @@ STORED: {self.stored}
         except KeyError:
             print('no leyó el ejecutable de Gaussian')
             print(myEnv)
-        # homeDir = '/home/'+subprocess.run(
-        #     'ls /home/', shell=True, text=True, capture_output=True
-        # ).stdout.replace('\n', '')
 
-        # with open(f'{homeDir}/.bashrc', 'r') as f:
-        #     bashrcInfo = f.read()
-        #     root = re.search(r'g[0-9]+root=[/a-zA-Z0-9]+', bashrcInfo)[0]
-        #     scrdir = re.search(r'GAUSS_SCRDIR=[/a-zA-Z0-9]+', bashrcInfo)[0]
-        #     source = '$' + re.search(r'g[0-9]+root[/a-zA-Z0-9]+\.profile', bashrcInfo)[0]
-        #     gaussianExecutable = source.replace('source ', '').replace('bsd/', '').replace('.profile', '')
-
-        # cmd = (f"export {root}; export {scrdir}; source {source}; {gaussianExecutable} < {inputFile} > Opt_{self.__properties['NAME']}.log")
         cmd = f'{gaussExecutable} < {inputFile} > {outputFile}'
 
         subprocess.run(cmd, shell=True)
@@ -311,7 +315,7 @@ STORED: {self.stored}
 
         Returns
         -------
-        A List of Pandas DataFrame containing the matrix of 
+        A List of Pandas DataFrame containing the matrix of
         the different coordinates through the optimization
         '''
 
@@ -331,7 +335,7 @@ STORED: {self.stored}
                     eachCoord = [i.group() for i in optCoord if i.start() > eachSpan[s][0] and i.end() < eachSpan[s][1]]
                     matrix = []
                     for i in eachCoord:
-                        matrix.append([i.split()[a] for a in range(6) if a != 2])    
+                        matrix.append([i.split()[a] for a in range(6) if a != 2])
                     col = ['ID', 'ATOM', 'X', 'Y', 'Z']
                     coords = pd.DataFrame(matrix, columns=col)
                     coords[['ID', 'ATOM']] = coords[['ID', 'ATOM']].astype(int)
@@ -341,13 +345,6 @@ STORED: {self.stored}
 
         opt.pop()
         return opt
-
-                # for match in re.finditer(r'\sDipole\smoment\s', log):
-                #     minSpan = match.start()
-                #     coords = re.finditer(r'\s+X=\s+(\d|-\d)+\.\d+\s+Y=\s+(\d|-\d)+\.\d+\s+Z=\s+(\d|-\d)+\.\d+\s+Tot=\s+(\d|-\d)+\.\d+\s+', log)
-                # for i in coords:
-                #     if i.start() > minSpan:
-                #         dipoleMoment = np.array([float(i.group(0).split()[a]) for a in (1, 3, 5)])
 
     def __ReplaceCoordinates(self, name, coordinatesMatrix):
         """
@@ -400,6 +397,11 @@ STORED: {self.stored}
         coordinates = self.__ExtractCoordinates(outputFile)
 
         return coordinates
+
+    def UpdateChanges(self):
+
+        transaction.commit()
+        self._p_changed = False
 
     def SPEN(self):
         pass

@@ -13,6 +13,13 @@
 	<file alias="resetIcon.png">/icons2/png/188-recycle-3.png</file>
 	<file alias="calculateIcon.png">/icons2/png/167-gear-1.png</file>
 	<file alias="displayCalcIcon.png">/icons2/png/136-organization.png</file>
+	<file alias="transIcon.png">/icons/Trans_icon.png</file>
+    <file alias="absIcon.png">/icons/Abs_icon.png</file>
+    <file alias="baselineIcon.png">/icons/Baseline_icon.png</file>
+    <file alias="percentIcon.png">/icons/Percent_Trans_icon.png</file>
+    <file alias="normalizeIcon.png">/icons/Normalize_icon.png</file>
+    <file alias="gridIcon.png">/icons/Grid_icon.png</file>
+
   </qresource>
   <qresource prefix="fonts">
 	<file>/fonts/CascadiaCode.ttf</file>

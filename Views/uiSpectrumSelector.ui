@@ -1,0 +1,268 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <author>SamuelVP</author>
+ <class>uiSpectrumSelector</class>
+ <widget class="QWidget" name="uiSpectrumSelector">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>463</width>
+    <height>166</height>
+   </rect>
+  </property>
+  <property name="windowTitle">
+   <string>Spectrum Selector</string>
+  </property>
+  <property name="styleSheet">
+   <string notr="true">/*QWidget */
+QWidget {
+	background-color: #161613;
+	font-family: &quot;Cascadia Code PL&quot;;
+	font-size: 13px;
+}
+
+/*QScrollArea */
+QScrollArea {
+	background-color: #3e3e3e
+}
+
+/*QLabel */
+QLabel {
+	color: #A6E22E;
+}
+
+ /*QGroupBox */
+QGroupBox {
+	margin-top: 2.5ex; /* leave space at the top for the title */
+}
+QGroupBox::title {
+	subcontrol-origin: margin;
+	subcontrol-position: top center; /* position at the top center */
+	color: #8f8f91;
+ }
+
+/*QPushButton*/
+QPushButton {
+	background-color: #3e3e3e;
+	color: #F92672;
+	border: 1px solid #8f8f91;
+	padding: 2px;
+}
+QPushButton:hover {
+	background-color: #E6DB74;
+	color: #F92672;
+}
+QPushButton:disabled {
+	background-color: #d5d4d5;
+	color: #ffffff;
+}
+
+ /*QComboBox*/
+QComboBox {
+	border: 1px solid #3f3f3f;
+	padding: 1px 18px 1px 3px;
+	color: #A6E22E;
+	background-color: #3f3f3f;
+}
+QComboBox:on { /* shift the text when the popup opens */
+	color: #F92672;
+	padding-top: 3px;
+	padding-left: 4px;
+	background-color: rgba(255, 255, 255, 50);
+}
+QComboBox:off { /* shift the text when the popup opens */
+	color: #A6E22E;
+	padding-top: 3px;
+	padding-left: 4px;
+	background-color: rgba(255, 255, 255, 50);
+}
+QComboBox QAbstractItemView {
+	border: 1px solid #3e3e3e;
+	background-color: #3e3e3e;
+	selection-background-color: rgba(255, 255, 255, 100);
+}
+QComboBox:off::disabled {
+    color: #000000;
+}
+
+ /*QListView */
+QListView, QTableView {
+	color: #66D9EF;
+	background-color: rgba(45, 42, 46, 200);
+	alternate-background-color: #2d3336;
+	show-decoration-selected: 1; /* make the selection span the entire width of the view */
+}
+QListView::item:alternate, QTableView::item:alternate {
+	background-color: rgba(255, 255, 255, 30);
+}
+
+QListView::item:selected, QTableView::item:selected {
+	background: rgba(255, 255, 255, 50);
+}
+QListView::item:selected:!active, QTableView::item:selected:!active {
+	color: #fd971f;
+}
+QListView::item:selected:active, QTableView::item:selected:active {
+	color: #f92672;
+}
+QListView::item:hover, QTableView::item:hover {
+      background: rgba(255, 255, 255, 30);
+}
+
+/*QScrollBar*/
+QScrollBar {
+	background: rgba(0, 0, 0, 0);
+	height: 10px;
+}
+QScrollBar::handle:active {
+	background: rgba(255, 255, 255, 50);
+}
+QScrollBar::handle:!active {
+	background: rgba(0, 0, 0, 0);
+}
+QScrollBar::handle:pressed {
+	background: rgba(255, 255, 255, 80);
+}
+QScrollBar::right-arrow, QScrollBar::left-arrow {
+      border: none;
+      background: none;
+      color: none;
+}
+QScrollBar::add-line {
+      border: none;
+      background: none;
+}
+QScrollBar::sub-line {
+      border: none;
+      background: none;
+}
+
+/*QToolTip*/
+QToolTip {
+	background-color: #000000;
+	color: #ffffff;
+	border: 1px solid #ffffff;
+	padding: 3px;
+}</string>
+  </property>
+  <widget class="QScrollArea" name="scrollArea">
+   <property name="geometry">
+    <rect>
+     <x>10</x>
+     <y>0</y>
+     <width>451</width>
+     <height>161</height>
+    </rect>
+   </property>
+   <property name="styleSheet">
+    <string notr="true"/>
+   </property>
+   <property name="widgetResizable">
+    <bool>true</bool>
+   </property>
+   <widget class="QWidget" name="scrollAreaWidgetContents">
+    <property name="geometry">
+     <rect>
+      <x>0</x>
+      <y>0</y>
+      <width>449</width>
+      <height>159</height>
+     </rect>
+    </property>
+   </widget>
+  </widget>
+  <widget class="QWidget" name="layoutWidget">
+   <property name="geometry">
+    <rect>
+     <x>10</x>
+     <y>0</y>
+     <width>451</width>
+     <height>161</height>
+    </rect>
+   </property>
+   <layout class="QGridLayout" name="gridLayout">
+    <property name="spacing">
+     <number>0</number>
+    </property>
+    <item row="1" column="0">
+     <widget class="QPushButton" name="uiShowButton">
+      <property name="enabled">
+       <bool>false</bool>
+      </property>
+      <property name="minimumSize">
+       <size>
+        <width>50</width>
+        <height>50</height>
+       </size>
+      </property>
+      <property name="maximumSize">
+       <size>
+        <width>50</width>
+        <height>50</height>
+       </size>
+      </property>
+      <property name="toolTip">
+       <string>Show</string>
+      </property>
+      <property name="text">
+       <string/>
+      </property>
+     </widget>
+    </item>
+    <item row="2" column="0">
+     <widget class="QPushButton" name="uiRemoveButton">
+      <property name="enabled">
+       <bool>false</bool>
+      </property>
+      <property name="minimumSize">
+       <size>
+        <width>50</width>
+        <height>50</height>
+       </size>
+      </property>
+      <property name="maximumSize">
+       <size>
+        <width>50</width>
+        <height>50</height>
+       </size>
+      </property>
+      <property name="toolTip">
+       <string>Remove</string>
+      </property>
+      <property name="text">
+       <string/>
+      </property>
+     </widget>
+    </item>
+    <item row="0" column="0">
+     <widget class="QPushButton" name="uiLoadButton">
+      <property name="minimumSize">
+       <size>
+        <width>50</width>
+        <height>50</height>
+       </size>
+      </property>
+      <property name="maximumSize">
+       <size>
+        <width>50</width>
+        <height>50</height>
+       </size>
+      </property>
+      <property name="toolTip">
+       <string>Load</string>
+      </property>
+      <property name="text">
+       <string/>
+      </property>
+     </widget>
+    </item>
+    <item row="0" column="1" rowspan="3">
+     <widget class="QTableView" name="uiAvailableSpectraTableView"/>
+    </item>
+   </layout>
+  </widget>
+ </widget>
+ <resources/>
+ <connections/>
+</ui>

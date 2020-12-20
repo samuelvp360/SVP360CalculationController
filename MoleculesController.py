@@ -4,10 +4,10 @@
 import sys
 import os
 import transaction
-from Computational_calculations.Gaussian import Gaussian
+from Molecules import Molecules
 from CalculationsController import CalculationsController
 from ResultsController import ResultsWidget
-from IRController import IRPlotter, IRCanvas
+from IRController import SpectrumSelector
 from Models import MoleculesModel, StatusModel, AvailableCalcModel
 from Worker import WorkerThread
 from Views import resources
@@ -36,12 +36,13 @@ class MainWindow(qtw.QMainWindow):
             self.uiName,
             self.uiDisplayAvailableCalcButton,
             self.uiSubmitCalcButton,
-            self.ui2DImage
+            self.ui2DImage,
+            self.uiChangeNameButton
         ]
     # --------------------------------------------------STYLE-------------------------------------------------------
-        self.fontDB = qtg.QFontDatabase()
-        self.fontDB.addApplicationFont(":/fonts/CascadiaCode.ttf")
-        self.setFont(qtg.QFont("CascadiaCode", 11))
+        # self.fontDB = qtg.QFontDatabase()
+        # self.fontDB.addApplicationFont(":/fonts/CascadiaCode.ttf")
+        # self.setFont(qtg.QFont("CascadiaCode", 11))
         self.uiOpen.setIcon(qtg.QIcon(':/icons/openIcon.png'))
         self.uiSave.setIcon(qtg.QIcon(':/icons/saveIcon.png'))
         self.uiDeleteMoleculeButton.setIcon(qtg.QIcon(':/icons/trashIcon.png'))
@@ -54,9 +55,6 @@ class MainWindow(qtw.QMainWindow):
         self.uiRemoveButton.setIcon(qtg.QIcon(':/icons/trashIcon.png'))
         self.uiSubmitCalcButton.setIcon(qtg.QIcon(':/icons/calculateIcon.png'))
         self.uiDisplayAvailableCalcButton.setIcon(qtg.QIcon(':/icons/displayCalcIcon.png'))
-        iconSize = qtc.QSize(50, 50)
-        self.uiSubmitCalcButton.setIconSize(iconSize)
-        self.uiDisplayAvailableCalcButton.setIconSize(iconSize)
         self.statusBar().showMessage('Welcome to SVP360 Calculation Manager')
         self.uiSaveToDB.setEnabled(False)
         self.uiSave.setEnabled(False)
@@ -73,8 +71,10 @@ class MainWindow(qtw.QMainWindow):
         self.uiSubmitCalcButton.clicked.connect(self.SubmitCalc)
         self._propertiesWidgets[1].clicked.connect(self.DisplayAvailableCalcs)
         self.uiShowResultsButton.clicked.connect(self.ShowResults)
-        self.uiIRManager.clicked.connect(self.DisplayIR)
-    #---------------------------------------------------METHODS--------------------------------------------------
+        self.uiSpectraManagerButton.clicked.connect(self.DisplaySpectrum)
+        self.uiUpdateDB.triggered.connect(self.StoreChanges)
+        self._propertiesWidgets[4].clicked.connect(lambda: self._selectedMolecule.SetName(self._propertiesWidgets[0].text()))
+    # ---------------------------------------------------METHODS--------------------------------------------------
 
     def LoadMolecules(self):
         """
@@ -94,7 +94,7 @@ class MainWindow(qtw.QMainWindow):
         key_names_loaded = []
         if len([i for i in filePathList if i in self._filePathList]) == 0:
             for index, key in enumerate(filePathList, start=1):
-                exec(f'self.mol{index} = Gaussian("{key}")')
+                exec(f'self.mol{index} = Molecules("{key}")')
                 exec(f"key_names_loaded.append(str(self.mol{index}.GetInchikey))")
                 exec(f'self._filePathList.append("{key}")')
 
@@ -138,9 +138,14 @@ class MainWindow(qtw.QMainWindow):
                 self.listModel = MoleculesModel(self._molecules)
                 self.uiMoleculesList.setModel(self.listModel)
             except:
-                print('Something was wrong')
+                self.statusBar().showMessage('Something was wrong')
         else:
             self.statusBar().showMessage(f'{self._selectedMolecule.GetName} is already in DB!')
+
+    def StoreChanges(self):
+
+        self.GetSelectedMolecule()
+        self._selectedMolecule.UpdateChanges()
 
     def SaveFiles(self):
 
@@ -168,6 +173,7 @@ class MainWindow(qtw.QMainWindow):
                 self._molecules[index.row()] = fetchedMolecule
             else:
                 self._selectedMolecule = self._molecules[index.row()]
+        self.uiSpectraManagerButton.setEnabled(True)
 
     def ShowProperties(self):
         """
@@ -224,10 +230,8 @@ class MainWindow(qtw.QMainWindow):
                 self.uiMoleculesList.setCurrentIndex(self.listModel.index(newIndex))
                 self.ShowProperties()
             else:
-                self.uiSaveToDB.setEnabled(False)
-                self.uiSave.setEnabled(False)
-                self.uiDeleteMoleculeButton.setEnabled(False)
-                self.uiResetButton.setEnabled(False)
+                self.ResetListOfMolecules()
+                [w.setEnabled(False) for w in self._propertiesWidgets]
 
             self.statusBar().showMessage('1 Molecule deleted!')
 
@@ -242,6 +246,7 @@ class MainWindow(qtw.QMainWindow):
         self.uiName.setText('')
         self.uiDisplayAvailableCalcButton.setEnabled(False)
         self.uiSubmitCalcButton.setEnabled(False)
+        self.uiSpectraManagerButton.setEnabled(False)
         self.ui2DImage.clear()
         self.uiSaveToDB.setEnabled(False)
         self.uiSave.setEnabled(False)
@@ -250,7 +255,10 @@ class MainWindow(qtw.QMainWindow):
         self.statusBar().showMessage(f'{totalMolecules} Molecule(s) deleted!')
         self.masterQueue = []
         self.uiCalculationFlowTable.setModel(None)
-        self.statusModel.layoutChanged.emit()
+        try:
+            self.statusModel.layoutChanged.emit()
+        except AttributeError:
+            pass
 
     def RemoveFromQueue(self):
 
@@ -343,33 +351,51 @@ class MainWindow(qtw.QMainWindow):
             self.resultsWidget = ResultsWidget(self._selectedMolecule.GetCalculations[index.row()]['RESULTS'])
             self.resultsWidget.show()
 
-    def DisplayIR(self):
+    def DisplaySpectrum(self):
         """
         docstring
         """
-        filePath, _ = qtw.QFileDialog.getOpenFileName(
-            self,
-            'Select your IR csv data',
-            options=qtw.QFileDialog.DontUseNativeDialog,
-            filter='Mol files(*.csv)'
-        )
-        self.IRPlotter = IRPlotter(filePath)
-        self.IRPlotter.show()
+        self.SpectrumSelector = SpectrumSelector(self._selectedMolecule)
+        self.SpectrumSelector.show()
+
+    def CloseAll(self):
+        self.database.Close()
+        try:
+            self.SpectrumSelector.close()
+        except AttributeError:
+            pass
 
     def closeEvent(self, event):
 
-        reply = qtw.QMessageBox.question(
-            self, 'Window Close', 'Are you sure you want to close the window?',
-            qtw.QMessageBox.Yes | qtw.QMessageBox.No, qtw.QMessageBox.No
-        )
+        try:
+            if self._selectedMolecule._p_changed:
+                reply = qtw.QMessageBox.question(
+                    self, 'Window Close',
+                    'Some changes have not been stored yet, do you want to commit this changes?',
+                    qtw.QMessageBox.Yes | qtw.QMessageBox.No | qtw.QMessageBox.Cancel,
+                    qtw.QMessageBox.No
+                )
 
-        if reply == qtw.QMessageBox.Yes:
-            transaction.commit()
-            self.database.Close()
+                if reply == qtw.QMessageBox.Yes:
+                    transaction.commit()
+                    self._selectedMolecule._p_changed = False
+                    transaction.commit()
+                    self.CloseAll()
+                    event.accept()
+                    print('Window closed')
+                elif reply == qtw.QMessageBox.No:
+                    transaction.abort()
+                    self.CloseAll()
+                    event.accept()
+                    print('Window closed')
+                else:
+                    event.ignore()
+            else:
+                self.CloseAll()
+                event.accept()
+        except AttributeError:
+            self.CloseAll()
             event.accept()
-            print('Window closed')
-        else:
-            event.ignore()
 
 
 if __name__ == '__main__':
