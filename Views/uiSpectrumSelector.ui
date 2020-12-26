@@ -7,8 +7,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>463</width>
-    <height>166</height>
+    <width>450</width>
+    <height>205</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -18,7 +18,7 @@
    <string notr="true">/*QWidget */
 QWidget {
 	background-color: #161613;
-	font-family: &quot;Cascadia Code PL&quot;;
+	font-family: &quot;Cascadia Code&quot;;
 	font-size: 13px;
 }
 
@@ -86,28 +86,42 @@ QComboBox:off::disabled {
     color: #000000;
 }
 
- /*QListView */
-QListView, QTableView {
-	color: #66D9EF;
-	background-color: rgba(45, 42, 46, 200);
+  /*QListView */
+QListView, QTableView, QTableWidget {
+	color: #FD971F;
+	background-color: rgba(39, 40, 34, 50);
 	alternate-background-color: #2d3336;
+	font-size: 9px;
 	show-decoration-selected: 1; /* make the selection span the entire width of the view */
 }
-QListView::item:alternate, QTableView::item:alternate {
-	background-color: rgba(255, 255, 255, 30);
+QListView::item:selected, QTableView::item:selected, QTableWidget::item:selected {
+	background: rgba(255, 255, 255, 50);
+	font-weight: bold;
+}
+QListView::item:selected:!active, QTableView::item:selected:!active, QTableWidget::item:selected:!active {
+	color: #fd971f;
+	background-color: #d5d4d5;
+}
+QListView::item:selected:active, QTableView::item:selected:active, QTableWidget::item:selected:active {
+	color: #f92672;
+	background-color: #000000;
+	border: 1px solid #ffffff;
+}
+QListView::item:hover, QTableView::item:hover, QTableWidget::item:hover {
+      background: rgba(255, 255, 255, 30);
 }
 
-QListView::item:selected, QTableView::item:selected {
-	background: rgba(255, 255, 255, 50);
+/*QHeaderView*/
+QHeaderView::section {
+	background-color: #272822;
+	alternate-background-color: #2d3336;
+	color: #A6E22E;
+	border: 1px solid #000000;
 }
-QListView::item:selected:!active, QTableView::item:selected:!active {
-	color: #fd971f;
-}
-QListView::item:selected:active, QTableView::item:selected:active {
-	color: #f92672;
-}
-QListView::item:hover, QTableView::item:hover {
-      background: rgba(255, 255, 255, 30);
+QHeaderView::section:checked {
+	color: #F92672;
+	border: 1px solid #ffffff;
+	font-weight: bold;
 }
 
 /*QScrollBar*/
@@ -175,42 +189,17 @@ QToolTip {
   <widget class="QWidget" name="layoutWidget">
    <property name="geometry">
     <rect>
-     <x>10</x>
+     <x>0</x>
      <y>0</y>
      <width>451</width>
-     <height>161</height>
+     <height>202</height>
     </rect>
    </property>
    <layout class="QGridLayout" name="gridLayout">
     <property name="spacing">
      <number>0</number>
     </property>
-    <item row="1" column="0">
-     <widget class="QPushButton" name="uiShowButton">
-      <property name="enabled">
-       <bool>false</bool>
-      </property>
-      <property name="minimumSize">
-       <size>
-        <width>50</width>
-        <height>50</height>
-       </size>
-      </property>
-      <property name="maximumSize">
-       <size>
-        <width>50</width>
-        <height>50</height>
-       </size>
-      </property>
-      <property name="toolTip">
-       <string>Show</string>
-      </property>
-      <property name="text">
-       <string/>
-      </property>
-     </widget>
-    </item>
-    <item row="2" column="0">
+    <item row="3" column="0">
      <widget class="QPushButton" name="uiRemoveButton">
       <property name="enabled">
        <bool>false</bool>
@@ -236,7 +225,7 @@ QToolTip {
      </widget>
     </item>
     <item row="0" column="0">
-     <widget class="QPushButton" name="uiLoadButton">
+     <widget class="QPushButton" name="uiLoadIRButton">
       <property name="minimumSize">
        <size>
         <width>50</width>
@@ -257,8 +246,55 @@ QToolTip {
       </property>
      </widget>
     </item>
-    <item row="0" column="1" rowspan="3">
+    <item row="0" column="1" rowspan="4">
      <widget class="QTableView" name="uiAvailableSpectraTableView"/>
+    </item>
+    <item row="2" column="0">
+     <widget class="QPushButton" name="uiShowButton">
+      <property name="enabled">
+       <bool>false</bool>
+      </property>
+      <property name="minimumSize">
+       <size>
+        <width>50</width>
+        <height>50</height>
+       </size>
+      </property>
+      <property name="maximumSize">
+       <size>
+        <width>50</width>
+        <height>50</height>
+       </size>
+      </property>
+      <property name="toolTip">
+       <string>Show</string>
+      </property>
+      <property name="text">
+       <string/>
+      </property>
+     </widget>
+    </item>
+    <item row="1" column="0">
+     <widget class="QPushButton" name="uiLoadNMRButton">
+      <property name="minimumSize">
+       <size>
+        <width>50</width>
+        <height>50</height>
+       </size>
+      </property>
+      <property name="maximumSize">
+       <size>
+        <width>50</width>
+        <height>50</height>
+       </size>
+      </property>
+      <property name="toolTip">
+       <string>Load</string>
+      </property>
+      <property name="text">
+       <string/>
+      </property>
+     </widget>
     </item>
    </layout>
   </widget>

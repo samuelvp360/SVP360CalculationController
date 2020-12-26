@@ -4,6 +4,7 @@
 from PyQt5 import QtCore as qtc
 import pandas as pd
 from scipy.optimize import curve_fit
+from numpy import exp, sqrt
 
 
 class WorkerThread(qtc.QObject):
@@ -61,33 +62,34 @@ class IRWorkerThread(qtc.QObject):
 
         n = self.bands.shape[0]
         position = self.bands['Wavenumber'].to_list()
-        amplitude = self.bands['Height (A)'].to_list()
+        amplitude = self.bands['Absorbance'].to_list()
         hwhm = self.bands['HWHM'].to_list()
-        parameters = position + amplitude + hwhm
-        lowerBounds = tuple(n * [500] + n * [0] + n * [1e-5])
-        upperBounds = tuple(n * [4000] + n * [2] + n * [1000])
+        beta = n * [0.5]
+        parameters = position + amplitude + hwhm + beta
+        lowerBounds = tuple([i - 50 for i in position] + [i / 2.0 for i in amplitude] + n * [1e-5] + n * [0])
+        upperBounds = tuple([i + 50 for i in position] + [i * 1.5 for i in amplitude] + n * [1000] + n * [1])
 
         try:
             fittedParams, cov = curve_fit(
-                self.LorentzianModel, self.df['Wavenumber'],
+                self.FitModel, self.df['Wavenumber'],
                 self.df['Absorbance'], p0=parameters, absolute_sigma=True,
                 bounds=(lowerBounds, upperBounds)
             )
             fittedPosition = fittedParams[:n]
             fittedAmplitude = fittedParams[n:2 * n]
-            fittedHwhm = fittedParams[2 * n:]
+            fittedHwhm = fittedParams[2 * n:3 * n]
+            fittedBeta = fittedParams[3 * n:]
             self.bands['Wavenumber'] = pd.Series(fittedPosition)
-            self.bands['Height (A)'] = pd.Series(fittedAmplitude)
+            self.bands['Absorbance'] = pd.Series(fittedAmplitude)
             self.bands['HWHM'] = pd.Series(fittedHwhm)
+            self.bands['Beta'] = pd.Series(fittedBeta)
             self.predictedBands['Absorbance'] = pd.DataFrame(
-                map(self.LorentzianByBand, self.bands['Wavenumber'], self.bands['Height (A)'], self.bands['HWHM'])
+                map(
+                    self.ModelByBand, self.bands['Wavenumber'],
+                    self.bands['Absorbance'], self.bands['HWHM'],
+                    self.bands['Beta']
+                )
             ).transpose()
-            self.predictedBands['Transmittance'] = self.predictedBands['Absorbance'].applymap(lambda x: (10 ** (2 - x)) / 100)
-            self.predictedBands['%Transmittance'] = self.predictedBands['Transmittance'].applymap(lambda x: 100 * x)
-            self.predictedBands['Absorbance']['Fitted Curve Lorentzian'] = self.predictedBands['Absorbance'].sum(axis=1)
-            self.predictedBands['Residuals'] = self.df['Absorbance'] - self.predictedBands['Absorbance']['Fitted Curve Lorentzian']
-            self.predictedBands['Transmittance']['Fitted Curve Lorentzian'] = self.predictedBands['Absorbance']['Fitted Curve Lorentzian'].apply(lambda x: (10 ** (2 - x)) / 100)
-            self.predictedBands['%Transmittance']['Fitted Curve Lorentzian'] = self.predictedBands['Transmittance']['Fitted Curve Lorentzian'].apply(lambda x: 100 * x)
             self.okFit.emit(self.predictedBands, self.bands, self.df)
         except RuntimeError:
             self.error.emit()
@@ -95,18 +97,77 @@ class IRWorkerThread(qtc.QObject):
             self.finished.emit()
             self.deleteLater()
 
-    def LorentzianFunction(self, x, x0, amp, hwhm):
+    def L(self, x, x0, amp, hwhm):
+        """Lorentzian Function.
+
+        Parameters
+        ----------
+        x :
+            frequency variable
+        x0 :
+            position of the band
+        amp :
+            height of the band
+        hwhm :
+            half widht at half maximum of the band
+        """
+        print('Lorentzian')
         return amp / (1 + ((x - x0) / hwhm) ** 2)
 
-    def LorentzianByBand(self, x0, amp, hwhm):
-        """
-        docstring
-        """
-        xRange = self.df['Wavenumber']
-        return pd.Series([(amp / (1 + ((x - x0) / hwhm) ** 2)) for x in xRange])
+    def G(self, x, x0, amp, hwhm):
+        """Gaussian Function.
 
-    def LorentzianModel(self, x, *args):
-        """LorentzianModel.
+        Parameters
+        ----------
+        x :
+            frequency variable
+        x0 :
+            position of the band
+        amp :
+            height of the band
+        hwhm :
+            half widht at half maximum of the band
+        """
+        print('Gaussian')
+        return amp * exp(-1 * (x - x0) ** 2 / (2 * hwhm ** 2))
+
+    def K(self, x, x0, amp, hwhm, beta):
+        """Brown Function.
+
+        Parameters
+        ----------
+        x :
+            frequency variable
+        x0 :
+            position of the band
+        amp :
+            height of the band
+        hwhm :
+            half widht at half maximum of the band
+        beta :
+            Voigt-likeness parameter.
+            If beta=0, K resembles a Gaussian shape.
+            If beta=1, K resembles a Lorentzian shape.
+        """
+        print('Brown')
+        return amp / (1 + (beta * (x - x0) / (sqrt(2) * hwhm)) ** 2) ** (1 / beta ** 2)
+
+    def ModelByBand(self, x0, amp, hwhm, beta):
+        """LorentzianByBand.
+
+        Parameters
+        ----------
+        x0 :
+            x0
+        amp :
+            amp
+        hwhm :
+            hwhm
+        """
+        return pd.Series([self.K(x, x0, amp, hwhm, beta) for x in self.df['Wavenumber']])
+
+    def FitModel(self, x, *args):
+        """FitModel.
 
         Args:
             x:
@@ -115,10 +176,10 @@ class IRWorkerThread(qtc.QObject):
         n = self.bands.shape[0]
         x0 = args[:n]
         amp = args[n:2 * n]
-        hwhm = args[2 * n:]
+        hwhm = args[2 * n:3 * n]
+        beta = args[3 * n:]
 
-        res = [self.LorentzianFunction(x, x0[i], amp[i], hwhm[i]) for i in range(n)]
+        res = [self.K(x, x0[i], amp[i], hwhm[i], beta[i]) for i in range(n)]
 
         return sum(res)
-
 

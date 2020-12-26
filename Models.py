@@ -59,9 +59,6 @@ class AvailableCalcModel(qtc.QAbstractTableModel):
             if orientation == qtc.Qt.Vertical:
                 return section
 
-        if role == qtc.Qt.ForegroundRole:
-            return qtg.QColor('#66D9EF')
-
     def flags(self, index):
         return qtc.Qt.ItemIsEnabled | qtc.Qt.ItemIsSelectable
 
@@ -108,9 +105,6 @@ class StatusModel(qtc.QAbstractTableModel):
             if orientation == qtc.Qt.Vertical:
                 return section
 
-        if role == qtc.Qt.ForegroundRole:
-            return qtg.QColor('#66D9EF')
-
     def flags(self, index):
         return qtc.Qt.ItemIsEnabled | qtc.Qt.ItemIsSelectable
 
@@ -143,9 +137,6 @@ class ResultsModel(qtc.QAbstractTableModel):
                 return section + 1
         return None
 
-        if role == qtc.Qt.ForegroundRole:
-            return qtg.QColor('#66D9EF')
-
     def flags(self, index):
         return qtc.Qt.ItemIsEnabled | qtc.Qt.ItemIsSelectable
 
@@ -161,23 +152,18 @@ class IRDataModel(qtc.QAbstractTableModel):
     def data(self, index, role):
         if role == qtc.Qt.DisplayRole:
             if index.column() == 0:
-                return str(self._bands.iloc[index.row(), index.column()])
+                return str(round(self._bands.iloc[index.row(), index.column()], 2))
             elif index.column() == 1:
-                if self._axis == 'Transmittance':
-                    return str(self._bands.iloc[index.row(), index.column()])
-                elif self._axis == '%Transmittance':
-                    return str(self._bands.iloc[index.row(), (index.column() + 1)])
-                else:
-                    return str(self._bands.iloc[index.row(), (index.column() + 2)])
+                return str(round(self._bands.loc[index.row(), self._axis], 6))
             elif index.column() == 2:
-                if self._axis == 'Transmittance':
-                    return str(self._bands.iloc[index.row(), (index.column() + 2)])
-                elif self._axis == '%Transmittance':
-                    return str(self._bands.iloc[index.row(), (index.column() + 3)])
-                else:
-                    return str(self._bands.iloc[index.row(), (index.column() + 4)])
+                return str(round(self._bands.loc[index.row(), 'HWHM'], 2))
             elif index.column() == 3:
-                return str(self._bands.iloc[index.row(), (index.column() + 4)])
+                if self._bands.get('Beta') is not None:
+                    return str(round(self._bands.loc[index.row(), 'Beta'], 4))
+                else:
+                    return ''
+        if role == qtc.Qt.TextAlignmentRole:
+            return qtc.Qt.AlignCenter
 
     def rowCount(self, index):
         return self._bands.shape[0]
@@ -193,14 +179,11 @@ class IRDataModel(qtc.QAbstractTableModel):
                 elif section == 1:
                     return self._axis
                 elif section == 2:
-                    return 'Height'
-                else:
                     return 'HWHM'
+                else:
+                    return 'Beta'
             if orientation == qtc.Qt.Vertical:
                 return section + 1
-
-        if role == qtc.Qt.ForegroundRole:
-            return qtg.QColor('#66D9EF')
 
     def flags(self, index):
         return qtc.Qt.ItemIsEnabled | qtc.Qt.ItemIsSelectable

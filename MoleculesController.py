@@ -7,7 +7,7 @@ import transaction
 from Molecules import Molecules
 from CalculationsController import CalculationsController
 from ResultsController import ResultsWidget
-from IRController import SpectrumSelector
+from ExperimentalController import SpectrumSelector
 from Models import MoleculesModel, StatusModel, AvailableCalcModel
 from Worker import WorkerThread
 from Views import resources
