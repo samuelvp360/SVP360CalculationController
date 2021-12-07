@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
 from PyQt5 import QtCore as qtc
@@ -6,26 +5,68 @@ from PyQt5 import QtGui as qtg
 from Views import resources
 
 
-class MoleculesModel(qtc.QAbstractListModel):
-    '''Model to populate the list of the uploaded molecules'''
+class StandardItem(qtg.QStandardItem):
+    def __init__(
+        self, txt='', img='', font_size=12, set_bold=False,
+        color='black'
+    ):
+        super().__init__()
 
-    def __init__(self, molecules):
-        super(MoleculesModel, self).__init__()
-        self.moleculesList = molecules
+        fnt = qtg.QFont('Open Sans', font_size)
+        fnt.setBold(set_bold)
+        self.setEditable(False)
+        self.setFont(fnt)
+        self.setText(txt)
+        self.setForeground(qtg.QColor(color))
+        if img:
+            image = qtg.QPixmap(img)
+            image = image.scaledToWidth(150)
+            self.setData(image, qtc.Qt.DecorationRole)
 
-    def data(self, index, role):
-        if role == qtc.Qt.DisplayRole:
-            return self.moleculesList[index.row()].GetName
 
-        if role == qtc.Qt.DecorationRole:
-            if self.moleculesList[index.row()].stored:
-                return qtg.QIcon(':/icons/okDB.png')
+class MoleculesModel(qtg.QStandardItemModel):
+    def __init__(self, molecules_list):
+        super().__init__()
+        self.populated_tree = self.populate_tree(molecules_list)
 
-    def rowCount(self, index):
-        return len(self.moleculesList)
+    def populate_tree(self, molecules_list):
+        if molecules_list:
+            std_item_list = []
+            for mol in molecules_list:
+                m_std_item_2 = StandardItem('', img=mol.mol_pic)
+                m_std_item_1 = StandardItem(
+                    f'{mol.name:120}', font_size=14, set_bold=True,
+                    color='#236e96'
+                )
+                summary = StandardItem(
+                    'Propiedades', font_size=12, set_bold=True
+                )
+                formula_1 = StandardItem('Formula', font_size=10)
+                formula_2 = StandardItem(f'{mol.formula}', font_size=10)
+                FW_1 = StandardItem('FW', font_size=10)
+                FW_2 = StandardItem(f'{mol.MW:.2f} uma', font_size=10)
+                inchi_1 = StandardItem('Inchi Key', font_size=10)
+                inchi_2 = StandardItem(f'{mol.inchi_key}', font_size=10)
+                smiles_1 = StandardItem('Smiles', font_size=10)
+                smiles_2 = StandardItem(f'{mol.smiles}', font_size=10)
+                std_item_list.append((m_std_item_1, m_std_item_2))
+                summary.appendRow([formula_1, formula_2])
+                summary.appendRow([FW_1, FW_2])
+                summary.appendRow([inchi_1, inchi_2])
+                summary.appendRow([smiles_1, smiles_2])
+                m_std_item_1.appendRows([summary])
+            return std_item_list
+        else:
+            return []
 
-    def flags(self, index):
-        return qtc.Qt.ItemIsEnabled | qtc.Qt.ItemIsSelectable
+    def create_model(self):
+        tree_model = qtg.QStandardItemModel()
+        tree_model.setColumnCount(2)
+        rood_node = tree_model.invisibleRootItem()
+        if self.populated_tree:
+            for item_1, item_2 in self.populated_tree:
+                rood_node.appendRow([item_1, item_2])
+        return tree_model
 
 
 class AvailableCalcModel(qtc.QAbstractTableModel):
