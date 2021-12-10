@@ -6,20 +6,20 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1156</width>
-    <height>640</height>
+    <width>1252</width>
+    <height>877</height>
    </rect>
   </property>
   <property name="windowTitle">
-   <string>MainWindow</string>
+   <string>SVP Controller</string>
   </property>
   <widget class="QWidget" name="centralwidget">
    <widget class="QWidget" name="layoutWidget">
     <property name="geometry">
      <rect>
       <x>5</x>
-      <y>40</y>
-      <width>896</width>
+      <y>15</y>
+      <width>781</width>
       <height>546</height>
      </rect>
     </property>
@@ -31,18 +31,29 @@
       <widget class="QPushButton" name="uiRemoveMoleculeButton">
        <property name="minimumSize">
         <size>
-         <width>0</width>
+         <width>200</width>
          <height>50</height>
         </size>
        </property>
        <property name="maximumSize">
         <size>
-         <width>80</width>
+         <width>200</width>
          <height>16777215</height>
         </size>
        </property>
+       <property name="styleSheet">
+        <string notr="true">QPushButton {
+	background-color: 'white';
+	border: 2px solid 'red';
+	border-radius: 6px;
+}
+QPushButton:hover {
+	background-color: 'red';
+	color: 'white'
+}</string>
+       </property>
        <property name="text">
-        <string>Remove</string>
+        <string>Remover</string>
        </property>
       </widget>
      </item>
@@ -54,15 +65,182 @@
          <height>50</height>
         </size>
        </property>
+       <property name="styleSheet">
+        <string notr="true">QPushButton {
+	background-color: 'white';
+	border: 2px solid 'green';
+	border-radius: 6px;
+}
+QPushButton:hover {
+	background-color: 'green';
+	color: 'white'
+}</string>
+       </property>
        <property name="text">
-        <string>Add Molecule</string>
+        <string>Agregar Molécula</string>
        </property>
       </widget>
      </item>
-     <item row="1" column="0" colspan="2">
-      <widget class="QTreeView" name="uiMoleculesTree"/>
+     <item row="1" column="0">
+      <widget class="QComboBox" name="uiSearchFieldComboBox"/>
+     </item>
+     <item row="1" column="1">
+      <widget class="QLineEdit" name="uiSearchLine">
+       <property name="placeholderText">
+        <string>Buscar Molécula</string>
+       </property>
+      </widget>
+     </item>
+     <item row="2" column="0" colspan="2">
+      <widget class="QTreeView" name="uiMoleculesTree">
+       <property name="cursor" stdset="0">
+        <cursorShape>PointingHandCursor</cursorShape>
+       </property>
+       <property name="selectionMode">
+        <enum>QAbstractItemView::SingleSelection</enum>
+       </property>
+      </widget>
      </item>
     </layout>
+   </widget>
+   <widget class="QGroupBox" name="groupBox">
+    <property name="geometry">
+     <rect>
+      <x>5</x>
+      <y>570</y>
+      <width>781</width>
+      <height>256</height>
+     </rect>
+    </property>
+    <property name="title">
+     <string>Lista de Trabajos</string>
+    </property>
+    <layout class="QVBoxLayout" name="verticalLayout">
+     <property name="spacing">
+      <number>0</number>
+     </property>
+     <property name="leftMargin">
+      <number>0</number>
+     </property>
+     <property name="topMargin">
+      <number>0</number>
+     </property>
+     <property name="rightMargin">
+      <number>0</number>
+     </property>
+     <property name="bottomMargin">
+      <number>0</number>
+     </property>
+     <item>
+      <widget class="QTableView" name="uiWorkflowTableView"/>
+     </item>
+    </layout>
+   </widget>
+   <widget class="QGroupBox" name="groupBox_2">
+    <property name="geometry">
+     <rect>
+      <x>960</x>
+      <y>15</y>
+      <width>280</width>
+      <height>811</height>
+     </rect>
+    </property>
+    <property name="title">
+     <string>Lista de selección</string>
+    </property>
+    <layout class="QVBoxLayout" name="verticalLayout_2">
+     <property name="spacing">
+      <number>0</number>
+     </property>
+     <property name="leftMargin">
+      <number>2</number>
+     </property>
+     <property name="topMargin">
+      <number>2</number>
+     </property>
+     <property name="rightMargin">
+      <number>2</number>
+     </property>
+     <property name="bottomMargin">
+      <number>2</number>
+     </property>
+     <item>
+      <widget class="QListView" name="uiSelectionList">
+       <property name="font">
+        <font>
+         <pointsize>12</pointsize>
+         <weight>75</weight>
+         <bold>true</bold>
+        </font>
+       </property>
+       <property name="cursor" stdset="0">
+        <cursorShape>PointingHandCursor</cursorShape>
+       </property>
+       <property name="styleSheet">
+        <string notr="true">QListView {
+	show-decoration-selected: 1; /* make the selection span the entire width of the view */
+}
+QListView::item {
+	padding: 8px;
+}
+QListView::item:selected {
+	padding: 28px;
+}</string>
+       </property>
+       <property name="alternatingRowColors">
+        <bool>true</bool>
+       </property>
+      </widget>
+     </item>
+    </layout>
+   </widget>
+   <widget class="QPushButton" name="uiSelectButton">
+    <property name="geometry">
+     <rect>
+      <x>790</x>
+      <y>255</y>
+      <width>166</width>
+      <height>41</height>
+     </rect>
+    </property>
+    <property name="styleSheet">
+     <string notr="true">QPushButton {
+	background-color: 'white';
+	border: 2px solid 'green';
+	border-radius: 6px;
+}
+QPushButton:hover {
+	background-color: 'green';
+	color: 'white'
+}</string>
+    </property>
+    <property name="text">
+     <string>&gt;&gt; Seleccionar &gt;&gt;</string>
+    </property>
+   </widget>
+   <widget class="QPushButton" name="uiUnselectButton">
+    <property name="geometry">
+     <rect>
+      <x>790</x>
+      <y>300</y>
+      <width>166</width>
+      <height>41</height>
+     </rect>
+    </property>
+    <property name="styleSheet">
+     <string notr="true">QPushButton {
+	background-color: 'white';
+	border: 2px solid 'red';
+	border-radius: 6px;
+}
+QPushButton:hover {
+	background-color: 'red';
+	color: 'white'
+}</string>
+    </property>
+    <property name="text">
+     <string>&lt;&lt; Remover &lt;&lt;</string>
+    </property>
    </widget>
   </widget>
   <widget class="QMenuBar" name="menubar">
@@ -70,12 +248,90 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>1156</width>
+     <width>1252</width>
      <height>22</height>
     </rect>
    </property>
+   <widget class="QMenu" name="menuArchivo">
+    <property name="title">
+     <string>Archivo</string>
+    </property>
+    <addaction name="actionDirectorio_de_trabajo"/>
+   </widget>
+   <widget class="QMenu" name="menuMelecula">
+    <property name="title">
+     <string>Melecula</string>
+    </property>
+    <addaction name="actionAgregar"/>
+    <addaction name="actionEliminar"/>
+   </widget>
+   <widget class="QMenu" name="menuGaussian">
+    <property name="title">
+     <string>Gaussian</string>
+    </property>
+    <addaction name="actionConfigurar"/>
+    <addaction name="actionProgramar_c_lculo"/>
+    <addaction name="actionDetener_fila"/>
+    <addaction name="actionPausar_fila"/>
+    <addaction name="actionReanudar_fila"/>
+   </widget>
+   <widget class="QMenu" name="menuDocking_Vina">
+    <property name="title">
+     <string>Docking (Vina)</string>
+    </property>
+    <addaction name="actionWizard"/>
+   </widget>
+   <addaction name="menuArchivo"/>
+   <addaction name="menuMelecula"/>
+   <addaction name="menuGaussian"/>
+   <addaction name="menuDocking_Vina"/>
   </widget>
   <widget class="QStatusBar" name="statusbar"/>
+  <action name="actionDirectorio_de_trabajo">
+   <property name="text">
+    <string>Cambiar directorio de trabajo</string>
+   </property>
+  </action>
+  <action name="actionAgregar">
+   <property name="text">
+    <string>Agregar</string>
+   </property>
+  </action>
+  <action name="actionEliminar">
+   <property name="text">
+    <string>Eliminar</string>
+   </property>
+  </action>
+  <action name="actionConfigurar">
+   <property name="text">
+    <string>Configurar</string>
+   </property>
+  </action>
+  <action name="actionProgramar_c_lculo">
+   <property name="text">
+    <string>Programar cálculo</string>
+   </property>
+  </action>
+  <action name="actionDetener_fila">
+   <property name="text">
+    <string>Arrancar fila</string>
+   </property>
+  </action>
+  <action name="actionPausar_fila">
+   <property name="text">
+    <string>Pausar fila</string>
+   </property>
+  </action>
+  <action name="actionReanudar_fila">
+   <property name="text">
+    <string>Reanudar fila</string>
+   </property>
+  </action>
+  <action name="actionWizard">
+   <property name="text">
+    <string>Wizard</string>
+   </property>
+  </action>
  </widget>
  <tabstops>
   <tabstop>uiRemoveMoleculeButton</tabstop>
@@ -91,12 +347,12 @@
    <slot>add_molecule()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>254</x>
-     <y>92</y>
+     <x>455</x>
+     <y>87</y>
     </hint>
     <hint type="destinationlabel">
      <x>288</x>
-     <y>-7</y>
+     <y>0</y>
     </hint>
    </hints>
   </connection>
@@ -112,7 +368,7 @@
     </hint>
     <hint type="destinationlabel">
      <x>104</x>
-     <y>-15</y>
+     <y>0</y>
     </hint>
    </hints>
   </connection>
@@ -128,7 +384,55 @@
     </hint>
     <hint type="destinationlabel">
      <x>424</x>
-     <y>-2</y>
+     <y>0</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>uiSelectButton</sender>
+   <signal>clicked()</signal>
+   <receiver>MainWindow</receiver>
+   <slot>select()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>884</x>
+     <y>289</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>888</x>
+     <y>-1</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>uiUnselectButton</sender>
+   <signal>clicked()</signal>
+   <receiver>MainWindow</receiver>
+   <slot>unselect()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>841</x>
+     <y>341</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>821</x>
+     <y>-9</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>uiSelectionList</sender>
+   <signal>clicked(QModelIndex)</signal>
+   <receiver>MainWindow</receiver>
+   <slot>set_selected_mol()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>1037</x>
+     <y>254</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>1054</x>
+     <y>-10</y>
     </hint>
    </hints>
   </connection>
@@ -137,5 +441,7 @@
   <slot>add_molecule()</slot>
   <slot>remove_molecule()</slot>
   <slot>set_selected_mol()</slot>
+  <slot>select()</slot>
+  <slot>unselect()</slot>
  </slots>
 </ui>

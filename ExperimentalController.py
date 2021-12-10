@@ -13,7 +13,7 @@ from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg, NavigationTool
 from matplotlib.figure import Figure
 from matplotlib.gridspec import GridSpec
 import matplotlib.ticker as ticker
-from scipy.signal import argrelextrema
+from scipy.signal import argrelextrema, savgol_filter
 import math
 from Models import IRDataModel, AvailableSpectraModel
 from Worker import IRWorkerThread
@@ -43,6 +43,8 @@ class NMRCanvas(FigureCanvasQTAgg):
         self.fig = Figure(figsize=(6, 4), dpi=100, facecolor='#2d2a2e')
         self.grid = GridSpec(17, 1, left=0.1, bottom=0.15, right=0.94, top=0.94, wspace=0.3, hspace=0.3)
         self.ax = self.fig.add_subplot(self.grid[0:, 0])
+        self.ax2 = self.ax.twinx()
+        self.ax3 = self.ax.twinx()
         super(NMRCanvas, self).__init__(self.fig)
 
 
@@ -61,7 +63,7 @@ class IRPlotter(qtw.QMainWindow):
         bandsDict=None,
         predictedBands=None
     ):
-        super(IRPlotter, self).__init__()
+        super().__init__()
         uic.loadUi('Views/uiIRPlotter.ui', self)
         self.uiTransButton.setIcon(qtg.QIcon(':/icons/transIcon.png'))
         self.uiAbsorbanceButton.setIcon(qtg.QIcon(':/icons/absIcon.png'))
@@ -697,52 +699,109 @@ class NMRPlotter(qtw.QMainWindow):
         self.cid = self.canvas.fig.canvas.mpl_connect(
             'button_press_event', self.PeaksDetectionManual
         )
+        self.GSD = GSD()
         self._title = title
         self._showGrid = True
+        self._smoothed = False
+        self._xAxis = 'ppm'
+        self._yAxis = 'Intensity'
         if dataDir is not None:
-            dic, self.data = ng.bruker.read(dataDir)
-            self.data = ng.bruker.remove_digital_filter(dic, self.data)
-            self.udic = ng.bruker.guess_udic(dic, self.data)
-            uc = ng.fileiobase.uc_from_udic(self.udic)
-            self.ppm = uc.ppm_scale()
-            self.data = ng.proc_base.zf_size(self.data, self.udic[0]['size'])
-            self.data = ng.proc_base.fft(self.data)
-            self.data = ng.proc_base.ps(self.data, p0=-10.0)  # este valor debe
+            dic, data = ng.bruker.read(dataDir)
+            data = ng.bruker.remove_digital_filter(dic, data)
+            self.udic = ng.bruker.guess_udic(dic, data)
+            data = ng.proc_base.zf_size(data, self.udic[0]['size'])
+            data = ng.proc_base.fft(data)
+            data = ng.proc_base.ps(data, p0=-10.0)  # este valor debe
             # ir cambiado, y esto debe ser opcional
-            self.data = ng.proc_base.di(self.data)
-            self.data = ng.proc_base.rev(self.data)
+            data = ng.proc_base.di(data)
+            data = ng.proc_base.rev(data)
+            uc = ng.fileiobase.uc_from_udic(self.udic)
+            ppm = uc.ppm_scale()
+            hz = uc.hz_scale()
+            self.df = pd.DataFrame({'Intensity': data})
+            self.df['ppm'] = ppm
+            self.df['hz'] = hz
+            self.df['First'] = self.df['Intensity'].diff() / self.df['ppm'].diff()
+            self.df['Second'] = self.df['First'].diff() / self.df['ppm'].diff()
         else:
-            self.data = data
+            self.df = data
             self.udic = udic
-            self.ppm = ppm
         self._nmrType = self.udic[0]['label']
         self.statusBar().showMessage(f'Showing {self._nmrType} spectra for {self._title}')
         self.Plot()
 # ------------------------------------SIGNALS---------------------------------------------------------------
         self.uiShowGridButton.clicked.connect(self.SetGrid)
-
+        self.uiPpmButton.clicked.connect(lambda: self.SelectXAxis('ppm'))
+        self.uiHzButton.clicked.connect(lambda: self.SelectXAxis('hz'))
+        self.uiSmoothButton.clicked.connect(self.Smooth)
 # ------------------------------------METHODS---------------------------------------------------------------
+
     def Plot(self):
 
         self.canvas.ax.clear()
-        self.canvas.ax.plot(self.ppm, self.data, linewidth=0.5, color='#272822')
+        self.canvas.ax2.clear()
+        self.canvas.ax3.clear()
+        self.canvas.ax.plot(self.df[self._xAxis], self.df[self._yAxis], linewidth=0.5, color='#272822')
         self.canvas.ax.set_title(f'{self._title}', color='#ae81ff')
-        self.canvas.ax.set_xlabel('Chemical Shift (ppm)', color='#f92672')
+        if self._xAxis == 'ppm':
+            self.canvas.ax.set_xlabel('Chemical Shift (ppm)', color='#f92672')
+        else:
+            self.canvas.ax.set_xlabel('Frequency (Hz)', color='#f92672')
         self.canvas.ax.set_ylabel('Intensity', color='#f92672')
         self.canvas.ax.tick_params(axis='x', colors='#66d9ef')
         self.canvas.ax.tick_params(axis='y', colors='#66d9ef')
-        if self._nmrType == '1H':
+        self.canvas.ax2.set_ylabel('First derivative', color='#f92672')
+        self.canvas.ax2.tick_params(axis='y', colors='#66d9ef')
+        self.canvas.ax2.plot(self.df[self._xAxis], self.df['First'], linewidth=0.5, color='red')
+        self.canvas.ax3.set_ylabel('Second derivative', color='#f92672')
+        self.canvas.ax3.tick_params(axis='y', colors='#66d9ef')
+        self.canvas.ax3.plot(self.df[self._xAxis], self.df['Second'], linewidth=0.5, color='blue')
+        if self._nmrType == '1H' and self._xAxis == 'ppm':
             self.canvas.ax.set_xlim(15, -1)
             self.canvas.ax.xaxis.set_major_locator(ticker.MultipleLocator(1.0))
-        else:
+        elif self._nmrType == '13C' and self._xAxis == 'ppm':
             self.canvas.ax.set_xlim(200, -10)
+            self.canvas.ax.xaxis.set_major_locator(ticker.MultipleLocator(10.0))
+        else:
+            self.canvas.ax.set_xlim(18000, -6000)
         self.canvas.ax.grid(True, color='#2d2a2e', linestyle=':', linewidth=0.2) if self._showGrid else self.canvas.ax.grid(False)
         self.canvas.draw()
 
     def PeaksDetectionManual(self, event):
         pass
 
+    def PeaksDetectionAuto(self):
+        pass
+
     def SetGrid(self):
 
         self._showGrid = self.uiShowGridButton.isChecked()
         self.Plot()
+
+    def SelectXAxis(self, unit):
+
+        self.uiPpmButton.setChecked(True) if unit == 'ppm' else self.uiPpmButton.setChecked(False)
+        self.uiHzButton.setChecked(True) if unit == 'hz' else self.uiHzButton.setChecked(False)
+        self._xAxis = unit
+        self.Plot()
+
+    def Smooth(self):
+        if self.uiSmoothButton.isChecked():
+            self.df['smoothed'] = self.GSD.SavGol(self.df['Intensity'])
+            self._yAxis = 'smoothed'
+        else:
+            self._yAxis = 'Intensity'
+        self.Plot()
+
+
+class GSD():
+
+    def __init__(self):
+        pass
+        # self.data = data
+        # self.smoothedPpm = self.SavGol(data['ppm'])
+        # self.smoothedHz = self.SavGol(data['hz'])
+
+    def SavGol(self, yRange):
+        return savgol_filter(yRange, 5, 3)
+

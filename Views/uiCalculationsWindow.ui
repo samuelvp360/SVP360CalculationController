@@ -22,263 +22,6 @@
   <property name="windowTitle">
    <string>Calculation Setup</string>
   </property>
-  <property name="styleSheet">
-   <string notr="true">/*QWidget */
-QWidget {
-	background-color: #161613;
-	font-family: &quot;Cascadia Code PL&quot;;
-	font-size: 13px;
-}
-
-/*QMenu*/
-QMenu {
-	color: #ffffff;
-	margin: 2px;
-}
-QMenu::item {
-	background-color: #3e3e3e;
-}
-QMenu::item:selected {
-	background-color: rgba(255, 255, 255, 100);
-}
-QMenu::separator {
-	background-color: #ffffff;
-	height: 1px;
-	margin-left: 10px;
-	margin-right: 5px;
-}
-
-/*QMenuBar*/
-QMenuBar {
-	color: #ffffff;
-	spacing: 3px; /* spacing between menu bar items */
-	padding: 3px;
-}
-QMenuBar::item {
-	padding: 1px 4px;
-	background-color: #3e3e3e;
-}
-QMenuBar::item:hover {
-	background: rgba(255, 255, 255, 50);
-} 
-
-/*QToolBar*/
-QToolBar {
-	spacing: 3px;
-}
-
-/*QToolButton*/
-QToolButton {
-	color: #ffffff;
-	padding: 6px;
-}
-QToolButton:hover {
-	color: rgba(255, 255, 255, 50);
-}
-QToolButton:disabled {
-	background-color: #d5d4d5;
-	color: #ffffff;
-}
-
-/*QTabWidget*/
-QTabBar:tab{
-	color: #d5d4d5;
-	border: 1px solid #ffffff;
-	padding: 4px;
-}
-QTabBar:tab::selected {
-	color: #FD971F;
-}
-
-/*QScrollArea */
-QScrollArea {
-	background-color: #3e3e3e
-}
-
-/*QLabel */
-QLabel {
-	color: #A6E22E;
-}
-
-/*QCheckBox*/
-QCheckBox {
-	color: #A6E22E;
-}
-QCheckBox::indicator {
-	border: 1px solid #ffffff;
-}
-QCheckBox::indicator:checked {
-	background: #FD971F;
-}
-QCheckBox::indicator:disabled {
-	border: 1px solid #000000;
-}
-QCheckBox::disabled {
-	color: #000000;
-}
-
- /*QGroupBox */
-QGroupBox {
-	border: none;
-	margin-top: 2.5ex; /* leave space at the top for the title */
-}
-QGroupBox::title {
-	subcontrol-origin: margin;
-	subcontrol-position: top center; /* position at the top center */
-	color: #8f8f91;
- }
-
-/*QPushButton*/
-QPushButton {
-	background-color: #3e3e3e;
-	color: #F92672;
-	border: 1px solid #8f8f91;
-	padding: 2px;
-}
-QPushButton:hover {
-	background-color: #E6DB74;
-	color: #F92672;
-}
-QPushButton:disabled {
-	background-color: #d5d4d5;
-	color: #ffffff;
-}
-
-/*QSpinBox*/
-QSpinBox {
-	border: 1px solid #ffffff;
-	color: #FD971F;
-}
-QSpinBox:disabled {
-	border: 1px solid #000000;
-	color: #000000;
-}
-QDoubleSpinBox {
-	border: 1px solid #ffffff;
-	color: #FD971F;
-}
-QDoubleSpinBox:disabled {
-	border: 1px solid #000000;
-	color: #000000;
-}
-
-/*QPlainTextEdit*/
-QPlainTextEdit {
-	color: #FD971F;
-	border: 1px solid #ffffff;
-}
-QPlainTextEdit:disabled {
-	color: #000000;
-	border: 1px solid #000000;
-}
-
-/*QComboBox*/
-QComboBox {
-	border: 1px solid #3f3f3f;
-	padding: 1px 18px 1px 3px;
-	color: #A6E22E;
-	background-color: #3f3f3f;
-}
-QComboBox:on { /* shift the text when the popup opens */
-	color: #F92672;
-	padding-top: 3px;
-	padding-left: 4px;
-	background-color: rgba(255, 255, 255, 50);
-}
-QComboBox:off { /* shift the text when the popup opens */
-	color: #A6E22E;
-	padding-top: 3px;
-	padding-left: 4px;
-	background-color: rgba(255, 255, 255, 50);
-}
-
-
-QComboBox QAbstractItemView {
-	border: 1px solid #3e3e3e;
-	background-color: #3e3e3e;
-	selection-background-color: rgba(255, 255, 255, 100);
-}
-QComboBox:off::disabled {
-    color: #000000;
-}
-
- /*QListView */
-QListView, QTableView {
-	color: #66D9EF;
-	background-color: rgba(45, 42, 46, 200);
-	alternate-background-color: #2d3336;
-	show-decoration-selected: 1; /* make the selection span the entire width of the view */
-}
-QListView::item:alternate, QTableView::item:alternate {
-	background-color: rgba(255, 255, 255, 30);
-}
-
-QListView::item:selected, QTableView::item:selected {
-	background: rgba(255, 255, 255, 50);
-}
-QListView::item:selected:!active, QTableView::item:selected:!active {
-	color: #fd971f;
-}
-QListView::item:selected:active, QTableView::item:selected:active {
-	color: #f92672;
-}
-QListView::item:hover, QTableView::item:hover {
-      background: rgba(255, 255, 255, 30);
-}
-
- /*QLineEdit */
-QLineEdit {
-	background-color: rgba(255, 255, 255, 50);
-	border-radius: 0px;
-	padding: 3px;
-	color: #ffffff;
-}
-QLineEdit::focus {
-	border: 1px solid #8f8f91;
-}
-
-/*QScrollBar*/
-QScrollBar {
-	background: rgba(0, 0, 0, 0);
-	height: 10px;
-}
-QScrollBar::handle:active {
-	background: rgba(255, 255, 255, 50);
-}
-QScrollBar::handle:!active {
-	background: rgba(0, 0, 0, 0);
-}
-QScrollBar::handle:pressed {
-	background: rgba(255, 255, 255, 80);
-}
-QScrollBar::right-arrow, QScrollBar::left-arrow {
-      border: none;
-      background: none;
-      color: none;
-}
-QScrollBar::add-line {
-      border: none;
-      background: none;
-}
-QScrollBar::sub-line {
-      border: none;
-      background: none;
-}
-
-/*QStatusBar*/
-QStatusBar {
-	color: #8f8f91;
-	border-top: #8f8f91;
-}
-
-/*QToolTip*/
-QToolTip {
-	background-color: #000000;
-	color: #ffffff;
-	border: 1px solid #ffffff;
-	padding: 3px;
-}</string>
-  </property>
   <widget class="QScrollArea" name="scrollArea">
    <property name="geometry">
     <rect>
@@ -375,7 +118,6 @@ QToolTip {
           <property name="font">
            <font>
             <family>Cascadia Code PL</family>
-            <pointsize>-1</pointsize>
             <weight>75</weight>
             <bold>true</bold>
            </font>
@@ -1746,7 +1488,6 @@ Mode Options</string>
             <property name="font">
              <font>
               <family>Cascadia Code PL</family>
-              <pointsize>-1</pointsize>
               <weight>75</weight>
               <bold>true</bold>
              </font>
@@ -1787,7 +1528,6 @@ QLabel {
             <property name="font">
              <font>
               <family>Cascadia Code PL</family>
-              <pointsize>-1</pointsize>
               <weight>75</weight>
               <bold>true</bold>
              </font>
@@ -1814,7 +1554,6 @@ QLabel {
             <property name="font">
              <font>
               <family>Cascadia Code PL</family>
-              <pointsize>-1</pointsize>
               <weight>75</weight>
               <bold>true</bold>
              </font>

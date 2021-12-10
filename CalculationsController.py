@@ -15,17 +15,17 @@ class CalculationsController(qtw.QMainWindow):
     submitted = qtc.pyqtSignal(list)
 
     def __init__(self, molecule):
-        super(CalculationsController, self).__init__()
+        super().__init__()
         uic.loadUi('Views/uiCalculationsWindow.ui', self)
         self.uiOptGroupBox.setVisible(False)
         self.uiFreqGroupBox.setVisible(False)
         self.uiIRCGroupBox.setVisible(False)
     # ------------------------------------PROPERTIES------------------------------------------------------
         self._molecule = molecule
-        self._chk = self._molecule.GetName
-        self._oldChk = self._molecule.GetName
+        self._chk = self._molecule.get_name
+        self._oldChk = self._molecule.get_name
         self._coordinates = self._molecule.GetZMatrix
-        self.uiTitleLineEdit.setText(self._molecule.GetName)
+        self.uiTitleLineEdit.setText(self._molecule.get_name)
 
         self.memory = virtual_memory().total // 1e9
         self.cpu = multiprocessing.cpu_count()
@@ -37,7 +37,98 @@ class CalculationsController(qtw.QMainWindow):
         self._chargeMultiplicityLine = ['', ' ', '']
         self._lightBasis = ['', '', '', '', '', '']
         self._addInput = ''
-    # ------------------------------------WIDGETS---------------------------------------------------------
+        self.populate_widgets()
+    # ------------------------------------SIGNALS---------------------------------------------------------------
+        self._methodWidgets[0].currentIndexChanged.connect(lambda: self.SetKeywords(0, self._methodWidgets[0].currentIndex()))
+        self._methodWidgets[1].currentIndexChanged.connect(lambda: self.SetKeywords(1, self._methodWidgets[1].currentIndex()))
+        self._methodWidgets[2].currentIndexChanged.connect(lambda: self.SetKeywords(2, self._methodWidgets[2].currentIndex()))
+        self._methodWidgets[3].currentIndexChanged.connect(lambda: self.SetKeywords(3, self._methodWidgets[3].currentIndex()))
+        self._methodWidgets[4].currentIndexChanged.connect(lambda: self.SetKeywords(4, self._methodWidgets[4].currentIndex()))
+        self._methodWidgets[5].currentIndexChanged.connect(lambda: self.SetKeywords(5, self._methodWidgets[5].currentIndex()))
+        self._methodWidgets[7].currentIndexChanged.connect(lambda: self.SetKeywords(7, self._methodWidgets[7].currentIndex()))
+        self._methodWidgets[8].currentIndexChanged.connect(lambda: self.SetKeywords(8, self._methodWidgets[8].currentIndex()))
+        self._methodWidgets[9].currentIndexChanged.connect(lambda: self.SetKeywords(9, self._methodWidgets[9].currentIndex()))
+        self._methodWidgets[10].currentIndexChanged.connect(lambda: self.SetKeywords(10, self._methodWidgets[10].currentIndex()))
+        self._methodWidgets[12].currentIndexChanged.connect(lambda: self.SetKeywords(12))
+        self._methodWidgets[14].currentIndexChanged.connect(lambda: self.SetKeywords(14))
+        self._methodWidgets[17].currentIndexChanged.connect(lambda: self.SetKeywords(17, self._methodWidgets[17].currentIndex()))
+        self._methodWidgets[18].currentIndexChanged.connect(lambda: self.SetKeywords(18, self._methodWidgets[18].currentIndex()))
+        self._methodWidgets[19].currentIndexChanged.connect(lambda: self.SetKeywords(19, self._methodWidgets[19].currentIndex()))
+        self._methodWidgets[20].currentIndexChanged.connect(lambda: self.SetKeywords(20, self._methodWidgets[20].currentIndex()))
+        self._methodWidgets[22].currentIndexChanged.connect(lambda: self.SetKeywords(22))
+        self._methodWidgets[24].currentIndexChanged.connect(lambda: self.SetKeywords(24))
+        self._methodWidgets[27].currentIndexChanged.connect(lambda: self.SetKeywords(27, self._methodWidgets[27].currentIndex()))
+        self._methodWidgets[29].currentIndexChanged.connect(lambda: self.SetKeywords(29, self._methodWidgets[29].currentIndex()))
+        self._methodWidgets[30].valueChanged.connect(self.SetCahrgeMult)
+        self._methodWidgets[31].valueChanged.connect(self.SetCahrgeMult)
+        self._methodWidgets[32].valueChanged.connect(self.SetCahrgeMult)
+        self._methodWidgets[33].stateChanged.connect(lambda: self.SetKeywords(33, self._methodWidgets[33].isChecked()))
+        self._methodWidgets[34].valueChanged.connect(lambda: self.SetKeywords(34, self._methodWidgets[34].value()))
+        self._methodWidgets[36].currentIndexChanged.connect(lambda: self.SetKeywords(36, self._methodWidgets[36].currentIndex()))
+        self._methodWidgets[37].stateChanged.connect(lambda: self.SetKeywords(37, self._methodWidgets[37].isChecked()))
+        self._methodWidgets[38].currentIndexChanged.connect(lambda: self.SetKeywords(38, self._methodWidgets[38].currentIndex()))
+        self._methodWidgets[39].stateChanged.connect(lambda: self.SetKeywords(39))
+        self._methodWidgets[40].stateChanged.connect(lambda: self.SetKeywords(40))
+        self._methodWidgets[41].currentIndexChanged.connect(lambda: self.SetKeywords(41))
+        self._methodWidgets[44].valueChanged.connect(lambda: self.SetKeywords(44))
+        self._methodWidgets[45].valueChanged.connect(lambda: self.SetKeywords(45))
+        self._methodWidgets[46].stateChanged.connect(lambda: self.SetKeywords(46))
+        self._methodWidgets[48].currentIndexChanged.connect(lambda: self.SetKeywords(48))
+        self._methodWidgets[49].stateChanged.connect(lambda: self.SetKeywords(49))
+        self._methodWidgets[50].valueChanged.connect(lambda: self.SetKeywords(50))
+        self._methodWidgets[51].stateChanged.connect(lambda: self.SetKeywords(51))
+        self._methodWidgets[52].valueChanged.connect(lambda: self.SetKeywords(52))
+        self.uiAdditionalKeyLine.textChanged.connect(lambda: self.SetKeywords(60, self.uiAdditionalKeyLine.text()))
+        self._jobsWidgets[0].currentIndexChanged.connect(lambda: self.SetJobType(0, self._jobsWidgets[0].currentIndex()))
+        self._jobsWidgets[1].currentIndexChanged.connect(lambda: self.SetJobType(1, self._jobsWidgets[1].currentIndex()))
+        self._jobsWidgets[2].currentIndexChanged.connect(lambda: self.SetJobType(2, self._jobsWidgets[2].currentIndex()))
+        self._jobsWidgets[3].stateChanged.connect(lambda: self.SetJobType(3, self._jobsWidgets[3].isChecked()))
+        self._jobsWidgets[4].stateChanged.connect(lambda: self.SetJobType(4, self._jobsWidgets[4].isChecked()))
+        self._jobsWidgets[5].currentIndexChanged.connect(lambda: self.SetJobType(5, self._jobsWidgets[5].currentIndex()))
+        self._jobsWidgets[6].currentIndexChanged.connect(lambda: self.SetJobType(6, self._jobsWidgets[6].currentIndex()))
+        self._jobsWidgets[7].currentIndexChanged.connect(lambda: self.SetJobType(7, self._jobsWidgets[7].currentIndex()))
+        self._jobsWidgets[8].stateChanged.connect(lambda: self.SetJobType(8, self._jobsWidgets[8].isChecked()))
+        self._jobsWidgets[9].stateChanged.connect(lambda: self.SetJobType(9, self._jobsWidgets[9].isChecked()))
+        self._jobsWidgets[10].stateChanged.connect(lambda: self.SetJobType(10, self._jobsWidgets[10].isChecked()))
+        self._jobsWidgets[11].stateChanged.connect(lambda: self.SetJobType(11, self._jobsWidgets[11].isChecked()))
+        self._jobsWidgets[12].stateChanged.connect(lambda: self.SetJobType(12, self._jobsWidgets[12].isChecked()))
+        self._jobsWidgets[15].currentIndexChanged.connect(lambda: self.SetJobType(15, self._jobsWidgets[15].currentIndex()))
+        self._jobsWidgets[16].currentIndexChanged.connect(lambda: self.SetJobType(16, self._jobsWidgets[16].currentIndex()))
+        self._jobsWidgets[17].currentIndexChanged.connect(lambda: self.SetJobType(17, self._jobsWidgets[17].currentIndex()))
+        self._jobsWidgets[18].stateChanged.connect(lambda: self.SetJobType(18, self._jobsWidgets[18].isChecked()))
+        self._jobsWidgets[19].valueChanged.connect(lambda: self.SetJobType(19, self._jobsWidgets[19].value()))
+        self._jobsWidgets[20].stateChanged.connect(lambda: self.SetJobType(20, self._jobsWidgets[20].isChecked()))
+        self._jobsWidgets[21].valueChanged.connect(lambda: self.SetJobType(21, self._jobsWidgets[21].value()))
+        self._jobsWidgets[22].stateChanged.connect(lambda: self.SetJobType(22, self._jobsWidgets[22].isChecked()))
+        self._link0Widgets[0].valueChanged.connect(lambda: self.SetLink0(0, self._link0Widgets[0].value()))
+        self._link0Widgets[1].valueChanged.connect(lambda: self.SetLink0(1, self._link0Widgets[1].value()))
+        self._link0Widgets[2].currentIndexChanged.connect(lambda: self.SetLink0(2, self._link0Widgets[2].currentIndex()))
+        self._link0Widgets[3].textChanged.connect(lambda: self.SetLink0(3, self._link0Widgets[3].text()))
+        self._link0Widgets[4].clicked.connect(lambda: self.SetLink0(4, 1))
+        self._link0Widgets[5].currentIndexChanged.connect(lambda: self.SetLink0(5, self._link0Widgets[5].currentIndex()))
+        self._link0Widgets[6].textChanged.connect(lambda: self.SetLink0(6, self._link0Widgets[6].text()))
+        self._link0Widgets[7].clicked.connect(lambda: self.SetLink0(7, 1))
+        self._generalWidgets[0].stateChanged.connect(lambda: self.SetGeneral(0, self._generalWidgets[0].isChecked()))
+        self._generalWidgets[1].stateChanged.connect(lambda: self.SetGeneral(1, self._generalWidgets[1].isChecked()))
+        self._generalWidgets[2].stateChanged.connect(lambda: self.SetGeneral(2, self._generalWidgets[2].isChecked()))
+        self._generalWidgets[7].stateChanged.connect(lambda: self.SetGeneral(7, self._generalWidgets[7].isChecked()))
+        self._generalWidgets[9].stateChanged.connect(lambda: self.SetGeneral(9, self._generalWidgets[9].isChecked()))
+        self._generalWidgets[11].stateChanged.connect(lambda: self.SetGeneral(11, self._generalWidgets[11].isChecked()))
+        self._generalWidgets[12].valueChanged.connect(lambda: self.SetGeneral(12, self._generalWidgets[12].value()))
+        self.uiTitleLineEdit.textChanged.connect(self.SetTitle)
+        self.uiAddInputCheckBox.stateChanged.connect(self.SetPreview)
+        self.uiQueueCalcButton.clicked.connect(self.QueueCalculation)
+
+        self._methodWidgets[30].setValue(self._molecule.GetNetCharge)
+        self._methodWidgets[10].model().item(2).setEnabled(False)
+        self.SetKeywords(1, self._methodWidgets[1].currentIndex())
+        self.SetCahrgeMult()
+        [self.SetLink0(i, self._link0Widgets[i].value()) for i in range(2)]
+        [self.SetLink0(i, self._link0Widgets[i].currentIndex()) for i in (2, 5)]
+        self.SetTitle()
+        self.SetPreview()
+
+    def populate_widgets(self):
         self._jobTypes = (
             'Energy', 'Optimization', 'Frequency', 'Opt+Freq', 'IRC', 'Scan', 'Stability', 'NMR'
         )
@@ -195,7 +286,7 @@ class CalculationsController(qtw.QMainWindow):
             self.uiMaxDiskCheckBox,  # 11
             self.uiMaxDiskSpinBox  # 12
         ]
-    # ------------------------------------POPULATE WIDGETS------------------------------------------------------
+
         self._methodWidgets[0].addItems(self._state)
         self._methodWidgets[1].addItems(self._methods)
         self._methodWidgets[1].setCurrentIndex(2)
@@ -243,96 +334,6 @@ class CalculationsController(qtw.QMainWindow):
         [self._link0Widgets[i].setEnabled(False) for i in range(3, 8) if i != 5]
         self._link0Widgets[5].addItems(self._oldChk)
         [self._generalWidgets[i].setEnabled(False) for i in (3, 4, 5, 6, 8, 10, 12)]
-    # ------------------------------------SIGNALS---------------------------------------------------------------
-        self._methodWidgets[0].currentIndexChanged.connect(lambda: self.SetKeywords(0, self._methodWidgets[0].currentIndex()))
-        self._methodWidgets[1].currentIndexChanged.connect(lambda: self.SetKeywords(1, self._methodWidgets[1].currentIndex()))
-        self._methodWidgets[2].currentIndexChanged.connect(lambda: self.SetKeywords(2, self._methodWidgets[2].currentIndex()))
-        self._methodWidgets[3].currentIndexChanged.connect(lambda: self.SetKeywords(3, self._methodWidgets[3].currentIndex()))
-        self._methodWidgets[4].currentIndexChanged.connect(lambda: self.SetKeywords(4, self._methodWidgets[4].currentIndex()))
-        self._methodWidgets[5].currentIndexChanged.connect(lambda: self.SetKeywords(5, self._methodWidgets[5].currentIndex()))
-        self._methodWidgets[7].currentIndexChanged.connect(lambda: self.SetKeywords(7, self._methodWidgets[7].currentIndex()))
-        self._methodWidgets[8].currentIndexChanged.connect(lambda: self.SetKeywords(8, self._methodWidgets[8].currentIndex()))
-        self._methodWidgets[9].currentIndexChanged.connect(lambda: self.SetKeywords(9, self._methodWidgets[9].currentIndex()))
-        self._methodWidgets[10].currentIndexChanged.connect(lambda: self.SetKeywords(10, self._methodWidgets[10].currentIndex()))
-        self._methodWidgets[12].currentIndexChanged.connect(lambda: self.SetKeywords(12))
-        self._methodWidgets[14].currentIndexChanged.connect(lambda: self.SetKeywords(14))
-        self._methodWidgets[17].currentIndexChanged.connect(lambda: self.SetKeywords(17, self._methodWidgets[17].currentIndex()))
-        self._methodWidgets[18].currentIndexChanged.connect(lambda: self.SetKeywords(18, self._methodWidgets[18].currentIndex()))
-        self._methodWidgets[19].currentIndexChanged.connect(lambda: self.SetKeywords(19, self._methodWidgets[19].currentIndex()))
-        self._methodWidgets[20].currentIndexChanged.connect(lambda: self.SetKeywords(20, self._methodWidgets[20].currentIndex()))
-        self._methodWidgets[22].currentIndexChanged.connect(lambda: self.SetKeywords(22))
-        self._methodWidgets[24].currentIndexChanged.connect(lambda: self.SetKeywords(24))
-        self._methodWidgets[27].currentIndexChanged.connect(lambda: self.SetKeywords(27, self._methodWidgets[27].currentIndex()))
-        self._methodWidgets[29].currentIndexChanged.connect(lambda: self.SetKeywords(29, self._methodWidgets[29].currentIndex()))
-        self._methodWidgets[30].valueChanged.connect(self.SetCahrgeMult)
-        self._methodWidgets[31].valueChanged.connect(self.SetCahrgeMult)
-        self._methodWidgets[32].valueChanged.connect(self.SetCahrgeMult)
-        self._methodWidgets[33].stateChanged.connect(lambda: self.SetKeywords(33, self._methodWidgets[33].isChecked()))
-        self._methodWidgets[34].valueChanged.connect(lambda: self.SetKeywords(34, self._methodWidgets[34].value()))
-        self._methodWidgets[36].currentIndexChanged.connect(lambda: self.SetKeywords(36, self._methodWidgets[36].currentIndex()))
-        self._methodWidgets[37].stateChanged.connect(lambda: self.SetKeywords(37, self._methodWidgets[37].isChecked()))
-        self._methodWidgets[38].currentIndexChanged.connect(lambda: self.SetKeywords(38, self._methodWidgets[38].currentIndex()))
-        self._methodWidgets[39].stateChanged.connect(lambda: self.SetKeywords(39))
-        self._methodWidgets[40].stateChanged.connect(lambda: self.SetKeywords(40))
-        self._methodWidgets[41].currentIndexChanged.connect(lambda: self.SetKeywords(41))
-        self._methodWidgets[44].valueChanged.connect(lambda: self.SetKeywords(44))
-        self._methodWidgets[45].valueChanged.connect(lambda: self.SetKeywords(45))
-        self._methodWidgets[46].stateChanged.connect(lambda: self.SetKeywords(46))
-        self._methodWidgets[48].currentIndexChanged.connect(lambda: self.SetKeywords(48))
-        self._methodWidgets[49].stateChanged.connect(lambda: self.SetKeywords(49))
-        self._methodWidgets[50].valueChanged.connect(lambda: self.SetKeywords(50))
-        self._methodWidgets[51].stateChanged.connect(lambda: self.SetKeywords(51))
-        self._methodWidgets[52].valueChanged.connect(lambda: self.SetKeywords(52))
-        self.uiAdditionalKeyLine.textChanged.connect(lambda: self.SetKeywords(60, self.uiAdditionalKeyLine.text()))
-        self._jobsWidgets[0].currentIndexChanged.connect(lambda: self.SetJobType(0, self._jobsWidgets[0].currentIndex()))
-        self._jobsWidgets[1].currentIndexChanged.connect(lambda: self.SetJobType(1, self._jobsWidgets[1].currentIndex()))
-        self._jobsWidgets[2].currentIndexChanged.connect(lambda: self.SetJobType(2, self._jobsWidgets[2].currentIndex()))
-        self._jobsWidgets[3].stateChanged.connect(lambda: self.SetJobType(3, self._jobsWidgets[3].isChecked()))
-        self._jobsWidgets[4].stateChanged.connect(lambda: self.SetJobType(4, self._jobsWidgets[4].isChecked()))
-        self._jobsWidgets[5].currentIndexChanged.connect(lambda: self.SetJobType(5, self._jobsWidgets[5].currentIndex()))
-        self._jobsWidgets[6].currentIndexChanged.connect(lambda: self.SetJobType(6, self._jobsWidgets[6].currentIndex()))
-        self._jobsWidgets[7].currentIndexChanged.connect(lambda: self.SetJobType(7, self._jobsWidgets[7].currentIndex()))
-        self._jobsWidgets[8].stateChanged.connect(lambda: self.SetJobType(8, self._jobsWidgets[8].isChecked()))
-        self._jobsWidgets[9].stateChanged.connect(lambda: self.SetJobType(9, self._jobsWidgets[9].isChecked()))
-        self._jobsWidgets[10].stateChanged.connect(lambda: self.SetJobType(10, self._jobsWidgets[10].isChecked()))
-        self._jobsWidgets[11].stateChanged.connect(lambda: self.SetJobType(11, self._jobsWidgets[11].isChecked()))
-        self._jobsWidgets[12].stateChanged.connect(lambda: self.SetJobType(12, self._jobsWidgets[12].isChecked()))
-        self._jobsWidgets[15].currentIndexChanged.connect(lambda: self.SetJobType(15, self._jobsWidgets[15].currentIndex()))
-        self._jobsWidgets[16].currentIndexChanged.connect(lambda: self.SetJobType(16, self._jobsWidgets[16].currentIndex()))
-        self._jobsWidgets[17].currentIndexChanged.connect(lambda: self.SetJobType(17, self._jobsWidgets[17].currentIndex()))
-        self._jobsWidgets[18].stateChanged.connect(lambda: self.SetJobType(18, self._jobsWidgets[18].isChecked()))
-        self._jobsWidgets[19].valueChanged.connect(lambda: self.SetJobType(19, self._jobsWidgets[19].value()))
-        self._jobsWidgets[20].stateChanged.connect(lambda: self.SetJobType(20, self._jobsWidgets[20].isChecked()))
-        self._jobsWidgets[21].valueChanged.connect(lambda: self.SetJobType(21, self._jobsWidgets[21].value()))
-        self._jobsWidgets[22].stateChanged.connect(lambda: self.SetJobType(22, self._jobsWidgets[22].isChecked()))
-        self._link0Widgets[0].valueChanged.connect(lambda: self.SetLink0(0, self._link0Widgets[0].value()))
-        self._link0Widgets[1].valueChanged.connect(lambda: self.SetLink0(1, self._link0Widgets[1].value()))
-        self._link0Widgets[2].currentIndexChanged.connect(lambda: self.SetLink0(2, self._link0Widgets[2].currentIndex()))
-        self._link0Widgets[3].textChanged.connect(lambda: self.SetLink0(3, self._link0Widgets[3].text()))
-        self._link0Widgets[4].clicked.connect(lambda: self.SetLink0(4, 1))
-        self._link0Widgets[5].currentIndexChanged.connect(lambda: self.SetLink0(5, self._link0Widgets[5].currentIndex()))
-        self._link0Widgets[6].textChanged.connect(lambda: self.SetLink0(6, self._link0Widgets[6].text()))
-        self._link0Widgets[7].clicked.connect(lambda: self.SetLink0(7, 1))
-        self._generalWidgets[0].stateChanged.connect(lambda: self.SetGeneral(0, self._generalWidgets[0].isChecked()))
-        self._generalWidgets[1].stateChanged.connect(lambda: self.SetGeneral(1, self._generalWidgets[1].isChecked()))
-        self._generalWidgets[2].stateChanged.connect(lambda: self.SetGeneral(2, self._generalWidgets[2].isChecked()))
-        self._generalWidgets[7].stateChanged.connect(lambda: self.SetGeneral(7, self._generalWidgets[7].isChecked()))
-        self._generalWidgets[9].stateChanged.connect(lambda: self.SetGeneral(9, self._generalWidgets[9].isChecked()))
-        self._generalWidgets[11].stateChanged.connect(lambda: self.SetGeneral(11, self._generalWidgets[11].isChecked()))
-        self._generalWidgets[12].valueChanged.connect(lambda: self.SetGeneral(12, self._generalWidgets[12].value()))
-        self.uiTitleLineEdit.textChanged.connect(self.SetTitle)
-        self.uiAddInputCheckBox.stateChanged.connect(self.SetPreview)
-        self.uiQueueCalcButton.clicked.connect(self.QueueCalculation)
-
-        self._methodWidgets[30].setValue(self._molecule.GetNetCharge)
-        self._methodWidgets[10].model().item(2).setEnabled(False)
-        self.SetKeywords(1, self._methodWidgets[1].currentIndex())
-        self.SetCahrgeMult()
-        [self.SetLink0(i, self._link0Widgets[i].value()) for i in range(2)]
-        [self.SetLink0(i, self._link0Widgets[i].currentIndex()) for i in (2, 5)]
-        self.SetTitle()
-        self.SetPreview()
-    # ------------------------------------METHODS---------------------------------------------------------------
 
     def SetKeywords(self, widgetNumber=None, selection=None):
 
@@ -948,7 +949,6 @@ class CalculationsController(qtw.QMainWindow):
         self.SetPreview()
 
     def SetTitle(self):
-
         self.uiTitleLabel.setText(self.uiTitleLineEdit.text())
         self.SetPreview()
 
@@ -997,7 +997,7 @@ class CalculationsController(qtw.QMainWindow):
         elif widgetNumber == 2:
             if selection == 1:
                 [self._link0Widgets[i].setEnabled(False) for i in (3, 4)]
-                self._link0Widgets[3].setText(self._molecule.GetName)
+                self._link0Widgets[3].setText(self._molecule.get_name)
             elif selection == 2:
                 [self._link0Widgets[i].setEnabled(True) for i in (3, 4)]
                 self._link0Widgets[3].clear()
@@ -1024,7 +1024,7 @@ class CalculationsController(qtw.QMainWindow):
         elif widgetNumber == 5:
             if selection == 1:
                 [self._link0Widgets[i].setEnabled(False) for i in (6, 7)]
-                self._link0Widgets[6].setText(f'{self._molecule.GetName}')
+                self._link0Widgets[6].setText(f'{self._molecule.get_name}')
             elif selection == 2:
                 [self._link0Widgets[i].setEnabled(True) for i in (6, 7)]
                 self._link0Widgets[6].clear()
@@ -1068,9 +1068,9 @@ class CalculationsController(qtw.QMainWindow):
                 self._keywordsLine[12] = ''
         if widgetNumber == 2:
             if selection:
-                self._coordinates = self._molecule.GetInitCoords.to_string(index=False, header=False)
+                self._coordinates = self._molecule.get_coordinates
             else:
-                self._coordinates = self._molecule.GetZMatrix
+                self._coordinates = self._molecule.get_zmatrix
         if widgetNumber == 7:
             if selection:
                 self._keywordsLine[0] = '#P '
@@ -1124,7 +1124,7 @@ class CalculationsController(qtw.QMainWindow):
         """
         docstring
         """
-        name = f'{self._molecule.GetName}_{self._jobTypes[self._jobsWidgets[0].currentIndex()]}'
+        name = f'{self._molecule.get_name}_{self._jobTypes[self._jobsWidgets[0].currentIndex()]}'
         existentImputs = str(len([i for i in listdir() if re.sub(r'_\d+\.com', '', i) == name]))
         fileName = f'{name}_{existentImputs}.com'
         jobType = self._jobTypes[self._jobsWidgets[0].currentIndex()]
