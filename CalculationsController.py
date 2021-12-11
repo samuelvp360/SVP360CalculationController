@@ -20,11 +20,11 @@ class CalculationsController(qtw.QMainWindow):
         self.uiOptGroupBox.setVisible(False)
         self.uiFreqGroupBox.setVisible(False)
         self.uiIRCGroupBox.setVisible(False)
-    # ------------------------------------PROPERTIES------------------------------------------------------
+    # ------------------------------------PROPERTIES-------------------------------------
         self._molecule = molecule
         self._chk = self._molecule.get_name
         self._oldChk = self._molecule.get_name
-        self._coordinates = self._molecule.GetZMatrix
+        self._coordinates = self._molecule.get_zmatrix
         self.uiTitleLineEdit.setText(self._molecule.get_name)
 
         self.memory = virtual_memory().total // 1e9
@@ -38,7 +38,7 @@ class CalculationsController(qtw.QMainWindow):
         self._lightBasis = ['', '', '', '', '', '']
         self._addInput = ''
         self.populate_widgets()
-    # ------------------------------------SIGNALS---------------------------------------------------------------
+    # ------------------------------------SIGNALS----------------------------------------
         self._methodWidgets[0].currentIndexChanged.connect(lambda: self.SetKeywords(0, self._methodWidgets[0].currentIndex()))
         self._methodWidgets[1].currentIndexChanged.connect(lambda: self.SetKeywords(1, self._methodWidgets[1].currentIndex()))
         self._methodWidgets[2].currentIndexChanged.connect(lambda: self.SetKeywords(2, self._methodWidgets[2].currentIndex()))
@@ -115,18 +115,18 @@ class CalculationsController(qtw.QMainWindow):
         self._generalWidgets[9].stateChanged.connect(lambda: self.SetGeneral(9, self._generalWidgets[9].isChecked()))
         self._generalWidgets[11].stateChanged.connect(lambda: self.SetGeneral(11, self._generalWidgets[11].isChecked()))
         self._generalWidgets[12].valueChanged.connect(lambda: self.SetGeneral(12, self._generalWidgets[12].value()))
-        self.uiTitleLineEdit.textChanged.connect(self.SetTitle)
-        self.uiAddInputCheckBox.stateChanged.connect(self.SetPreview)
-        self.uiQueueCalcButton.clicked.connect(self.QueueCalculation)
+        self.uiTitleLineEdit.textChanged.connect(self.set_title)
+        # self.uiAddInputCheckBox.stateChanged.connect(self.set_preview)
+        # self.uiQueueCalcButton.clicked.connect(self.queu_calculation)
 
-        self._methodWidgets[30].setValue(self._molecule.GetNetCharge)
+        self._methodWidgets[30].setValue(self._molecule.get_formal_charge)
         self._methodWidgets[10].model().item(2).setEnabled(False)
         self.SetKeywords(1, self._methodWidgets[1].currentIndex())
         self.SetCahrgeMult()
         [self.SetLink0(i, self._link0Widgets[i].value()) for i in range(2)]
         [self.SetLink0(i, self._link0Widgets[i].currentIndex()) for i in (2, 5)]
-        self.SetTitle()
-        self.SetPreview()
+        self.set_title()
+        self.set_preview()
 
     def populate_widgets(self):
         self._jobTypes = (
@@ -722,7 +722,7 @@ class CalculationsController(qtw.QMainWindow):
             self._keywordsLine[-1] = ' ' + selection.upper()
 
         self.uiKeywordsLabel.setText(''.join(self._keywordsLine))
-        self.SetPreview()
+        self.set_preview()
 
     def SetJobType(self, widgetNumber, selection):
 
@@ -946,11 +946,11 @@ class CalculationsController(qtw.QMainWindow):
                 self._keywordsLine[-3] = 'CALCFC'
 
         self.uiKeywordsLabel.setText(''.join(self._keywordsLine))
-        self.SetPreview()
+        self.set_preview()
 
-    def SetTitle(self):
-        self.uiTitleLabel.setText(self.uiTitleLineEdit.text())
-        self.SetPreview()
+    def set_title(self, title):
+        self.uiTitleLabel.setText(title)
+        self.set_preview()
 
     def SetCahrgeMult(self):
         """
@@ -958,7 +958,7 @@ class CalculationsController(qtw.QMainWindow):
         """
         self._chargeMultiplicityLine[0] = str(self._methodWidgets[30].value())
 
-        self._currentElectrons = self._molecule.GetValenceElectrons - self._methodWidgets[30].value() + self._molecule.GetNetCharge
+        self._currentElectrons = self._molecule.get_valence_electrons - self._methodWidgets[30].value() + self._molecule.get_formal_charge
         combination = self._currentElectrons % 2
         if combination == 0:
             self._methodWidgets[32].setVisible(True)
@@ -978,19 +978,19 @@ class CalculationsController(qtw.QMainWindow):
             self._methodWidgets[2].model().item(1).setEnabled(False)
 
         self.uiChargeMultLabel.setText(''.join(self._chargeMultiplicityLine))
-        self.SetPreview()
+        self.set_preview()
 
     def SetLink0(self, widgetNumber, selection):
         """
         docstring
         """
         if widgetNumber == 0:
-            if selection != 0:
+            if selection:
                 self._link0Line[2] = f'%Mem={str(selection)}GB\n'
             else:
                 self._link0Line[2] = ''
         elif widgetNumber == 1:
-            if selection != 0:
+            if selection:
                 self._link0Line[1] = f'%NProcShared={str(selection)}\n'
             else:
                 self._link0Line[1] = ''
@@ -1018,7 +1018,7 @@ class CalculationsController(qtw.QMainWindow):
                 options=qtw.QFileDialog.DontUseNativeDialog,
                 filter='Chk files(*.chk)'
             )
-            if self._chk != '':
+            if self._chk:
                 self._link0Widgets[3].setText(f'{self._chk}.chk')
                 self.SetLink0(3, self._chk)
         elif widgetNumber == 5:
@@ -1040,17 +1040,16 @@ class CalculationsController(qtw.QMainWindow):
                 self._link0Line[0] = f'%OLDCHK={selection}.chk\n'
         elif widgetNumber == 7:
             self._oldChk, _ = qtw.QFileDialog.getOpenFileName(
-                self,
-                'Open an old chk file',
+                self, 'Open an old chk file',
                 options=qtw.QFileDialog.DontUseNativeDialog,
                 filter='Chk files(*.chk)'
             )
-            if self._oldChk != '':
+            if self._oldChk:
                 self._link0Widgets[6].setText(f'{self._oldChk}.chk')
                 self.SetLink0(6, self._oldChk)
 
         self._link0Widgets[8].setPlainText(''.join(self._link0Line))
-        self.SetPreview()
+        self.set_preview()
 
     def SetGeneral(self, widgetNumber, selection):
         """
@@ -1092,20 +1091,20 @@ class CalculationsController(qtw.QMainWindow):
             self._keywordsLine[14] = f' MAXDISK={str(selection)}GB'
 
         self.uiKeywordsLabel.setText(''.join(self._keywordsLine))
-        self.SetPreview()
+        self.set_preview()
 
     def SetAddInput(self):
         """
         docstring
         """
-        heavyAtoms = ' '.join(set(self._molecule.heavyAtoms))
-        lightAtoms = ' '.join(set(self._molecule.lightAtoms))
+        heavy_atoms = ' '.join(self._molecule.get_heavy_atoms)
+        light_atoms = ' '.join(self._molecule.get_light_atoms)
         self.uiAddInputPlainText.clear()
         self.uiAddInputPlainText.setPlainText(
-            f"{heavyAtoms} 0\n{self._heavyBasis}\n****\n{lightAtoms} 0\n{''.join(self._lightBasis)}\n****\n\n{heavyAtoms} 0\n{self._heavyBasis}"
+            f"{heavy_atoms} 0\n{self._heavyBasis}\n****\n{light_atoms} 0\n{''.join(self._lightBasis)}\n****\n\n{heavy_atoms} 0\n{self._heavyBasis}"
         )
 
-    def SetPreview(self):
+    def set_preview(self):
         """
         docstring
         """
@@ -1115,25 +1114,30 @@ class CalculationsController(qtw.QMainWindow):
             self._addInput = ''
 
         self._input = [
-            self._link0Widgets[8].toPlainText(), self.uiKeywordsLabel.text(), self.uiTitleLineEdit.text(),
-            self.uiChargeMultLabel.text(), self._coordinates, self._addInput
+            self._link0Widgets[8].toPlainText(), self.uiKeywordsLabel.text(),
+            self.uiTitleLineEdit.text(), self.uiChargeMultLabel.text(),
+            self._coordinates, self._addInput
         ]
-        self.uiPreviewPlainText.setPlainText('{}{}\n\n {}\n\n{}\n{}\n{}\n'.format(*self._input))
+        self.uiPreviewPlainText.setPlainText(
+            '{}{}\n\n {}\n\n{}\n{}\n{}\n'.format(*self._input)
+        )
 
-    def QueueCalculation(self):
+    def queu_calculation(self):
         """
         docstring
         """
-        name = f'{self._molecule.get_name}_{self._jobTypes[self._jobsWidgets[0].currentIndex()]}'
-        existentImputs = str(len([i for i in listdir() if re.sub(r'_\d+\.com', '', i) == name]))
-        fileName = f'{name}_{existentImputs}.com'
-        jobType = self._jobTypes[self._jobsWidgets[0].currentIndex()]
+        job_type = self._jobTypes[self._jobsWidgets[0].currentIndex()]
+        name = f'{self._molecule.inchi_key}/{job_type}'
+        existent_imputs = str(len([i for i in listdir() if re.sub(r'_\d+\.com', '', i) == name]))
+        file_name = f'{name}_{existent_imputs}.com'
         keywords = self.uiKeywordsLabel.text()
         chargeMult = self.uiChargeMultLabel.text().replace(' ', '/')
-        with open(fileName, 'w') as f:
+        with open(file_name, 'w') as f:
             f.write(self.uiPreviewPlainText.toPlainText())
 
-        calculation = [self._molecule, jobType, keywords, 'Pending', chargeMult, fileName]
+        calculation = (
+            job_type, keywords, chargeMult, file_name
+        )
 
         self.submitted.emit(calculation)
         self.close()

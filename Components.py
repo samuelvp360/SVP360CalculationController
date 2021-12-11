@@ -3,7 +3,7 @@
 import os
 import shutil
 from rdkit import Chem
-from rdkit.Chem import AllChem, Draw
+from rdkit.Chem import AllChem, Draw, Descriptors
 from rdkit import RDLogger
 from openbabel import openbabel as ob
 from persistent import Persistent
@@ -15,7 +15,6 @@ class Molecule(Persistent):
         RDLogger.DisableLog('rdApp.*')  # evita los mensajes adicionales no cruciales
         self.mol = self.__create_mol(path, file_format)
         if self.mol:
-            AllChem.EmbedMolecule(self.mol, randomSeed=0xf00d)
             self.set_name(path, init=True)
             self.inchi_key = Chem.MolToInchiKey(self.mol)
             self.smiles = Chem.MolToSmiles(self.mol)
@@ -23,6 +22,7 @@ class Molecule(Persistent):
             self.formula = Chem.rdMolDescriptors.CalcMolFormula(self.mol)
             self.__set_mol_picture()
             self.mol = Chem.AddHs(self.mol)
+            AllChem.EmbedMolecule(self.mol, randomSeed=0xf00d)
 
     def __create_mol(self, path, file_format):
         with open(path, 'r') as file:
@@ -89,4 +89,25 @@ class Molecule(Persistent):
             else:
                 new_zmat.append(' ' + line.replace('=', '\t'))
         return '\n'.join(new_zmat)
+
+    @property
+    def get_valence_electrons(self):
+        return Descriptors.NumValenceElectrons(self.mol)
+
+    @property
+    def get_formal_charge(self):
+        return Chem.rdmolops.GetFormalCharge(self.mol)
+
+    @property
+    def get_heavy_atoms(self):
+        return tuple(
+            set([a.GetSymbol() for a in self.mol.GetAtoms() if a.GetAtomicNum() > 22.9])
+        )
+
+    @property
+    def get_ligth_atoms(self):
+        return tuple(
+            set([a.GetSymbol() for a in self.mol.GetAtoms() if a.GetAtomicNum() <= 22.9])
+        )
+
 

@@ -96,6 +96,9 @@ QPushButton:hover {
        <property name="cursor" stdset="0">
         <cursorShape>PointingHandCursor</cursorShape>
        </property>
+       <property name="contextMenuPolicy">
+        <enum>Qt::CustomContextMenu</enum>
+       </property>
        <property name="selectionMode">
         <enum>QAbstractItemView::SingleSelection</enum>
        </property>
@@ -436,6 +439,22 @@ QPushButton:hover {
     </hint>
    </hints>
   </connection>
+  <connection>
+   <sender>uiMoleculesTree</sender>
+   <signal>customContextMenuRequested(QPoint)</signal>
+   <receiver>MainWindow</receiver>
+   <slot>right_click()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>284</x>
+     <y>290</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>333</x>
+     <y>-11</y>
+    </hint>
+   </hints>
+  </connection>
  </connections>
  <slots>
   <slot>add_molecule()</slot>
@@ -443,5 +462,6 @@ QPushButton:hover {
   <slot>set_selected_mol()</slot>
   <slot>select()</slot>
   <slot>unselect()</slot>
+  <slot>right_click()</slot>
  </slots>
 </ui>

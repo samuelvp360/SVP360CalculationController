@@ -86,6 +86,27 @@ class MainWindow(qtw.QMainWindow):
             self.database.remove(to_remove)
             self.set_models()
 
+    def right_click(self, position):
+        if self.selected_mol:
+            menu = qtw.QMenu()
+            gauss = qtw.QMenu('Gaussian')
+            vina = qtw.QMenu('Vina')
+            menu.addMenu(gauss)
+            menu.addMenu(vina)
+            calculate = gauss.addAction('Calcular')
+            prepare = vina.addAction('Preparar ligando')
+            prepare_2 = vina.addAction('Preparar receptor')
+            docking = vina.addAction('Hacer Docking')
+            action = menu.exec_(self.uiMoleculesTree.mapToGlobal(position))
+            if action == calculate:
+                print('abriendo Gaussian')
+            elif action == prepare:
+                print('Preparando ligando')
+            elif action == prepare_2:
+                print('Preparando receptor')
+            elif action == docking:
+                print('Docking')
+
     def closeEvent(self, event):
         self.database.close()
         self.closed.emit()

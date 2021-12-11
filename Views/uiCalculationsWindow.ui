@@ -1259,7 +1259,7 @@ Mode Options</string>
              <rect>
               <x>10</x>
               <y>20</y>
-              <width>711</width>
+              <width>790</width>
               <height>131</height>
              </rect>
             </property>
@@ -1348,8 +1348,8 @@ Mode Options</string>
              <rect>
               <x>10</x>
               <y>170</y>
-              <width>198</width>
-              <height>28</height>
+              <width>234</width>
+              <height>29</height>
              </rect>
             </property>
             <layout class="QHBoxLayout" name="horizontalLayout_8">
@@ -1388,7 +1388,7 @@ Mode Options</string>
               <x>20</x>
               <y>20</y>
               <width>281</width>
-              <height>58</height>
+              <height>60</height>
              </rect>
             </property>
             <layout class="QGridLayout" name="gridLayout_3">
@@ -1596,5 +1596,58 @@ QLabel {
     </hint>
    </hints>
   </connection>
+  <connection>
+   <sender>uiTitleLineEdit</sender>
+   <signal>textChanged(QString)</signal>
+   <receiver>uiCalculationSetup</receiver>
+   <slot>set_title()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>124</x>
+     <y>160</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>162</x>
+     <y>1</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>uiQueueCalcButton</sender>
+   <signal>clicked()</signal>
+   <receiver>uiCalculationSetup</receiver>
+   <slot>queu_calculation()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>102</x>
+     <y>614</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>35</x>
+     <y>-1</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>uiAddInputCheckBox</sender>
+   <signal>stateChanged(int)</signal>
+   <receiver>uiCalculationSetup</receiver>
+   <slot>set_preview()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>63</x>
+     <y>388</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>74</x>
+     <y>5</y>
+    </hint>
+   </hints>
+  </connection>
  </connections>
+ <slots>
+  <slot>set_title()</slot>
+  <slot>queu_calculation()</slot>
+  <slot>set_preview()</slot>
+ </slots>
 </ui>
