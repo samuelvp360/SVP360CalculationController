@@ -58,6 +58,12 @@
          <height>590</height>
         </size>
        </property>
+       <property name="font">
+        <font>
+         <weight>50</weight>
+         <bold>false</bold>
+        </font>
+       </property>
        <property name="title">
         <string/>
        </property>
@@ -118,8 +124,8 @@
           <property name="font">
            <font>
             <family>Cascadia Code PL</family>
-            <weight>75</weight>
-            <bold>true</bold>
+            <weight>50</weight>
+            <bold>false</bold>
            </font>
           </property>
           <property name="currentIndex">
@@ -1616,7 +1622,7 @@ QLabel {
    <sender>uiQueueCalcButton</sender>
    <signal>clicked()</signal>
    <receiver>uiCalculationSetup</receiver>
-   <slot>queu_calculation()</slot>
+   <slot>queue_calculation()</slot>
    <hints>
     <hint type="sourcelabel">
      <x>102</x>
@@ -1635,8 +1641,8 @@ QLabel {
    <slot>set_preview()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>63</x>
-     <y>388</y>
+     <x>68</x>
+     <y>171</y>
     </hint>
     <hint type="destinationlabel">
      <x>74</x>
@@ -1647,7 +1653,7 @@ QLabel {
  </connections>
  <slots>
   <slot>set_title()</slot>
-  <slot>queu_calculation()</slot>
+  <slot>queue_calculation()</slot>
   <slot>set_preview()</slot>
  </slots>
 </ui>

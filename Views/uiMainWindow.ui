@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1252</width>
+    <width>1371</width>
     <height>877</height>
    </rect>
   </property>
@@ -17,7 +17,7 @@
    <widget class="QWidget" name="layoutWidget">
     <property name="geometry">
      <rect>
-      <x>5</x>
+      <x>10</x>
       <y>15</y>
       <width>781</width>
       <height>546</height>
@@ -99,8 +99,17 @@ QPushButton:hover {
        <property name="contextMenuPolicy">
         <enum>Qt::CustomContextMenu</enum>
        </property>
+       <property name="alternatingRowColors">
+        <bool>true</bool>
+       </property>
        <property name="selectionMode">
         <enum>QAbstractItemView::SingleSelection</enum>
+       </property>
+       <property name="animated">
+        <bool>true</bool>
+       </property>
+       <property name="headerHidden">
+        <bool>true</bool>
        </property>
       </widget>
      </item>
@@ -109,14 +118,236 @@ QPushButton:hover {
    <widget class="QGroupBox" name="groupBox">
     <property name="geometry">
      <rect>
-      <x>5</x>
+      <x>10</x>
       <y>570</y>
-      <width>781</width>
-      <height>256</height>
+      <width>1351</width>
+      <height>261</height>
      </rect>
     </property>
     <property name="title">
      <string>Lista de Trabajos</string>
+    </property>
+    <layout class="QGridLayout" name="gridLayout_2">
+     <property name="leftMargin">
+      <number>0</number>
+     </property>
+     <property name="topMargin">
+      <number>0</number>
+     </property>
+     <property name="rightMargin">
+      <number>0</number>
+     </property>
+     <property name="bottomMargin">
+      <number>0</number>
+     </property>
+     <property name="spacing">
+      <number>0</number>
+     </property>
+     <item row="0" column="0">
+      <widget class="QPushButton" name="uiPauseQueueButton">
+       <property name="minimumSize">
+        <size>
+         <width>200</width>
+         <height>50</height>
+        </size>
+       </property>
+       <property name="maximumSize">
+        <size>
+         <width>80</width>
+         <height>16777215</height>
+        </size>
+       </property>
+       <property name="styleSheet">
+        <string notr="true">QPushButton {
+	background-color: 'white';
+	border: 2px solid 'red';
+	border-radius: 6px;
+}
+QPushButton:hover {
+	background-color: 'red';
+	color: 'white'
+}</string>
+       </property>
+       <property name="text">
+        <string>Detener</string>
+       </property>
+      </widget>
+     </item>
+     <item row="0" column="1">
+      <widget class="QPushButton" name="uiStartQueueButton">
+       <property name="minimumSize">
+        <size>
+         <width>0</width>
+         <height>50</height>
+        </size>
+       </property>
+       <property name="styleSheet">
+        <string notr="true">QPushButton {
+	background-color: 'white';
+	border: 2px solid 'green';
+	border-radius: 6px;
+}
+QPushButton:hover {
+	background-color: 'green';
+	color: 'white'
+}</string>
+       </property>
+       <property name="text">
+        <string>Iniciar</string>
+       </property>
+      </widget>
+     </item>
+     <item row="1" column="0" colspan="2">
+      <widget class="QTableView" name="uiJobsTableView"/>
+     </item>
+    </layout>
+   </widget>
+   <widget class="QGroupBox" name="groupBox_2">
+    <property name="geometry">
+     <rect>
+      <x>800</x>
+      <y>11</y>
+      <width>280</width>
+      <height>436</height>
+     </rect>
+    </property>
+    <property name="title">
+     <string>Lista de proyectos</string>
+    </property>
+    <layout class="QGridLayout" name="gridLayout_3">
+     <property name="leftMargin">
+      <number>0</number>
+     </property>
+     <property name="topMargin">
+      <number>0</number>
+     </property>
+     <property name="rightMargin">
+      <number>0</number>
+     </property>
+     <property name="bottomMargin">
+      <number>0</number>
+     </property>
+     <property name="spacing">
+      <number>0</number>
+     </property>
+     <item row="0" column="0">
+      <widget class="QPushButton" name="pushButton">
+       <property name="minimumSize">
+        <size>
+         <width>0</width>
+         <height>50</height>
+        </size>
+       </property>
+       <property name="maximumSize">
+        <size>
+         <width>80</width>
+         <height>16777215</height>
+        </size>
+       </property>
+       <property name="styleSheet">
+        <string notr="true">QPushButton {
+	background-color: 'white';
+	border: 2px solid 'red';
+	border-radius: 6px;
+}
+QPushButton:hover {
+	background-color: 'red';
+	color: 'white'
+}</string>
+       </property>
+       <property name="text">
+        <string>Remover</string>
+       </property>
+      </widget>
+     </item>
+     <item row="1" column="0" colspan="3">
+      <widget class="QListView" name="uiProjectsList"/>
+     </item>
+     <item row="0" column="1" colspan="2">
+      <widget class="QPushButton" name="pushButton_2">
+       <property name="minimumSize">
+        <size>
+         <width>0</width>
+         <height>50</height>
+        </size>
+       </property>
+       <property name="styleSheet">
+        <string notr="true">QPushButton {
+	background-color: 'white';
+	border: 2px solid 'green';
+	border-radius: 6px;
+}
+QPushButton:hover {
+	background-color: 'green';
+	color: 'white'
+}</string>
+       </property>
+       <property name="text">
+        <string>Crear</string>
+       </property>
+      </widget>
+     </item>
+    </layout>
+   </widget>
+   <widget class="QPushButton" name="uiSelectButton">
+    <property name="geometry">
+     <rect>
+      <x>795</x>
+      <y>475</y>
+      <width>281</width>
+      <height>41</height>
+     </rect>
+    </property>
+    <property name="styleSheet">
+     <string notr="true">QPushButton {
+	background-color: 'white';
+	border: 2px solid 'green';
+	border-radius: 6px;
+}
+QPushButton:hover {
+	background-color: 'green';
+	color: 'white'
+}</string>
+    </property>
+    <property name="text">
+     <string>&gt;&gt; Seleccionar molécula &gt;&gt;</string>
+    </property>
+   </widget>
+   <widget class="QPushButton" name="uiUnselectButton">
+    <property name="geometry">
+     <rect>
+      <x>795</x>
+      <y>520</y>
+      <width>281</width>
+      <height>41</height>
+     </rect>
+    </property>
+    <property name="styleSheet">
+     <string notr="true">QPushButton {
+	background-color: 'white';
+	border: 2px solid 'red';
+	border-radius: 6px;
+}
+QPushButton:hover {
+	background-color: 'red';
+	color: 'white'
+}</string>
+    </property>
+    <property name="text">
+     <string>&lt;&lt; Remover molécula &lt;&lt;</string>
+    </property>
+   </widget>
+   <widget class="QGroupBox" name="groupBox_3">
+    <property name="geometry">
+     <rect>
+      <x>1084</x>
+      <y>10</y>
+      <width>271</width>
+      <height>551</height>
+     </rect>
+    </property>
+    <property name="title">
+     <string>Moléculas del proyecto</string>
     </property>
     <layout class="QVBoxLayout" name="verticalLayout">
      <property name="spacing">
@@ -135,40 +366,7 @@ QPushButton:hover {
       <number>0</number>
      </property>
      <item>
-      <widget class="QTableView" name="uiWorkflowTableView"/>
-     </item>
-    </layout>
-   </widget>
-   <widget class="QGroupBox" name="groupBox_2">
-    <property name="geometry">
-     <rect>
-      <x>960</x>
-      <y>15</y>
-      <width>280</width>
-      <height>811</height>
-     </rect>
-    </property>
-    <property name="title">
-     <string>Lista de selección</string>
-    </property>
-    <layout class="QVBoxLayout" name="verticalLayout_2">
-     <property name="spacing">
-      <number>0</number>
-     </property>
-     <property name="leftMargin">
-      <number>2</number>
-     </property>
-     <property name="topMargin">
-      <number>2</number>
-     </property>
-     <property name="rightMargin">
-      <number>2</number>
-     </property>
-     <property name="bottomMargin">
-      <number>2</number>
-     </property>
-     <item>
-      <widget class="QListView" name="uiSelectionList">
+      <widget class="QListView" name="uiMolInProjectList">
        <property name="font">
         <font>
          <pointsize>12</pointsize>
@@ -197,61 +395,13 @@ QListView::item:selected {
      </item>
     </layout>
    </widget>
-   <widget class="QPushButton" name="uiSelectButton">
-    <property name="geometry">
-     <rect>
-      <x>790</x>
-      <y>255</y>
-      <width>166</width>
-      <height>41</height>
-     </rect>
-    </property>
-    <property name="styleSheet">
-     <string notr="true">QPushButton {
-	background-color: 'white';
-	border: 2px solid 'green';
-	border-radius: 6px;
-}
-QPushButton:hover {
-	background-color: 'green';
-	color: 'white'
-}</string>
-    </property>
-    <property name="text">
-     <string>&gt;&gt; Seleccionar &gt;&gt;</string>
-    </property>
-   </widget>
-   <widget class="QPushButton" name="uiUnselectButton">
-    <property name="geometry">
-     <rect>
-      <x>790</x>
-      <y>300</y>
-      <width>166</width>
-      <height>41</height>
-     </rect>
-    </property>
-    <property name="styleSheet">
-     <string notr="true">QPushButton {
-	background-color: 'white';
-	border: 2px solid 'red';
-	border-radius: 6px;
-}
-QPushButton:hover {
-	background-color: 'red';
-	color: 'white'
-}</string>
-    </property>
-    <property name="text">
-     <string>&lt;&lt; Remover &lt;&lt;</string>
-    </property>
-   </widget>
   </widget>
   <widget class="QMenuBar" name="menubar">
    <property name="geometry">
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>1252</width>
+     <width>1371</width>
      <height>22</height>
     </rect>
    </property>
@@ -263,7 +413,7 @@ QPushButton:hover {
    </widget>
    <widget class="QMenu" name="menuMelecula">
     <property name="title">
-     <string>Melecula</string>
+     <string>Molécula</string>
     </property>
     <addaction name="actionAgregar"/>
     <addaction name="actionEliminar"/>
@@ -273,10 +423,7 @@ QPushButton:hover {
      <string>Gaussian</string>
     </property>
     <addaction name="actionConfigurar"/>
-    <addaction name="actionProgramar_c_lculo"/>
-    <addaction name="actionDetener_fila"/>
-    <addaction name="actionPausar_fila"/>
-    <addaction name="actionReanudar_fila"/>
+    <addaction name="actionProgram"/>
    </widget>
    <widget class="QMenu" name="menuDocking_Vina">
     <property name="title">
@@ -284,8 +431,22 @@ QPushButton:hover {
     </property>
     <addaction name="actionWizard"/>
    </widget>
+   <widget class="QMenu" name="menuProyecto">
+    <property name="title">
+     <string>Proyecto</string>
+    </property>
+    <addaction name="actionNuevo_proyecto"/>
+   </widget>
+   <widget class="QMenu" name="menuProtocolo">
+    <property name="title">
+     <string>Protocolo</string>
+    </property>
+    <addaction name="actionNuevo_protocolo"/>
+   </widget>
    <addaction name="menuArchivo"/>
    <addaction name="menuMelecula"/>
+   <addaction name="menuProyecto"/>
+   <addaction name="menuProtocolo"/>
    <addaction name="menuGaussian"/>
    <addaction name="menuDocking_Vina"/>
   </widget>
@@ -310,7 +471,7 @@ QPushButton:hover {
     <string>Configurar</string>
    </property>
   </action>
-  <action name="actionProgramar_c_lculo">
+  <action name="actionProgram">
    <property name="text">
     <string>Programar cálculo</string>
    </property>
@@ -333,6 +494,16 @@ QPushButton:hover {
   <action name="actionWizard">
    <property name="text">
     <string>Wizard</string>
+   </property>
+  </action>
+  <action name="actionNuevo_proyecto">
+   <property name="text">
+    <string>Nuevo proyecto</string>
+   </property>
+  </action>
+  <action name="actionNuevo_protocolo">
+   <property name="text">
+    <string>Nuevo protocolo</string>
    </property>
   </action>
  </widget>
@@ -424,7 +595,7 @@ QPushButton:hover {
    </hints>
   </connection>
   <connection>
-   <sender>uiSelectionList</sender>
+   <sender>uiMolInProjectList</sender>
    <signal>clicked(QModelIndex)</signal>
    <receiver>MainWindow</receiver>
    <slot>set_selected_mol()</slot>
@@ -455,6 +626,38 @@ QPushButton:hover {
     </hint>
    </hints>
   </connection>
+  <connection>
+   <sender>uiStartQueueButton</sender>
+   <signal>clicked()</signal>
+   <receiver>MainWindow</receiver>
+   <slot>start_master_queue()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>374</x>
+     <y>634</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>595</x>
+     <y>-5</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>uiPauseQueueButton</sender>
+   <signal>clicked()</signal>
+   <receiver>MainWindow</receiver>
+   <slot>pause_master_queue()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>22</x>
+     <y>647</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>570</x>
+     <y>-10</y>
+    </hint>
+   </hints>
+  </connection>
  </connections>
  <slots>
   <slot>add_molecule()</slot>
@@ -463,5 +666,7 @@ QPushButton:hover {
   <slot>select()</slot>
   <slot>unselect()</slot>
   <slot>right_click()</slot>
+  <slot>start_master_queue()</slot>
+  <slot>pause_master_queue()</slot>
  </slots>
 </ui>

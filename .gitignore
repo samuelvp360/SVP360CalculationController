@@ -1,3 +1,12 @@
+1.1/
+1/
+5/
+6/
+Worker_old.py
+Views/uiMainWindow_old.ui
+fid
+style_sheet.css
+test2.py
 DB/*.txt
 DB/*.fs
 DB/*.fs.old
@@ -6,6 +15,7 @@ DB/*.fs.lock
 DB/*.fs.tmp
 DB/*.pyc
 DB/*.swp
+DB/__pycache__
 Views/*.pyc
 Views/*.swp
 images/

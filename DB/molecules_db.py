@@ -3,6 +3,7 @@
 import transaction
 import os
 from ZODB import FileStorage, DB
+from BTrees.IOBTree import IOBTree
 
 
 class MyZODB(object):
@@ -19,9 +20,14 @@ class MyZODB(object):
         self.connection = self.db.open()
         self.dbroot = self.connection.root()
         elements = ('config', 'molecules')
+        elements_2 = ('protocols', 'jobs')
         for element in elements:
             if not self.dbroot.get(element):
                 self.dbroot[element] = {}
+                self.commit()
+        for element in elements_2:
+            if not self.dbroot.get(element):
+                self.dbroot[element] = IOBTree()
                 self.commit()
 
     def close(self):
@@ -32,34 +38,50 @@ class MyZODB(object):
     def commit(self):
         transaction.commit()
 
-    def set(self, molecule):
-        self.dbroot['molecules'][molecule.inchi_key] = molecule
+    def set(self, kind, key, element):
+        self.dbroot[kind][key] = element
         self.dbroot._p_changed = True
         self.commit()
+
+    def get(self, kind, key):
+        return self.dbroot[kind].get(key)
 
     def set_config(self, config_data):
         self.dbroot['config'] = config_data
         self.dbroot._p_changed = True
         self.commit()
 
-    def update(self, key, data):
-        self.dbroot['molecules'][key].__dict__.update(data)
-        self.dbroot._p_changed = True
+    def update(self, kind, key, data):
+        self.dbroot[kind][key].__dict__.update(data)
+        if kind == 'molecules':
+            self.dbroot._p_changed = True
         self.commit()
 
     @property
-    def get_db(self):
+    def get_molecules_db(self):
         return self.dbroot['molecules'].values()
 
-    def get_molecule(self, key):
-        return self.dbroot['molecules'].get(key)
+    @property
+    def get_protocols_db(self):
+        return self.dbroot['protocols'].values()
+
+    def get_protocol(self, key):
+        return self.dbroot['protocols'].get(key)
+
+    @property
+    def get_jobs_db(self):
+        return self.dbroot['jobs'].values()
+
+    @property
+    def get_job_id(self):
+        return len(self.dbroot['jobs'])
 
     @property
     def get_config(self):
         return self.dbroot.get('config')
 
-    def check(self, key):
-        return key in self.dbroot['molecules']
+    def check(self, kind, key):
+        return key in self.dbroot[kind]
 
     def remove(self, key):
         del self.dbroot['molecules'][key]

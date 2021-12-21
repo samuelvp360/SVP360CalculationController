@@ -2,17 +2,20 @@
 # -*- coding: utf-8 -*-
 
 import re
+import subprocess
+import os
+import multiprocessing
+import numpy as np
 from os import listdir
 from PyQt5 import QtWidgets as qtw
 from PyQt5 import QtCore as qtc
 from PyQt5 import uic
-import multiprocessing
 from psutil import virtual_memory
 
 
-class CalculationsController(qtw.QMainWindow):
+class Gaussian(qtw.QMainWindow):
 
-    submitted = qtc.pyqtSignal(list)
+    submitted = qtc.pyqtSignal(dict)
 
     def __init__(self, molecule):
         super().__init__()
@@ -125,7 +128,7 @@ class CalculationsController(qtw.QMainWindow):
         self.SetCahrgeMult()
         [self.SetLink0(i, self._link0Widgets[i].value()) for i in range(2)]
         [self.SetLink0(i, self._link0Widgets[i].currentIndex()) for i in (2, 5)]
-        self.set_title()
+        self.set_title(self._molecule.get_name)
         self.set_preview()
 
     def populate_widgets(self):
@@ -950,7 +953,7 @@ class CalculationsController(qtw.QMainWindow):
 
     def set_title(self, title):
         self.uiTitleLabel.setText(title)
-        self.set_preview()
+        # self.set_preview()
 
     def SetCahrgeMult(self):
         """
@@ -1122,22 +1125,69 @@ class CalculationsController(qtw.QMainWindow):
             '{}{}\n\n {}\n\n{}\n{}\n{}\n'.format(*self._input)
         )
 
-    def queu_calculation(self):
+    def queue_calculation(self):
         """
         docstring
         """
         job_type = self._jobTypes[self._jobsWidgets[0].currentIndex()]
-        name = f'{self._molecule.inchi_key}/{job_type}'
-        existent_imputs = str(len([i for i in listdir() if re.sub(r'_\d+\.com', '', i) == name]))
-        file_name = f'{name}_{existent_imputs}.com'
+        name = f'molecules/{self._molecule.inchi_key}/{job_type}'
+        existent_imputs = str(
+            len(
+                [i for i in listdir(f'molecules/{self._molecule.inchi_key}/') if re.sub(r'_\d+\.com', '', i) == job_type]
+            )
+        )
+        input_file = f'{name}_{existent_imputs}.com'
         keywords = self.uiKeywordsLabel.text()
-        chargeMult = self.uiChargeMultLabel.text().replace(' ', '/')
-        with open(file_name, 'w') as f:
+        charge_mult = self.uiChargeMultLabel.text().replace(' ', '/')
+        with open(input_file, 'w') as f:
             f.write(self.uiPreviewPlainText.toPlainText())
 
-        calculation = (
-            job_type, keywords, chargeMult, file_name
-        )
+        output_file = input_file.replace('.com', '.log')
+        calculation = {
+            'type': job_type, 'keywords': keywords,
+            'charge_mult': charge_mult, 'input_file': input_file,
+            'output_file': output_file, 'molecule': self._molecule.get_name,
+            'molecule_id': self._molecule.inchi_key
+        }
 
         self.submitted.emit(calculation)
         self.close()
+
+
+class GaussianWorker():
+
+    def run(self, input_file, output_file):
+        # pasar al módulo Calculations, formando una nueva clase llamada
+        # GaussianWorker, que en la función run recibe el input y output y
+        # retorna si el cálculo fue exitoso o no.
+        # Primero debe hacer checkeo a ver si ya existe ese output y si ya el
+        # cálculo está terminado. Si es así, debe retornar True de una vez
+        '''
+        Parameters
+        ----------
+        input_file : the .com file as Gaussian input
+
+        Returns
+        -------
+        log file corresponding to the output of required calculation
+        '''
+        env = os.environ.copy()
+        try:
+            gauss_exec = env['GAUSS_EXEDIR'].split('/')[-1]
+        except KeyError:
+            return False
+            print('no leyó el ejecutable de Gaussian')
+        cmd = f'{gauss_exec} < {input_file} > {output_file}'
+        subprocess.run(cmd, shell=True)
+
+    def check(self, output_file):
+        if not os.path.exists(output_file):
+            return False
+        if 'Optimization' in output_file:
+            with open(output_file, 'r') as f:
+                file = f.read()
+                finished = re.findall('Optimization completed.', file)
+                if finished:
+                    return True
+                return False
+

@@ -24,11 +24,13 @@ class StandardItem(qtg.QStandardItem):
 
 
 class MoleculesModel(qtg.QStandardItemModel):
-    def __init__(self, molecules_list):
+    def __init__(self, molecules_list, calculations_list):
         super().__init__()
-        self.populated_tree = self.populate_tree(molecules_list)
+        self.populated_tree = self.populate_tree(
+            molecules_list, calculations_list
+        )
 
-    def populate_tree(self, molecules_list):
+    def populate_tree(self, molecules_list, calculations_list):
         if molecules_list:
             std_item_list = []
             for mol in molecules_list:
@@ -55,7 +57,22 @@ class MoleculesModel(qtg.QStandardItemModel):
                 summary.appendRow([FW_1, FW_2])
                 summary.appendRow([inchi_1, inchi_2])
                 summary.appendRow([smiles_1, smiles_2])
-                m_std_item_1.appendRows([summary])
+                calculations = StandardItem(
+                    'Cálculos disponibles', font_size=12, set_bold=True
+                )
+                id_calc = StandardItem('ID', font_size=10, set_bold=True)
+                calc_type = StandardItem(
+                    'Tipo de cálculo', font_size=10, set_bold=True
+                )
+                calculations.appendRow([id_calc, calc_type])
+                for c in mol.calculations:
+                    calc_type = [
+                        calc.type for calc in calculations_list if calc.id == c
+                    ][0]
+                    calc_type = StandardItem(calc_type, font_size=10)
+                    calc_id = StandardItem(str(c), font_size=10)
+                    calculations.appendRow([calc_id, calc_type])
+                m_std_item_1.appendRows([summary, calculations])
             return std_item_list
         else:
             return []
@@ -83,16 +100,80 @@ class SelectionModel(qtc.QAbstractListModel):
         super().__init__()
         self.selection_list = selection_list
 
-    def rowCount(self, index):
-        return len(self.selection_list)
-
     def data(self, index, role):
         if role == qtc.Qt.DisplayRole:
             value = self.selection_list[index.row()]
             return f'{value.get_name}'
 
+    def rowCount(self, index):
+        return len(self.selection_list)
+
     def flags(self, index):
         return qtc.Qt.ItemIsEnabled | qtc.Qt.ItemIsSelectable
+
+
+class JobsModel(qtc.QAbstractTableModel):
+    def __init__(self, jobs_list):
+        super().__init__()
+        self.jobs_list = jobs_list[::-1]
+        self.headers = (
+            'ID', 'Molécula', 'Tipo de trabajo', 'Carga/Mult.',
+            'Keywords', 'Output', 'Estatus', 'Programado', 'Comienzo',
+            'Final', 'Transcurrido'
+        )
+
+    def data(self, index, role):
+        value = self.jobs_list[index.row()]
+        time_format = '%H:%M:%S; %d.%m.%Y'
+        if role == qtc.Qt.DisplayRole:
+            if index.column() == 0:
+                return str(value.id)
+            if index.column() == 1:
+                return f"{value.molecule} ({value.molecule_id})"
+            elif index.column() == 2:
+                return str(value.type)
+            elif index.column() == 3:
+                return str(value.charge_mult)
+            elif index.column() == 4:
+                return str(value.keywords)
+            elif index.column() == 5:
+                return str(value.output_file.split('/')[2])
+            elif index.column() == 6:
+                return str(value.get_status)
+            elif index.column() == 7:
+                time = getattr(value, 'programmed', '')
+                return time.strftime(time_format) if time else ''
+            elif index.column() == 8:
+                time = getattr(value, 'started', '')
+                return time.strftime(time_format) if time else ''
+            elif index.column() == 9:
+                time = getattr(value, 'finished', '')
+                return time.strftime(time_format) if time else ''
+            elif index.column() == 10:
+                time = getattr(value, 'elapsed', '')
+                return str(time) if time else ''
+
+        if role == qtc.Qt.ForegroundRole:
+            status = index.column() == 6
+            if status and value.get_status == 'Programmed':
+                return qtg.QColor('orange')
+            elif status and value.get_status == 'Running':
+                return qtg.QColor('blue')
+            elif status and value.get_status == 'Finished':
+                return qtg.QColor('green')
+            elif status and value.get_status == 'Failed':
+                return qtg.QColor('red')
+
+    def rowCount(self, index):
+        return len(self.jobs_list)
+
+    def columnCount(self, index):
+        return len(self.headers)
+
+    def headerData(self, section, orientation, role):
+        if role == qtc.Qt.DisplayRole:
+            if orientation == qtc.Qt.Horizontal:
+                return self.headers[section]
 
 
 # class AvailableCalcModel(qtc.QAbstractTableModel):
