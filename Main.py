@@ -2,9 +2,9 @@
 # -*- coding: utf-8 -*-
 
 import sys
-from Components import Molecule, Optimization
+from Components import Molecule, Optimization, Project
 from Worker import Worker
-from Models import MoleculesModel, SelectionModel, JobsModel
+from Models import MoleculesModel, ProjectsModel, JobsModel
 from Calculations import Gaussian
 from PyQt5 import QtCore as qtc
 from PyQt5 import QtWidgets as qtw
@@ -24,27 +24,36 @@ class MainWindow(qtw.QMainWindow):
         super().__init__()
         uic.loadUi('Views/uiMainWindow.ui', self)
         self.database = MyZODB()
-        self.mols_in_project_list = []
         self.selected_mol = None
+        self.selected_project = None
         self.set_models()
         self.resume_queue()
+        calc_items = (
+            'Gaussian', 'Vina', 'Reactividad local'
+        )
+        self.uiCalculationsComboBox.addItems(calc_items)
         # pyqtRemoveInputHook()
 
     def set_models(self):
+        # Jobs
         self.jobs_list = list(self.database.get_jobs_db)
         self.master_queue = [
             j for j in self.jobs_list if j.get_status in ('Programmed', 'Running')
         ]
-        self.molecules_list = list(self.database.get_molecules_db)
-        tree_model = MoleculesModel(self.molecules_list, self.jobs_list)
-        self.uiMoleculesTree.setModel(tree_model.create_model())
-        self.uiMoleculesTree.header().setSectionResizeMode(qtw.QHeaderView.ResizeToContents)
-        list_model = SelectionModel(self.mols_in_project_list)
-        self.uiProjectsList.setModel(list_model)
-        self.selected_mol = None
         jobs_model = JobsModel(self.jobs_list)
         self.uiJobsTableView.setModel(jobs_model)
         self.uiJobsTableView.resizeColumnsToContents()
+        # Molecules
+        self.molecules_list = list(self.database.get_molecules_db)
+        mol_tree_model = MoleculesModel(self.molecules_list, self.jobs_list)
+        self.uiMoleculesTree.setModel(mol_tree_model.create_model())
+        self.uiMoleculesTree.header().setSectionResizeMode(qtw.QHeaderView.ResizeToContents)
+        self.selected_mol = None
+        # Projects
+        self.projects_list = list(self.database.get_projects_db)
+        proj_tree_model = ProjectsModel(self.projects_list)
+        self.uiProjectsTreeView.setModel(proj_tree_model.create_model())
+        self.uiProjectsTreeView.header().setSectionResizeMode(qtw.QHeaderView.ResizeToContents)
 
     def set_selected_mol(self, value):
         if self.molecules_list:
@@ -59,18 +68,34 @@ class MainWindow(qtw.QMainWindow):
         else:
             self.selected_mol = None
 
-    def select(self):
-        selected = self.selected_mol is not None
-        already_in = self.selected_mol in self.mols_in_project_list
-        if selected and not already_in:
-            self.mols_in_project_list.append(self.selected_mol)
-            self.set_models()
+    def set_selected_project(self, value):
+        if self.projects_list:
+            has_parent = value.parent().data()
+            while has_parent:
+                value = value.parent()
+                has_parent = value.parent().data()
+            if value.data():
+                self.selected_project = [
+                    p for p in self.projects_list if p.name == value.data().strip()
+                ][0]
+        else:
+            self.selected_project = None
 
-    def unselect(self):
-        if self.selected_mol is not None and self.selected_mol in self.mols_in_project_list:
-            index = self.mols_in_project_list.index(self.selected_mol)
-            self.mols_in_project_list.pop(index)
-            self.set_models()
+    def select_mol(self):
+        selected_mol = self.selected_mol is not None
+        if self.selected_project is not None:
+            already_in = self.selected_mol in self.selected_project.molecules
+            if selected_mol and not already_in:
+                self.selected_project.add_molecule(self.selected_mol)
+                self.database.commit()
+                self.set_models()
+
+    def unselect_mol(self):
+        pass
+        # if self.selected_mol is not None and self.selected_mol in self.mols_in_project_list:
+            # index = self.mols_in_project_list.index(self.selected_mol)
+            # self.mols_in_project_list.pop(index)
+            # self.set_models()
 
     def add_molecule(self):
         mol_path, _ = qtw.QFileDialog.getOpenFileNames(
@@ -102,10 +127,36 @@ class MainWindow(qtw.QMainWindow):
             self.database.remove(to_remove)
             self.set_models()
 
-    def gaussian_setup(self):
-        self.gauss_controller = Gaussian(self.selected_mol)
-        self.gauss_controller.submitted.connect(self.queue_manager)
-        self.gauss_controller.show()
+    def create_project(self):
+        name = self.uiProjectNameLine.text()
+        exists = self.database.check('projects', name)
+        if exists:
+            qtw.QMessageBox.critical(
+                self, 'Proyecto existente', f'El proyecto con nombre: {name} ya existe en la base de datos. No será creado.'
+            )
+        else:
+            project = Project(name)
+            self.database.set('projects', project.name, project)
+            self.uiProjectNameLine.clear()
+            self.set_models()
+
+    def add_group_calculation(self):
+        calc = self.uiCalculationsComboBox.currentText()
+        if calc == 'Gaussian':
+            self.gaussian_setup(group=True)
+
+    def remove_group_calc(self):
+        pass
+
+    def gaussian_setup(self, group=False):
+        if not group:
+            self.gauss_controller = Gaussian(self.selected_mol)
+            self.gauss_controller.submitted.connect(self.queue_manager)
+            self.gauss_controller.show()
+        else:
+            self.gauss_controller = Gaussian(self.selected_project.molecules)
+            self.gauss_controller.submitted.connect(self.queue_manager)
+            self.gauss_controller.show()
 
     @qtc.pyqtSlot(dict)
     def queue_manager(self, calculation):

@@ -3,6 +3,7 @@
 from PyQt5 import QtCore as qtc
 from PyQt5 import QtGui as qtg
 from Views import resources
+from rdkit.Chem import Draw
 
 
 class StandardItem(qtg.QStandardItem):
@@ -24,6 +25,7 @@ class StandardItem(qtg.QStandardItem):
 
 
 class MoleculesModel(qtg.QStandardItemModel):
+
     def __init__(self, molecules_list, calculations_list):
         super().__init__()
         self.populated_tree = self.populate_tree(
@@ -36,7 +38,7 @@ class MoleculesModel(qtg.QStandardItemModel):
             for mol in molecules_list:
                 m_std_item_2 = StandardItem(img=mol.mol_pic)
                 m_std_item_1 = StandardItem(
-                    f'{mol.get_name:70}', font_size=14,
+                    f'{mol.get_name:60}', font_size=14,
                     set_bold=True, color='#236e96'
                 )
                 summary = StandardItem(
@@ -95,21 +97,92 @@ class MoleculesModel(qtg.QStandardItemModel):
         return formula.translate(trans)
 
 
-class SelectionModel(qtc.QAbstractListModel):
-    def __init__(self, selection_list):
+class ProjectsModel(qtg.QStandardItemModel):
+
+    def __init__(self, projects_list):
         super().__init__()
-        self.selection_list = selection_list
+        self.populated_tree = self.populate_tree(projects_list)
 
-    def data(self, index, role):
-        if role == qtc.Qt.DisplayRole:
-            value = self.selection_list[index.row()]
-            return f'{value.get_name}'
+    def populate_tree(self, projects_list):
+        if projects_list:
+            std_item_list = []
+            for project in projects_list:
+                p_std_item = StandardItem(
+                    f'{project.name}', font_size=12,
+                    set_bold=True, color='#236e96'
+                )
+                molecules = StandardItem(
+                    'Moléculas', font_size=10, set_bold=True
+                )
+                # mols = [m for m in molecules_list if mol == m.inchi_key][0]
+                if project.molecules:
+                    mol_std_item = StandardItem(img=project.grid_img)
+                else:
+                    mol_std_item = StandardItem(img='')
+                molecules.appendRow(mol_std_item)
+                p_std_item.appendRow(molecules)
+                # formula_1 = StandardItem('Formula', font_size=10)
+                # formula_2 = StandardItem(
+                    # self.translate_formula(mol.formula), font_size=10
+                # )
+                # FW_1 = StandardItem('FW', font_size=10)
+                # FW_2 = StandardItem(f'{mol.MW:.2f} uma', font_size=10)
+                # inchi_1 = StandardItem('Inchi Key', font_size=10)
+                # inchi_2 = StandardItem(f'{mol.inchi_key}', font_size=10)
+                # smiles_1 = StandardItem('Smiles', font_size=10)
+                # smiles_2 = StandardItem(f'{mol.smiles}', font_size=10)
+                # std_item_list.append((m_std_item_1, m_std_item_2))
+                # summary.appendRow([formula_1, formula_2])
+                # summary.appendRow([FW_1, FW_2])
+                # summary.appendRow([inchi_1, inchi_2])
+                # summary.appendRow([smiles_1, smiles_2])
+                # calculations = StandardItem(
+                    # 'Cálculos disponibles', font_size=12, set_bold=True
+                # )
+                # id_calc = StandardItem('ID', font_size=10, set_bold=True)
+                # calc_type = StandardItem(
+                    # 'Tipo de cálculo', font_size=10, set_bold=True
+                # )
+                # calculations.appendRow([id_calc, calc_type])
+                # for c in mol.calculations:
+                    # calc_type = [
+                        # calc.type for calc in calculations_list if calc.id == c
+                    # ][0]
+                    # calc_type = StandardItem(calc_type, font_size=10)
+                    # calc_id = StandardItem(str(c), font_size=10)
+                    # calculations.appendRow([calc_id, calc_type])
+                # m_std_item_1.appendRows([summary, calculations])
+                std_item_list.append(p_std_item)
+            return std_item_list
+        else:
+            return []
 
-    def rowCount(self, index):
-        return len(self.selection_list)
+    def create_model(self):
+        tree_model = qtg.QStandardItemModel()
+        tree_model.setColumnCount(2)
+        rood_node = tree_model.invisibleRootItem()
+        if self.populated_tree:
+            for item_1 in self.populated_tree:
+                rood_node.appendRow([item_1])
+        return tree_model
 
-    def flags(self, index):
-        return qtc.Qt.ItemIsEnabled | qtc.Qt.ItemIsSelectable
+
+
+# class MolsInProjectModel(qtc.QAbstractListModel):
+    # def __init__(self, project):
+        # super().__init__()
+        # if project:
+            # self.molecules = project.molecules
+
+    # def data(self, index, role):
+        # if role == qtc.Qt.DisplayRole:
+            # return self.molecules[index.row()]
+
+    # def rowCount(self, index):
+        # return len(self.selection_list)
+
+    # def flags(self, index):
+        # return qtc.Qt.ItemIsEnabled | qtc.Qt.ItemIsSelectable
 
 
 class JobsModel(qtc.QAbstractTableModel):

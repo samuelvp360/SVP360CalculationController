@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1371</width>
-    <height>877</height>
+    <width>1808</width>
+    <height>989</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -20,7 +20,7 @@
       <x>10</x>
       <y>15</y>
       <width>781</width>
-      <height>546</height>
+      <height>651</height>
      </rect>
     </property>
     <layout class="QGridLayout" name="gridLayout">
@@ -55,6 +55,9 @@ QPushButton:hover {
        <property name="text">
         <string>Remover</string>
        </property>
+       <property name="autoDefault">
+        <bool>true</bool>
+       </property>
       </widget>
      </item>
      <item row="0" column="1">
@@ -79,10 +82,20 @@ QPushButton:hover {
        <property name="text">
         <string>Agregar Molécula</string>
        </property>
+       <property name="autoDefault">
+        <bool>true</bool>
+       </property>
       </widget>
      </item>
      <item row="1" column="0">
-      <widget class="QComboBox" name="uiSearchFieldComboBox"/>
+      <widget class="QComboBox" name="uiSearchFieldComboBox">
+       <property name="currentText">
+        <string/>
+       </property>
+       <property name="placeholderText">
+        <string/>
+       </property>
+      </widget>
      </item>
      <item row="1" column="1">
       <widget class="QLineEdit" name="uiSearchLine">
@@ -119,8 +132,8 @@ QPushButton:hover {
     <property name="geometry">
      <rect>
       <x>10</x>
-      <y>570</y>
-      <width>1351</width>
+      <y>680</y>
+      <width>1786</width>
       <height>261</height>
      </rect>
     </property>
@@ -171,6 +184,9 @@ QPushButton:hover {
        <property name="text">
         <string>Detener</string>
        </property>
+       <property name="autoDefault">
+        <bool>true</bool>
+       </property>
       </widget>
      </item>
      <item row="0" column="1">
@@ -195,6 +211,9 @@ QPushButton:hover {
        <property name="text">
         <string>Iniciar</string>
        </property>
+       <property name="autoDefault">
+        <bool>true</bool>
+       </property>
       </widget>
      </item>
      <item row="1" column="0" colspan="2">
@@ -205,10 +224,10 @@ QPushButton:hover {
    <widget class="QGroupBox" name="groupBox_2">
     <property name="geometry">
      <rect>
-      <x>800</x>
+      <x>1010</x>
       <y>11</y>
-      <width>280</width>
-      <height>436</height>
+      <width>786</width>
+      <height>656</height>
      </rect>
     </property>
     <property name="title">
@@ -230,18 +249,74 @@ QPushButton:hover {
      <property name="spacing">
       <number>0</number>
      </property>
-     <item row="0" column="0">
-      <widget class="QPushButton" name="pushButton">
+     <item row="10" column="1" colspan="2">
+      <widget class="QPushButton" name="uiAddCalcuButton">
+       <property name="minimumSize">
+        <size>
+         <width>0</width>
+         <height>30</height>
+        </size>
+       </property>
+       <property name="styleSheet">
+        <string notr="true">QPushButton {
+	background-color: 'white';
+	border: 2px solid 'green';
+	border-radius: 6px;
+}
+QPushButton:hover {
+	background-color: 'green';
+	color: 'white'
+}</string>
+       </property>
+       <property name="text">
+        <string>Adicionar cálculo</string>
+       </property>
+      </widget>
+     </item>
+     <item row="9" column="0" colspan="3">
+      <widget class="QComboBox" name="uiCalculationsComboBox"/>
+     </item>
+     <item row="0" column="0" colspan="3">
+      <widget class="QLineEdit" name="uiProjectNameLine">
+       <property name="font">
+        <font>
+         <weight>75</weight>
+         <bold>true</bold>
+        </font>
+       </property>
+       <property name="placeholderText">
+        <string>Nombre del proyecto</string>
+       </property>
+       <property name="clearButtonEnabled">
+        <bool>true</bool>
+       </property>
+      </widget>
+     </item>
+     <item row="7" column="0" colspan="3">
+      <widget class="QTreeView" name="uiProjectsTreeView">
+       <property name="cursor" stdset="0">
+        <cursorShape>PointingHandCursor</cursorShape>
+       </property>
+       <property name="contextMenuPolicy">
+        <enum>Qt::CustomContextMenu</enum>
+       </property>
+       <property name="alternatingRowColors">
+        <bool>true</bool>
+       </property>
+       <property name="animated">
+        <bool>true</bool>
+       </property>
+       <property name="headerHidden">
+        <bool>true</bool>
+       </property>
+      </widget>
+     </item>
+     <item row="2" column="0">
+      <widget class="QPushButton" name="uiRemoveProjectButton">
        <property name="minimumSize">
         <size>
          <width>0</width>
          <height>50</height>
-        </size>
-       </property>
-       <property name="maximumSize">
-        <size>
-         <width>80</width>
-         <height>16777215</height>
         </size>
        </property>
        <property name="styleSheet">
@@ -258,13 +333,37 @@ QPushButton:hover {
        <property name="text">
         <string>Remover</string>
        </property>
+       <property name="autoDefault">
+        <bool>true</bool>
+       </property>
       </widget>
      </item>
-     <item row="1" column="0" colspan="3">
-      <widget class="QListView" name="uiProjectsList"/>
+     <item row="10" column="0">
+      <widget class="QPushButton" name="uiRemoveLastCalcButton">
+       <property name="minimumSize">
+        <size>
+         <width>170</width>
+         <height>30</height>
+        </size>
+       </property>
+       <property name="styleSheet">
+        <string notr="true">QPushButton {
+	background-color: 'white';
+	border: 2px solid 'red';
+	border-radius: 6px;
+}
+QPushButton:hover {
+	background-color: 'red';
+	color: 'white'
+}</string>
+       </property>
+       <property name="text">
+        <string>Remover último cálculo</string>
+       </property>
+      </widget>
      </item>
-     <item row="0" column="1" colspan="2">
-      <widget class="QPushButton" name="pushButton_2">
+     <item row="2" column="1" colspan="2">
+      <widget class="QPushButton" name="uiCreateProjectButton">
        <property name="minimumSize">
         <size>
          <width>0</width>
@@ -285,16 +384,29 @@ QPushButton:hover {
        <property name="text">
         <string>Crear</string>
        </property>
+       <property name="autoDefault">
+        <bool>true</bool>
+       </property>
+      </widget>
+     </item>
+     <item row="8" column="0" colspan="3">
+      <widget class="QLabel" name="label">
+       <property name="text">
+        <string>Cálculos disponibles</string>
+       </property>
+       <property name="alignment">
+        <set>Qt::AlignCenter</set>
+       </property>
       </widget>
      </item>
     </layout>
    </widget>
-   <widget class="QPushButton" name="uiSelectButton">
+   <widget class="QPushButton" name="uiSelectMolButton">
     <property name="geometry">
      <rect>
       <x>795</x>
-      <y>475</y>
-      <width>281</width>
+      <y>300</y>
+      <width>211</width>
       <height>41</height>
      </rect>
     </property>
@@ -312,13 +424,16 @@ QPushButton:hover {
     <property name="text">
      <string>&gt;&gt; Seleccionar molécula &gt;&gt;</string>
     </property>
+    <property name="autoDefault">
+     <bool>true</bool>
+    </property>
    </widget>
-   <widget class="QPushButton" name="uiUnselectButton">
+   <widget class="QPushButton" name="uiUnselectMolButton">
     <property name="geometry">
      <rect>
       <x>795</x>
-      <y>520</y>
-      <width>281</width>
+      <y>340</y>
+      <width>211</width>
       <height>41</height>
      </rect>
     </property>
@@ -336,64 +451,9 @@ QPushButton:hover {
     <property name="text">
      <string>&lt;&lt; Remover molécula &lt;&lt;</string>
     </property>
-   </widget>
-   <widget class="QGroupBox" name="groupBox_3">
-    <property name="geometry">
-     <rect>
-      <x>1084</x>
-      <y>10</y>
-      <width>271</width>
-      <height>551</height>
-     </rect>
+    <property name="autoDefault">
+     <bool>true</bool>
     </property>
-    <property name="title">
-     <string>Moléculas del proyecto</string>
-    </property>
-    <layout class="QVBoxLayout" name="verticalLayout">
-     <property name="spacing">
-      <number>0</number>
-     </property>
-     <property name="leftMargin">
-      <number>0</number>
-     </property>
-     <property name="topMargin">
-      <number>0</number>
-     </property>
-     <property name="rightMargin">
-      <number>0</number>
-     </property>
-     <property name="bottomMargin">
-      <number>0</number>
-     </property>
-     <item>
-      <widget class="QListView" name="uiMolInProjectList">
-       <property name="font">
-        <font>
-         <pointsize>12</pointsize>
-         <weight>75</weight>
-         <bold>true</bold>
-        </font>
-       </property>
-       <property name="cursor" stdset="0">
-        <cursorShape>PointingHandCursor</cursorShape>
-       </property>
-       <property name="styleSheet">
-        <string notr="true">QListView {
-	show-decoration-selected: 1; /* make the selection span the entire width of the view */
-}
-QListView::item {
-	padding: 8px;
-}
-QListView::item:selected {
-	padding: 28px;
-}</string>
-       </property>
-       <property name="alternatingRowColors">
-        <bool>true</bool>
-       </property>
-      </widget>
-     </item>
-    </layout>
    </widget>
   </widget>
   <widget class="QMenuBar" name="menubar">
@@ -401,7 +461,7 @@ QListView::item:selected {
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>1371</width>
+     <width>1808</width>
      <height>22</height>
     </rect>
    </property>
@@ -563,50 +623,34 @@ QListView::item:selected {
    </hints>
   </connection>
   <connection>
-   <sender>uiSelectButton</sender>
+   <sender>uiSelectMolButton</sender>
    <signal>clicked()</signal>
    <receiver>MainWindow</receiver>
-   <slot>select()</slot>
+   <slot>select_mol()</slot>
    <hints>
     <hint type="sourcelabel">
      <x>884</x>
-     <y>289</y>
+     <y>607</y>
     </hint>
     <hint type="destinationlabel">
      <x>888</x>
-     <y>-1</y>
+     <y>0</y>
     </hint>
    </hints>
   </connection>
   <connection>
-   <sender>uiUnselectButton</sender>
+   <sender>uiUnselectMolButton</sender>
    <signal>clicked()</signal>
    <receiver>MainWindow</receiver>
-   <slot>unselect()</slot>
+   <slot>unselect_mol()</slot>
    <hints>
     <hint type="sourcelabel">
      <x>841</x>
-     <y>341</y>
+     <y>647</y>
     </hint>
     <hint type="destinationlabel">
      <x>821</x>
-     <y>-9</y>
-    </hint>
-   </hints>
-  </connection>
-  <connection>
-   <sender>uiMolInProjectList</sender>
-   <signal>clicked(QModelIndex)</signal>
-   <receiver>MainWindow</receiver>
-   <slot>set_selected_mol()</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>1037</x>
-     <y>254</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>1054</x>
-     <y>-10</y>
+     <y>0</y>
     </hint>
    </hints>
   </connection>
@@ -622,7 +666,7 @@ QListView::item:selected {
     </hint>
     <hint type="destinationlabel">
      <x>333</x>
-     <y>-11</y>
+     <y>0</y>
     </hint>
    </hints>
   </connection>
@@ -634,11 +678,11 @@ QListView::item:selected {
    <hints>
     <hint type="sourcelabel">
      <x>374</x>
-     <y>634</y>
+     <y>744</y>
     </hint>
     <hint type="destinationlabel">
      <x>595</x>
-     <y>-5</y>
+     <y>0</y>
     </hint>
    </hints>
   </connection>
@@ -650,11 +694,75 @@ QListView::item:selected {
    <hints>
     <hint type="sourcelabel">
      <x>22</x>
-     <y>647</y>
+     <y>757</y>
     </hint>
     <hint type="destinationlabel">
      <x>570</x>
+     <y>0</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>uiAddCalcuButton</sender>
+   <signal>clicked()</signal>
+   <receiver>MainWindow</receiver>
+   <slot>add_group_calculation()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>1170</x>
+     <y>567</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>1232</x>
+     <y>-6</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>uiRemoveLastCalcButton</sender>
+   <signal>clicked()</signal>
+   <receiver>MainWindow</receiver>
+   <slot>remove_group_calc()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>946</x>
+     <y>580</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>1003</x>
+     <y>30</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>uiProjectsTreeView</sender>
+   <signal>clicked(QModelIndex)</signal>
+   <receiver>MainWindow</receiver>
+   <slot>set_selected_project()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>992</x>
+     <y>211</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>1163</x>
      <y>-10</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>uiCreateProjectButton</sender>
+   <signal>clicked()</signal>
+   <receiver>MainWindow</receiver>
+   <slot>create_project()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>1250</x>
+     <y>106</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>1199</x>
+     <y>25</y>
     </hint>
    </hints>
   </connection>
@@ -663,10 +771,14 @@ QListView::item:selected {
   <slot>add_molecule()</slot>
   <slot>remove_molecule()</slot>
   <slot>set_selected_mol()</slot>
-  <slot>select()</slot>
-  <slot>unselect()</slot>
+  <slot>select_mol()</slot>
+  <slot>unselect_mol()</slot>
   <slot>right_click()</slot>
   <slot>start_master_queue()</slot>
   <slot>pause_master_queue()</slot>
+  <slot>add_group_calculation()</slot>
+  <slot>remove_group_calc()</slot>
+  <slot>set_selected_project()</slot>
+  <slot>create_project()</slot>
  </slots>
 </ui>

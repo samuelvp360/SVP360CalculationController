@@ -19,15 +19,15 @@ class MyZODB(object):
         self.db.pack()
         self.connection = self.db.open()
         self.dbroot = self.connection.root()
-        elements = ('config', 'molecules')
-        elements_2 = ('protocols', 'jobs')
+        elements = ('config', 'molecules', 'projects')
+        # elements_2 = ('jobs')
+        # for element in elements_2:
+        if not self.dbroot.get('jobs'):
+            self.dbroot['jobs'] = IOBTree()
+            self.commit()
         for element in elements:
             if not self.dbroot.get(element):
                 self.dbroot[element] = {}
-                self.commit()
-        for element in elements_2:
-            if not self.dbroot.get(element):
-                self.dbroot[element] = IOBTree()
                 self.commit()
 
     def close(self):
@@ -62,11 +62,8 @@ class MyZODB(object):
         return self.dbroot['molecules'].values()
 
     @property
-    def get_protocols_db(self):
-        return self.dbroot['protocols'].values()
-
-    def get_protocol(self, key):
-        return self.dbroot['protocols'].get(key)
+    def get_projects_db(self):
+        return self.dbroot['projects'].values()
 
     @property
     def get_jobs_db(self):

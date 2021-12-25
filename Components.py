@@ -26,28 +26,19 @@ class Molecule(Persistent):
             self.MW = Chem.rdMolDescriptors.CalcExactMolWt(self.mol)
             self.formula = Chem.rdMolDescriptors.CalcMolFormula(self.mol)
             self.__set_mol_picture()
-            self.__create_conformers()
+            # self.create_conformers()
 
     def __create_mol(self, path, file_format):
         with open(path, 'r') as file:
             block = file.read()
-        if file_format == 'mol':
-            return Chem.MolFromMolBlock(block)
-        elif file_format == 'mol2':
-            mol = Chem.MolFromMol2Block(block)
-            if mol:
-                return mol
-            else:
-                converter = ob.OBConversion()
-                converter.SetInAndOutFormats('mol2', 'pdb')
-                mol_ob = ob.OBMol()
-                converter.ReadString(mol_ob, block)
-                new_block = converter.WriteString(mol_ob)
-                return Chem.MolFromPDBBlock(new_block)
-        elif file_format == 'pdb':
-            return Chem.MolFromPDBBlock(block)
+            converter = ob.OBConversion()
+            converter.SetInAndOutFormats(file_format, 'can')
+            mol_ob = ob.OBMol()
+            converter.ReadString(mol_ob, block)
+            new_block = converter.WriteString(mol_ob)
+            return Chem.MolFromSmiles(new_block)
 
-    def __create_conformers(self):
+    def create_conformers(self):
         self.mol = Chem.AddHs(self.mol)
         AllChem.EmbedMolecule(self.mol, randomSeed=0xf00d)
         num_rot_bonds = Chem.rdMolDescriptors.CalcNumRotatableBonds(self.mol)
@@ -154,7 +145,7 @@ class Optimization(Persistent):
         else:
             self.finished = datetime.now()
             self.elapsed = self.finished - self.started
-        self._p_changed = True
+        # self._p_changed = True
 
     @property
     def get_status(self):
@@ -179,5 +170,46 @@ class Optimization(Persistent):
         pass
 
     def __get_lumo(self):
+        pass
+
+
+class Project(Persistent):
+
+    def __init__(self, name):
+        self.name = name
+        self.molecules = []
+        self.calculations = []
+        self.grid_img = f'projects/{self.name}/{self.name}.png'
+        self.__create_grid_img()
+
+    def __create_grid_img(self):
+        if not os.path.exists(f'projects/{self.name}/'):
+            os.makedirs(f'projects/{self.name}/')
+        if self.molecules:
+            img = Draw.MolsToGridImage(
+                [m.mol for m in self.molecules], molsPerRow=3,
+                legends=[m.get_name for m in self.molecules]
+            )
+            img.save(self.grid_img)
+
+    def add_molecule(self, molecule):
+        self.molecules.append(molecule)
+        self.__create_grid_img()
+        self._p_changed = True
+
+    def remove_molecule(self, molecule_id):
+        self.molecules.remove(molecule_id)
+        self.__create_grid_img()
+        self._p_changed = True
+
+    def add_calculation(self, calc_data):
+        self.calculations.append(calc_data)
+        self._p_changed = True
+
+    def remove_molecule(self, calculation_id):
+        self.calculations.remove(calculation_id)
+        self._p_changed = True
+
+    def run_protocol(self):
         pass
 
