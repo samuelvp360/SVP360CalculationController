@@ -1345,6 +1345,9 @@ Mode Options</string>
                <property name="text">
                 <string>Write Cartesians</string>
                </property>
+               <property name="checked">
+                <bool>true</bool>
+               </property>
               </widget>
              </item>
             </layout>

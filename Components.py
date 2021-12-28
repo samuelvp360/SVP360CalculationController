@@ -75,7 +75,6 @@ class Molecule(Persistent):
 
     @property
     def get_coordinates(self):
-        # hay que agregar manualmente la carga y multiplicidad
         coords = Chem.MolToXYZBlock(self.mol, confId=0).splitlines()
         new_coords = []
         for line in coords[2:]:

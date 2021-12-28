@@ -273,22 +273,27 @@ QPushButton:hover {
        </property>
       </widget>
      </item>
-     <item row="9" column="0" colspan="3">
-      <widget class="QComboBox" name="uiCalculationsComboBox"/>
-     </item>
-     <item row="0" column="0" colspan="3">
-      <widget class="QLineEdit" name="uiProjectNameLine">
-       <property name="font">
-        <font>
-         <weight>75</weight>
-         <bold>true</bold>
-        </font>
+     <item row="10" column="0">
+      <widget class="QPushButton" name="uiRemoveLastCalcButton">
+       <property name="minimumSize">
+        <size>
+         <width>170</width>
+         <height>30</height>
+        </size>
        </property>
-       <property name="placeholderText">
-        <string>Nombre del proyecto</string>
+       <property name="styleSheet">
+        <string notr="true">QPushButton {
+	background-color: 'white';
+	border: 2px solid 'red';
+	border-radius: 6px;
+}
+QPushButton:hover {
+	background-color: 'red';
+	color: 'white'
+}</string>
        </property>
-       <property name="clearButtonEnabled">
-        <bool>true</bool>
+       <property name="text">
+        <string>Remover último cálculo</string>
        </property>
       </widget>
      </item>
@@ -338,30 +343,6 @@ QPushButton:hover {
        </property>
       </widget>
      </item>
-     <item row="10" column="0">
-      <widget class="QPushButton" name="uiRemoveLastCalcButton">
-       <property name="minimumSize">
-        <size>
-         <width>170</width>
-         <height>30</height>
-        </size>
-       </property>
-       <property name="styleSheet">
-        <string notr="true">QPushButton {
-	background-color: 'white';
-	border: 2px solid 'red';
-	border-radius: 6px;
-}
-QPushButton:hover {
-	background-color: 'red';
-	color: 'white'
-}</string>
-       </property>
-       <property name="text">
-        <string>Remover último cálculo</string>
-       </property>
-      </widget>
-     </item>
      <item row="2" column="1" colspan="2">
       <widget class="QPushButton" name="uiCreateProjectButton">
        <property name="minimumSize">
@@ -389,6 +370,9 @@ QPushButton:hover {
        </property>
       </widget>
      </item>
+     <item row="9" column="0" colspan="3">
+      <widget class="QComboBox" name="uiCalculationsComboBox"/>
+     </item>
      <item row="8" column="0" colspan="3">
       <widget class="QLabel" name="label">
        <property name="text">
@@ -396,6 +380,46 @@ QPushButton:hover {
        </property>
        <property name="alignment">
         <set>Qt::AlignCenter</set>
+       </property>
+      </widget>
+     </item>
+     <item row="0" column="0" colspan="3">
+      <widget class="QLineEdit" name="uiProjectNameLine">
+       <property name="font">
+        <font>
+         <weight>75</weight>
+         <bold>true</bold>
+        </font>
+       </property>
+       <property name="placeholderText">
+        <string>Nombre del proyecto</string>
+       </property>
+       <property name="clearButtonEnabled">
+        <bool>true</bool>
+       </property>
+      </widget>
+     </item>
+     <item row="11" column="0" colspan="3">
+      <widget class="QPushButton" name="uiStartProjectButton">
+       <property name="minimumSize">
+        <size>
+         <width>0</width>
+         <height>50</height>
+        </size>
+       </property>
+       <property name="styleSheet">
+        <string notr="true">QPushButton {
+	background-color: 'white';
+	border: 2px solid 'green';
+	border-radius: 6px;
+}
+QPushButton:hover {
+	background-color: 'green';
+	color: 'white'
+}</string>
+       </property>
+       <property name="text">
+        <string>Iniciar proyecto</string>
        </property>
       </widget>
      </item>
@@ -449,7 +473,7 @@ QPushButton:hover {
 }</string>
     </property>
     <property name="text">
-     <string>&lt;&lt; Remover molécula &lt;&lt;</string>
+     <string>&lt;&lt;   Remover molécula   &lt;&lt;</string>
     </property>
     <property name="autoDefault">
      <bool>true</bool>
@@ -630,7 +654,7 @@ QPushButton:hover {
    <hints>
     <hint type="sourcelabel">
      <x>884</x>
-     <y>607</y>
+     <y>362</y>
     </hint>
     <hint type="destinationlabel">
      <x>888</x>
@@ -646,7 +670,7 @@ QPushButton:hover {
    <hints>
     <hint type="sourcelabel">
      <x>841</x>
-     <y>647</y>
+     <y>402</y>
     </hint>
     <hint type="destinationlabel">
      <x>821</x>
@@ -709,8 +733,8 @@ QPushButton:hover {
    <slot>add_group_calculation()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>1170</x>
-     <y>567</y>
+     <x>1433</x>
+     <y>635</y>
     </hint>
     <hint type="destinationlabel">
      <x>1232</x>
@@ -725,8 +749,8 @@ QPushButton:hover {
    <slot>remove_group_calc()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>946</x>
-     <y>580</y>
+     <x>1013</x>
+     <y>635</y>
     </hint>
     <hint type="destinationlabel">
      <x>1003</x>
@@ -741,8 +765,8 @@ QPushButton:hover {
    <slot>set_selected_project()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>992</x>
-     <y>211</y>
+     <x>1013</x>
+     <y>331</y>
     </hint>
     <hint type="destinationlabel">
      <x>1163</x>
@@ -757,12 +781,28 @@ QPushButton:hover {
    <slot>create_project()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>1250</x>
-     <y>106</y>
+     <x>1513</x>
+     <y>130</y>
     </hint>
     <hint type="destinationlabel">
      <x>1199</x>
      <y>25</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>uiStartProjectButton</sender>
+   <signal>clicked()</signal>
+   <receiver>MainWindow</receiver>
+   <slot>start_project()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>1169</x>
+     <y>664</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>1036</x>
+     <y>-3</y>
     </hint>
    </hints>
   </connection>
@@ -780,5 +820,6 @@ QPushButton:hover {
   <slot>remove_group_calc()</slot>
   <slot>set_selected_project()</slot>
   <slot>create_project()</slot>
+  <slot>start_project()</slot>
  </slots>
 </ui>

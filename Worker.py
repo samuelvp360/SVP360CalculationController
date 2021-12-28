@@ -9,10 +9,10 @@ class Worker(qtc.QObject):
     finished = qtc.pyqtSignal()
     workflow = qtc.pyqtSignal(int, str)
 
-    def __init__(self, master_queue):
+    def __init__(self, queue):
         super().__init__()
         self.gaussian_worker = GaussianWorker()
-        self.master_queue = master_queue
+        self.master_queue = queue
         self.paused = False
 
     @qtc.pyqtSlot()
@@ -36,5 +36,4 @@ class Worker(qtc.QObject):
     @qtc.pyqtSlot()
     def pause(self):
         self.paused = True
-
 

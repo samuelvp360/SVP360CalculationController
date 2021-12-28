@@ -54,6 +54,7 @@ class MainWindow(qtw.QMainWindow):
         proj_tree_model = ProjectsModel(self.projects_list)
         self.uiProjectsTreeView.setModel(proj_tree_model.create_model())
         self.uiProjectsTreeView.header().setSectionResizeMode(qtw.QHeaderView.ResizeToContents)
+        self.uiProjectsTreeView.expandAll()
 
     def set_selected_mol(self, value):
         if self.molecules_list:
@@ -143,28 +144,51 @@ class MainWindow(qtw.QMainWindow):
     def add_group_calculation(self):
         calc = self.uiCalculationsComboBox.currentText()
         if calc == 'Gaussian':
+            qtw.QMessageBox.critical(
+                self, 'Cálculo grupal', 'Los valores (keywords) utilizados para la primera molécula serán aplicados el resto.'
+            )
             self.gaussian_setup(group=True)
 
     def remove_group_calc(self):
         pass
 
+    def start_project(self):
+        # escogre si ejecutar en serie o en paralelo
+        project = self.selected_project
+        calculations = self.selected_project.calculations
+        if project is not None and calculations:
+            for calc in calculations:
+                if calc['type'] in ('Optimization', 'Energy', 'Frequency'):
+                    for molecule in project.molecules:
+                        self.gauss_controller = Gaussian(
+                            molecule,
+                            keywords=calc['keywords'],
+                        )
+                        self.gauss_controller.submitted.connect(self.queue_manager)
+                        self.gauss_controller.queue_calculation(calc['type'])
+
     def gaussian_setup(self, group=False):
         if not group:
             self.gauss_controller = Gaussian(self.selected_mol)
             self.gauss_controller.submitted.connect(self.queue_manager)
-            self.gauss_controller.show()
         else:
-            self.gauss_controller = Gaussian(self.selected_project.molecules)
-            self.gauss_controller.submitted.connect(self.queue_manager)
-            self.gauss_controller.show()
+            self.gauss_controller = Gaussian(self.selected_project.molecules[0])
+            self.gauss_controller.submitted.connect(self.set_group_calc)
+
+    @qtc.pyqtSlot(dict)
+    def set_group_calc(self, calculation):
+        self.selected_project.add_calculation(calculation)
+        self.database.commit()
+        self.set_models()
 
     @qtc.pyqtSlot(dict)
     def queue_manager(self, calculation):
         calculation['id'] = self.database.get_job_id
         if calculation.get('type') == 'Optimization':
             job = Optimization(**calculation)
-        self.selected_mol.add_calculation(job.id)
-        self.database.set('jobs', job.id, job)
+            mol = self.database.get('molecules', calculation['molecule_id'])
+            mol.add_calculation(job.id)
+            self.database.set('jobs', job.id, job)
         self.set_models()
 
     def resume_queue(self):

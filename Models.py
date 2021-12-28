@@ -114,44 +114,19 @@ class ProjectsModel(qtg.QStandardItemModel):
                 molecules = StandardItem(
                     'Moléculas', font_size=10, set_bold=True
                 )
-                # mols = [m for m in molecules_list if mol == m.inchi_key][0]
                 if project.molecules:
                     mol_std_item = StandardItem(img=project.grid_img)
                 else:
                     mol_std_item = StandardItem(img='')
                 molecules.appendRow(mol_std_item)
-                p_std_item.appendRow(molecules)
-                # formula_1 = StandardItem('Formula', font_size=10)
-                # formula_2 = StandardItem(
-                    # self.translate_formula(mol.formula), font_size=10
-                # )
-                # FW_1 = StandardItem('FW', font_size=10)
-                # FW_2 = StandardItem(f'{mol.MW:.2f} uma', font_size=10)
-                # inchi_1 = StandardItem('Inchi Key', font_size=10)
-                # inchi_2 = StandardItem(f'{mol.inchi_key}', font_size=10)
-                # smiles_1 = StandardItem('Smiles', font_size=10)
-                # smiles_2 = StandardItem(f'{mol.smiles}', font_size=10)
-                # std_item_list.append((m_std_item_1, m_std_item_2))
-                # summary.appendRow([formula_1, formula_2])
-                # summary.appendRow([FW_1, FW_2])
-                # summary.appendRow([inchi_1, inchi_2])
-                # summary.appendRow([smiles_1, smiles_2])
-                # calculations = StandardItem(
-                    # 'Cálculos disponibles', font_size=12, set_bold=True
-                # )
-                # id_calc = StandardItem('ID', font_size=10, set_bold=True)
-                # calc_type = StandardItem(
-                    # 'Tipo de cálculo', font_size=10, set_bold=True
-                # )
-                # calculations.appendRow([id_calc, calc_type])
-                # for c in mol.calculations:
-                    # calc_type = [
-                        # calc.type for calc in calculations_list if calc.id == c
-                    # ][0]
-                    # calc_type = StandardItem(calc_type, font_size=10)
-                    # calc_id = StandardItem(str(c), font_size=10)
-                    # calculations.appendRow([calc_id, calc_type])
-                # m_std_item_1.appendRows([summary, calculations])
+                calculations = StandardItem(
+                    'Cálculos', font_size=10, set_bold=True
+                )
+                for index, calc in enumerate(project.calculations):
+                    string = f'{index + 1}.\nTipo:\t\t{calc["type"]}\nKeywords:\t\t{calc["keywords"]}\nMultipl.:\t\t{calc["charge_mult"].split("/")[1]}\n'
+                    calc_std_item = StandardItem(string, font_size=8)
+                    calculations.appendRow(calc_std_item)
+                p_std_item.appendRows([molecules, calculations])
                 std_item_list.append(p_std_item)
             return std_item_list
         else:
@@ -165,24 +140,6 @@ class ProjectsModel(qtg.QStandardItemModel):
             for item_1 in self.populated_tree:
                 rood_node.appendRow([item_1])
         return tree_model
-
-
-
-# class MolsInProjectModel(qtc.QAbstractListModel):
-    # def __init__(self, project):
-        # super().__init__()
-        # if project:
-            # self.molecules = project.molecules
-
-    # def data(self, index, role):
-        # if role == qtc.Qt.DisplayRole:
-            # return self.molecules[index.row()]
-
-    # def rowCount(self, index):
-        # return len(self.selection_list)
-
-    # def flags(self, index):
-        # return qtc.Qt.ItemIsEnabled | qtc.Qt.ItemIsSelectable
 
 
 class JobsModel(qtc.QAbstractTableModel):

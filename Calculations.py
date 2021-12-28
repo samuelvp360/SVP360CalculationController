@@ -17,29 +17,23 @@ class Gaussian(qtw.QMainWindow):
 
     submitted = qtc.pyqtSignal(dict)
 
-    def __init__(self, molecule):
+    def __init__(self, molecule, *, keywords=False):
         super().__init__()
         uic.loadUi('Views/uiCalculationsWindow.ui', self)
         self.uiOptGroupBox.setVisible(False)
         self.uiFreqGroupBox.setVisible(False)
         self.uiIRCGroupBox.setVisible(False)
     # ------------------------------------PROPERTIES-------------------------------------
-        self._molecule = molecule
-        self._chk = self._molecule.get_name
-        self._oldChk = self._molecule.get_name
-        self._coordinates = self._molecule.get_zmatrix
-        self.uiTitleLineEdit.setText(self._molecule.get_name)
-
         self.memory = virtual_memory().total // 1e9
         self.cpu = multiprocessing.cpu_count()
-        self._keywordsLine = []
+        self.keywords_line = []
         for i in range(20):
-            self._keywordsLine.append('')
-        self._keywordsLine[0] = '# '
+            self.keywords_line.append('')
+        self.keywords_line[0] = '# '
         self._link0Line = ['', '', '', '']
         self._chargeMultiplicityLine = ['', ' ', '']
         self._lightBasis = ['', '', '', '', '', '']
-        self._addInput = ''
+        self.additional_input = ''
         self.populate_widgets()
     # ------------------------------------SIGNALS----------------------------------------
         self._methodWidgets[0].currentIndexChanged.connect(lambda: self.SetKeywords(0, self._methodWidgets[0].currentIndex()))
@@ -103,14 +97,14 @@ class Gaussian(qtw.QMainWindow):
         self._jobsWidgets[20].stateChanged.connect(lambda: self.SetJobType(20, self._jobsWidgets[20].isChecked()))
         self._jobsWidgets[21].valueChanged.connect(lambda: self.SetJobType(21, self._jobsWidgets[21].value()))
         self._jobsWidgets[22].stateChanged.connect(lambda: self.SetJobType(22, self._jobsWidgets[22].isChecked()))
-        self._link0Widgets[0].valueChanged.connect(lambda: self.SetLink0(0, self._link0Widgets[0].value()))
-        self._link0Widgets[1].valueChanged.connect(lambda: self.SetLink0(1, self._link0Widgets[1].value()))
-        self._link0Widgets[2].currentIndexChanged.connect(lambda: self.SetLink0(2, self._link0Widgets[2].currentIndex()))
-        self._link0Widgets[3].textChanged.connect(lambda: self.SetLink0(3, self._link0Widgets[3].text()))
-        self._link0Widgets[4].clicked.connect(lambda: self.SetLink0(4, 1))
-        self._link0Widgets[5].currentIndexChanged.connect(lambda: self.SetLink0(5, self._link0Widgets[5].currentIndex()))
-        self._link0Widgets[6].textChanged.connect(lambda: self.SetLink0(6, self._link0Widgets[6].text()))
-        self._link0Widgets[7].clicked.connect(lambda: self.SetLink0(7, 1))
+        self.link_0_widgets[0].valueChanged.connect(lambda: self.SetLink0(0, self.link_0_widgets[0].value()))
+        self.link_0_widgets[1].valueChanged.connect(lambda: self.SetLink0(1, self.link_0_widgets[1].value()))
+        self.link_0_widgets[2].currentIndexChanged.connect(lambda: self.SetLink0(2, self.link_0_widgets[2].currentIndex()))
+        self.link_0_widgets[3].textChanged.connect(lambda: self.SetLink0(3, self.link_0_widgets[3].text()))
+        self.link_0_widgets[4].clicked.connect(lambda: self.SetLink0(4, 1))
+        self.link_0_widgets[5].currentIndexChanged.connect(lambda: self.SetLink0(5, self.link_0_widgets[5].currentIndex()))
+        self.link_0_widgets[6].textChanged.connect(lambda: self.SetLink0(6, self.link_0_widgets[6].text()))
+        self.link_0_widgets[7].clicked.connect(lambda: self.SetLink0(7, 1))
         self._generalWidgets[0].stateChanged.connect(lambda: self.SetGeneral(0, self._generalWidgets[0].isChecked()))
         self._generalWidgets[1].stateChanged.connect(lambda: self.SetGeneral(1, self._generalWidgets[1].isChecked()))
         self._generalWidgets[2].stateChanged.connect(lambda: self.SetGeneral(2, self._generalWidgets[2].isChecked()))
@@ -122,14 +116,26 @@ class Gaussian(qtw.QMainWindow):
         # self.uiAddInputCheckBox.stateChanged.connect(self.set_preview)
         # self.uiQueueCalcButton.clicked.connect(self.queu_calculation)
 
+        self.prepare_molecule(molecule)
+        if keywords:
+            self.uiKeywordsLabel.setText(keywords)
+            self.set_preview()
+        else:
+            self.set_preview()
+            self.show()
+
+    def prepare_molecule(self, molecule):
+        self._molecule = molecule
+        self._chk = self._molecule.get_name
+        self._oldChk = self._molecule.get_name
+        self.coordinates = self._molecule.get_coordinates
+        self.uiTitleLineEdit.setText(self._molecule.get_name)
+        self.SetCahrgeMult()
+        self.SetKeywords(1, self._methodWidgets[1].currentIndex())
         self._methodWidgets[30].setValue(self._molecule.get_formal_charge)
         self._methodWidgets[10].model().item(2).setEnabled(False)
-        self.SetKeywords(1, self._methodWidgets[1].currentIndex())
-        self.SetCahrgeMult()
-        [self.SetLink0(i, self._link0Widgets[i].value()) for i in range(2)]
-        [self.SetLink0(i, self._link0Widgets[i].currentIndex()) for i in (2, 5)]
-        self.set_title(self._molecule.get_name)
-        self.set_preview()
+        [self.SetLink0(i, self.link_0_widgets[i].value()) for i in range(2)]
+        [self.SetLink0(i, self.link_0_widgets[i].currentIndex()) for i in (2, 5)]
 
     def populate_widgets(self):
         self._jobTypes = (
@@ -263,7 +269,7 @@ class Gaussian(qtw.QMainWindow):
             self.uiStateOfInterestSpinBox,  # 52
         ]
         self.lastMethodWidget = len(self._methodWidgets)
-        self._link0Widgets = [
+        self.link_0_widgets = [
             self.uiMemorySpinBox,  # 0
             self.uiProcessorsSpinBox,  # 1
             self.uiChkComboBox,  # 2
@@ -329,13 +335,13 @@ class Gaussian(qtw.QMainWindow):
         self._jobsWidgets[16].addItems(self._forceConstants2)
         self._jobsWidgets[17].addItems(self._recorrect)
 
-        self._link0Widgets[0].setMaximum(self.memory)
-        self._link0Widgets[0].setValue(self.memory - 2)
-        self._link0Widgets[1].setMaximum(self.cpu)
-        self._link0Widgets[1].setValue(self.cpu - 1)
-        self._link0Widgets[2].addItems(self._chk)
-        [self._link0Widgets[i].setEnabled(False) for i in range(3, 8) if i != 5]
-        self._link0Widgets[5].addItems(self._oldChk)
+        self.link_0_widgets[0].setMaximum(self.memory)
+        self.link_0_widgets[0].setValue(self.memory - 2)
+        self.link_0_widgets[1].setMaximum(self.cpu)
+        self.link_0_widgets[1].setValue(self.cpu - 1)
+        self.link_0_widgets[2].addItems(self._chk)
+        [self.link_0_widgets[i].setEnabled(False) for i in range(3, 8) if i != 5]
+        self.link_0_widgets[5].addItems(self._oldChk)
         [self._generalWidgets[i].setEnabled(False) for i in (3, 4, 5, 6, 8, 10, 12)]
 
     def SetKeywords(self, widgetNumber=None, selection=None):
@@ -348,8 +354,8 @@ class Gaussian(qtw.QMainWindow):
                 self._methodWidgets[2].model().item(3).setEnabled(False)
                 self._methodWidgets[2].setCurrentIndex(0)
                 for i in range(1, 11):
-                    self._keywordsLine[i] = ''
-                self._keywordsLine[2] = 'ZINDO'
+                    self.keywords_line[i] = ''
+                self.keywords_line[2] = 'ZINDO'
                 [self._methodWidgets[i].setVisible(False) for i in range(1, self.lastMethodWidget) if i not in (2, 30, 31, 32)]
                 [self._methodWidgets[i].setVisible(True) for i in range(47, 53)]
                 self.SetKeywords(48, self._methodWidgets[48].currentIndex())
@@ -357,8 +363,8 @@ class Gaussian(qtw.QMainWindow):
                 self._methodWidgets[2].model().item(3).setEnabled(False)
                 self._methodWidgets[2].setCurrentIndex(0)
                 for i in range(1, 11):
-                    self._keywordsLine[i] = ''
-                self._keywordsLine[2] = 'CIS'
+                    self.keywords_line[i] = ''
+                self.keywords_line[2] = 'CIS'
                 [self._methodWidgets[i].setVisible(False) for i in range(1, self.lastMethodWidget) if i not in (2, 30, 31, 32)]
                 [self._methodWidgets[i].setVisible(True) for i in (6, 8)]
                 [self._methodWidgets[i].setVisible(True) for i in range(47, 53)]
@@ -367,13 +373,13 @@ class Gaussian(qtw.QMainWindow):
             self._methodWidgets[2].model().item(3).setEnabled(True)
             if selection == 0:
                 for i in range(1, 11):
-                    self._keywordsLine[i] = ''
+                    self.keywords_line[i] = ''
                 [self._methodWidgets[i].setVisible(False) for i in range(2, self.lastMethodWidget) if i not in range(30, 33)]
                 [self._methodWidgets[i].setVisible(True) for i in (5, 35, 36)]
                 self.SetKeywords(5, self._methodWidgets[5].currentIndex())
             elif selection == 1:
                 for i in range(2, 11):
-                    self._keywordsLine[i] = ''
+                    self.keywords_line[i] = ''
                 [self._methodWidgets[i].setVisible(False) for i in range(3, self.lastMethodWidget) if i not in range(30, 33)]
                 [self._methodWidgets[i].setVisible(True) for i in (2, 4, 33)]
                 self._methodWidgets[33].setEnabled(True)
@@ -383,8 +389,8 @@ class Gaussian(qtw.QMainWindow):
                 [self._methodWidgets[i].setVisible(False) for i in range(3, self.lastMethodWidget) if i not in range(30, 33)]
                 [self._methodWidgets[i].setVisible(True) for i in (2, 6, 8, 10)]
                 for i in range(2, 11):
-                    self._keywordsLine[i] = ''
-                self._keywordsLine[2] = 'HF/'
+                    self.keywords_line[i] = ''
+                self.keywords_line[2] = 'HF/'
                 self.SetKeywords(8, self._methodWidgets[8].currentIndex())
             elif selection == 3:
                 [self._methodWidgets[i].setVisible(False) for i in range(3, self.lastMethodWidget) if i not in range(30, 33)]
@@ -392,31 +398,31 @@ class Gaussian(qtw.QMainWindow):
                 [self.SetKeywords(i, self._methodWidgets[i].currentIndex()) for i in (3, 8)]
             elif selection == 4:
                 for i in range(2, 11):
-                    self._keywordsLine[i] = ''
-                self._keywordsLine[2] = 'MP2'
+                    self.keywords_line[i] = ''
+                self.keywords_line[2] = 'MP2'
                 [self._methodWidgets[i].setVisible(False) for i in range(3, self.lastMethodWidget) if i not in range(30, 33)]
                 [self._methodWidgets[i].setVisible(True) for i in (2, 6, 8, 10, 37)]
                 self.SetKeywords(8, self._methodWidgets[8].currentIndex())
                 self.SetKeywords(37, self._methodWidgets[37].isChecked())
             elif selection == 5:
                 for i in range(2, 11):
-                    self._keywordsLine[i] = ''
+                    self.keywords_line[i] = ''
                 [self._methodWidgets[i].setVisible(False) for i in range(3, self.lastMethodWidget) if i not in range(30, 33)]
                 [self._methodWidgets[i].setVisible(True) for i in (2, 6, 8, 10, 37, 38)]
                 [self.SetKeywords(i, self._methodWidgets[i].currentIndex()) for i in (38, 8)]
                 self.SetKeywords(37, self._methodWidgets[37].isChecked())
             elif selection == 6:
                 for i in range(2, 11):
-                    self._keywordsLine[i] = ''
-                self._keywordsLine[2] = 'CCSD'
+                    self.keywords_line[i] = ''
+                self.keywords_line[2] = 'CCSD'
                 [self._methodWidgets[i].setVisible(False) for i in range(3, self.lastMethodWidget) if i not in range(30, 33)]
                 [self._methodWidgets[i].setVisible(True) for i in (2, 6, 8, 37, 39, 40, 41)]
                 self.SetKeywords(8, self._methodWidgets[8].currentIndex())
                 self.SetKeywords(39, 1)
             elif selection == 7:
                 for i in range(2, 11):
-                    self._keywordsLine[i] = ''
-                self._keywordsLine[2] = 'BD'
+                    self.keywords_line[i] = ''
+                self.keywords_line[2] = 'BD'
                 [self._methodWidgets[i].setVisible(False) for i in range(3, self.lastMethodWidget) if i not in range(30, 33)]
                 [self._methodWidgets[i].setVisible(True) for i in (2, 6, 8, 39, 40)]
                 self._methodWidgets[41].setCurrentIndex(0)
@@ -425,25 +431,25 @@ class Gaussian(qtw.QMainWindow):
                 self.SetKeywords(39, 1)
             elif selection == 8:
                 for i in range(2, 11):
-                    self._keywordsLine[i] = ''
+                    self.keywords_line[i] = ''
                 [self._methodWidgets[i].setVisible(False) for i in range(3, self.lastMethodWidget) if i not in range(30, 33)]
                 [self._methodWidgets[i].setVisible(True) for i in (2, 6, 8, 42, 43, 44, 45, 46)]
                 self.SetKeywords(8, self._methodWidgets[8].currentIndex())
                 self.SetKeywords(46, 1)
         elif widgetNumber == 2:
             if selection == 0:
-                self._keywordsLine[1] = ''
+                self.keywords_line[1] = ''
             elif selection == 1:
-                self._keywordsLine[1] = 'R'
+                self.keywords_line[1] = 'R'
             elif selection == 2:
-                self._keywordsLine[1] = 'U'
+                self.keywords_line[1] = 'U'
             else:
-                self._keywordsLine[1] = 'RO'
+                self.keywords_line[1] = 'RO'
         elif widgetNumber == 3:
             for i in range(2, 11):
-                self._keywordsLine[i] = ''
+                self.keywords_line[i] = ''
             functional = self._dftFunctionals[selection]
-            self._keywordsLine[2] = f'{functional}/'
+            self.keywords_line[2] = f'{functional}/'
             if selection in (0, 1, 6, 8, 9):
                 [self._methodWidgets[i].setVisible(True) for i in (28, 29)]
                 self._methodWidgets[33].setEnabled(True)
@@ -455,20 +461,20 @@ class Gaussian(qtw.QMainWindow):
             self.SetKeywords(8, self._methodWidgets[8].currentIndex())
         elif widgetNumber == 4:
             functional = self._semiempiricalFunctionals[selection]
-            self._keywordsLine[2] = f'{functional}'
+            self.keywords_line[2] = f'{functional}'
         elif widgetNumber == 5:
             method = self._mechanics[selection]
-            self._keywordsLine[2] = f'{method}'
+            self.keywords_line[2] = f'{method}'
             self.SetKeywords(36, self._methodWidgets[36].currentIndex())
         elif widgetNumber == 7:
             if selection == 1:
-                self._keywordsLine[3] = self._augmented[selection]
+                self.keywords_line[3] = self._augmented[selection]
             else:
-                self._keywordsLine[3] = ''
+                self.keywords_line[3] = ''
         elif widgetNumber == 8:
             for i in range(3, 9):
-                self._keywordsLine[i] = ''
-            self._keywordsLine[4] = self._basisSet[selection]
+                self.keywords_line[i] = ''
+            self.keywords_line[4] = self._basisSet[selection]
 
             if selection == 0:
                 [self._methodWidgets[i].setVisible(False) for i in range(7, 16) if i not in (8, 10)]
@@ -506,31 +512,31 @@ class Gaussian(qtw.QMainWindow):
         elif widgetNumber == 9:
             basis = self._basisSet[self._methodWidgets[8].currentIndex()]
             if selection == 1:
-                self._keywordsLine[4] = basis.replace('G', '+G')
+                self.keywords_line[4] = basis.replace('G', '+G')
             elif selection == 2:
-                self._keywordsLine[4] = basis.replace('G', '++G')
+                self.keywords_line[4] = basis.replace('G', '++G')
             else:
-                self._keywordsLine[4] = basis
+                self.keywords_line[4] = basis
         elif widgetNumber == 10:
             if selection in (1, 2):
-                self._keywordsLine[5] = self._asterisk[selection]
+                self.keywords_line[5] = self._asterisk[selection]
             else:
-                self._keywordsLine[5] = ''
+                self.keywords_line[5] = ''
         elif widgetNumber in (12, 14):
             first = self._methodWidgets[12].currentIndex()
             second = self._methodWidgets[14].currentIndex()
             if first != 0 or second != 0:
-                self._keywordsLine[6] = '('
-                self._keywordsLine[8] = ')'
+                self.keywords_line[6] = '('
+                self.keywords_line[8] = ')'
                 if first != 0 and second == 0:
-                    self._keywordsLine[7] = self._firstPolarizedOrbitals[first]
+                    self.keywords_line[7] = self._firstPolarizedOrbitals[first]
                 elif first == 0 and second != 0:
-                    self._keywordsLine[7] = self._secondPolarizedOrbitals[second]
+                    self.keywords_line[7] = self._secondPolarizedOrbitals[second]
                 elif first != 0 and second != 0:
-                    self._keywordsLine[7] = self._firstPolarizedOrbitals[first] + ',' + self._secondPolarizedOrbitals[second]
+                    self.keywords_line[7] = self._firstPolarizedOrbitals[first] + ',' + self._secondPolarizedOrbitals[second]
             else:
                 for i in range(6, 9):
-                    self._keywordsLine[i] = ''
+                    self.keywords_line[i] = ''
         elif widgetNumber == 17:
             if selection == 1:
                 self._lightBasis[0] = self._augmented[selection]
@@ -602,50 +608,50 @@ class Gaussian(qtw.QMainWindow):
             self.SetAddInput()
         elif widgetNumber == 29:
             if selection == 0:
-                self._keywordsLine[9] = ''
+                self.keywords_line[9] = ''
             elif selection == 1:
-                self._keywordsLine[9] = '/FIT'
+                self.keywords_line[9] = '/FIT'
             elif selection == 3:
                 self._methodWidgets[34].setVisible(True)
-                self._keywordsLine[9] = '/' + self._fittingSet[selection].replace('N', str(self._methodWidgets[34].value()))
+                self.keywords_line[9] = '/' + self._fittingSet[selection].replace('N', str(self._methodWidgets[34].value()))
             else:
-                self._keywordsLine[9] = '/' + self._fittingSet[selection]
+                self.keywords_line[9] = '/' + self._fittingSet[selection]
                 self._methodWidgets[34].setVisible(False)
         elif widgetNumber == 33:
             if selection:
-                self._keywordsLine[10] = ' SPARSE'
+                self.keywords_line[10] = ' SPARSE'
             else:
-                self._keywordsLine[10] = ''
+                self.keywords_line[10] = ''
         elif widgetNumber == 34:
-            self._keywordsLine[9] = re.sub(r'\d+', str(selection), self._keywordsLine[9])
+            self.keywords_line[9] = re.sub(r'\d+', str(selection), self.keywords_line[9])
         elif widgetNumber == 36:
             if selection == 0:
-                self._keywordsLine[3] = ''
+                self.keywords_line[3] = ''
             elif selection == 1:
-                self._keywordsLine[3] = '=QEQ'
+                self.keywords_line[3] = '=QEQ'
             elif selection == 2:
-                self._keywordsLine[3] = '=UNTYPED'
+                self.keywords_line[3] = '=UNTYPED'
             else:
-                self._keywordsLine[3] = '=UNCHARGED'
+                self.keywords_line[3] = '=UNCHARGED'
         elif widgetNumber == 37:
             selectedMethod = self._methodWidgets[1].currentIndex()
             if selectedMethod == 4:
                 if selection:
-                    self._keywordsLine[3] = '=FULL/'
+                    self.keywords_line[3] = '=FULL/'
                 else:
-                    self._keywordsLine[3] = '/'
+                    self.keywords_line[3] = '/'
             elif selectedMethod == 5:
                 if selection:
-                    self._keywordsLine[3] = ',FULL)/'
+                    self.keywords_line[3] = ',FULL)/'
                 else:
-                    self._keywordsLine[3] = ')/'
+                    self.keywords_line[3] = ')/'
             elif selectedMethod == 6:
                 self.SetKeywords(39, self._methodWidgets[39].isChecked())
         elif widgetNumber == 38:
             if selection == 0:
-                self._keywordsLine[2] = 'MP4(SDTQ'
+                self.keywords_line[2] = 'MP4(SDTQ'
             else:
-                self._keywordsLine[2] = 'MP4(SDQ'
+                self.keywords_line[2] = 'MP4(SDQ'
         elif widgetNumber in range(39, 42):
             first = self._methodWidgets[39].isChecked()
             if first:
@@ -673,19 +679,19 @@ class Gaussian(qtw.QMainWindow):
             combination = (first, second, third, fourth)
             if sum(combination) > 0:
                 if first + second == 1 and third + fourth == 0:
-                    self._keywordsLine[3] = '=' + re.sub(r'\,$', '', ''.join(variables)) + '/'
+                    self.keywords_line[3] = '=' + re.sub(r'\,$', '', ''.join(variables)) + '/'
                 elif first == 0 and second == 0:
-                    self._keywordsLine[3] = '(' + re.sub(r'\,$', '', ''.join(variables)) + ')/'
+                    self.keywords_line[3] = '(' + re.sub(r'\,$', '', ''.join(variables)) + ')/'
                 else:
-                    self._keywordsLine[3] = '=(' + re.sub(r'\,$', '', ''.join(variables)) + ')/'
+                    self.keywords_line[3] = '=(' + re.sub(r'\,$', '', ''.join(variables)) + ')/'
             else:
-                self._keywordsLine[3] = '/'
+                self.keywords_line[3] = '/'
         elif widgetNumber in range(44, 47):
-            self._keywordsLine[2] = f'CASSCF({self._methodWidgets[44].value()},{self._methodWidgets[45].value()}'
+            self.keywords_line[2] = f'CASSCF({self._methodWidgets[44].value()},{self._methodWidgets[45].value()}'
             if self._methodWidgets[46].isChecked():
-                self._keywordsLine[3] = ',RFO)/'
+                self.keywords_line[3] = ',RFO)/'
             else:
-                self._keywordsLine[3] = ')/'
+                self.keywords_line[3] = ')/'
         elif widgetNumber in range(48, 53):
             first = self._methodWidgets[48].currentIndex()
             if first == 0:
@@ -714,17 +720,17 @@ class Gaussian(qtw.QMainWindow):
             combination = (first, second, third)
             if sum(combination) > 0:
                 if second or third:
-                    self._keywordsLine[3] = '=(' + re.sub(r'\,$', '', ''.join(variables)) + ')/'
+                    self.keywords_line[3] = '=(' + re.sub(r'\,$', '', ''.join(variables)) + ')/'
                 else:
-                    self._keywordsLine[3] = '=' + re.sub(r'\,$', '', ''.join(variables)) + '/'
+                    self.keywords_line[3] = '=' + re.sub(r'\,$', '', ''.join(variables)) + '/'
             else:
-                self._keywordsLine[3] = '/'
+                self.keywords_line[3] = '/'
             if self._methodWidgets[0].currentIndex() == 1:
-                self._keywordsLine[3] = re.sub(r'/$', '', self._keywordsLine[3])
+                self.keywords_line[3] = re.sub(r'/$', '', self.keywords_line[3])
         elif widgetNumber == 60:
-            self._keywordsLine[-1] = ' ' + selection.upper()
+            self.keywords_line[-1] = ' ' + selection.upper()
 
-        self.uiKeywordsLabel.setText(''.join(self._keywordsLine))
+        self.uiKeywordsLabel.setText(''.join(self.keywords_line))
         self.set_preview()
 
     def SetJobType(self, widgetNumber, selection):
@@ -736,22 +742,22 @@ class Gaussian(qtw.QMainWindow):
                 self.uiIRCGroupBox.setVisible(False)
                 self._methodWidgets[0].model().item(1).setEnabled(True)
                 for i in range(-4, -1):
-                    self._keywordsLine[i] = ''
+                    self.keywords_line[i] = ''
             elif selection == 1:
                 self.uiOptGroupBox.setVisible(True)
                 self.uiFreqGroupBox.setVisible(False)
                 self.uiIRCGroupBox.setVisible(False)
                 self._methodWidgets[0].setCurrentIndex(0)
                 self._methodWidgets[0].model().item(1).setEnabled(False)
-                self._keywordsLine[-3] = ''
-                self._keywordsLine[-2] = ''
+                self.keywords_line[-3] = ''
+                self.keywords_line[-2] = ''
                 self.SetJobType(1, 1)
             elif selection == 2:
                 self.uiOptGroupBox.setVisible(False)
                 self.uiFreqGroupBox.setVisible(True)
                 self.uiIRCGroupBox.setVisible(False)
                 self._methodWidgets[0].model().item(1).setEnabled(True)
-                self._keywordsLine[-4] = ''
+                self.keywords_line[-4] = ''
                 self.SetJobType(5, 1)
             elif selection == 3:
                 self.uiOptGroupBox.setVisible(True)
@@ -767,7 +773,7 @@ class Gaussian(qtw.QMainWindow):
                 self._methodWidgets[0].setCurrentIndex(0)
                 self._methodWidgets[0].model().item(1).setEnabled(False)
                 for i in range(-4, -1):
-                    self._keywordsLine[i] = ''
+                    self.keywords_line[i] = ''
                 self.SetJobType(15, 1)
             else:
                 self.uiOptGroupBox.setVisible(False)
@@ -804,11 +810,11 @@ class Gaussian(qtw.QMainWindow):
             combination = (first, second, third, fourth)
             if sum(combination) > 0:
                 if sum(combination) > 1:
-                    self._keywordsLine[-4] = ' OPT=(' + re.sub(r'\,$', '', ''.join(variables)) + ')'
+                    self.keywords_line[-4] = ' OPT=(' + re.sub(r'\,$', '', ''.join(variables)) + ')'
                 else:
-                    self._keywordsLine[-4] = ' OPT=' + re.sub(r'\,$', '', ''.join(variables))
+                    self.keywords_line[-4] = ' OPT=' + re.sub(r'\,$', '', ''.join(variables))
             else:
-                self._keywordsLine[-4] = ' OPT'
+                self.keywords_line[-4] = ' OPT'
         elif widgetNumber in range(5, 13):
             first = self._jobsWidgets[5].currentIndex()
             if first == 1:
@@ -869,18 +875,18 @@ class Gaussian(qtw.QMainWindow):
             combination = (first, second, third, fourth, fifth, sixth, seventh, eighth)
             if sum(combination) > 0:
                 if sum(combination) > 1:
-                    self._keywordsLine[-3] = ' FREQ=(' + re.sub(r'\,$', '', ''.join(variables)) + ')'
+                    self.keywords_line[-3] = ' FREQ=(' + re.sub(r'\,$', '', ''.join(variables)) + ')'
                 else:
-                    self._keywordsLine[-3] = ' FREQ=' + re.sub(r'\,$', '', ''.join(variables))
+                    self.keywords_line[-3] = ' FREQ=' + re.sub(r'\,$', '', ''.join(variables))
             else:
-                self._keywordsLine[-3] = ' FREQ'
+                self.keywords_line[-3] = ' FREQ'
         elif widgetNumber == 14:
             if selection == 1:
-                self._keywordsLine[-2] = ' CPHF=RDFREQ'
+                self.keywords_line[-2] = ' CPHF=RDFREQ'
             elif selection == 2:
-                self._keywordsLine[-2] = ' CPHF=NOREAD'
+                self.keywords_line[-2] = ' CPHF=NOREAD'
             else:
-                self._keywordsLine[-2] = ''
+                self.keywords_line[-2] = ''
         elif widgetNumber in range(15, 23):
             first = self._jobsWidgets[15].currentIndex()
             if first == 1:
@@ -932,11 +938,11 @@ class Gaussian(qtw.QMainWindow):
             if sixth:
                 sixthVariable = 'HF/3-21G:HF/3-21G,'
                 for i in range(1, 13):
-                    self._keywordsLine[i] = ''
-                self._keywordsLine[-4] = ' IRCMAX='
+                    self.keywords_line[i] = ''
+                self.keywords_line[-4] = ' IRCMAX='
             else:
                 sixthVariable = ''
-                self._keywordsLine[-4] = ' IRC='
+                self.keywords_line[-4] = ' IRC='
                 self.SetKeywords(0, self._methodWidgets[0].currentIndex())
             variables = (
                 firstVariable, secondVariable, fourthVariable,
@@ -944,11 +950,11 @@ class Gaussian(qtw.QMainWindow):
             )
             combination = (first, second, third, fourth, fifth, sixth)
             if sum(combination) >= 1:
-                self._keywordsLine[-3] = '(' + re.sub(r'\,$', '', ''.join(variables)) + ')'
+                self.keywords_line[-3] = '(' + re.sub(r'\,$', '', ''.join(variables)) + ')'
             else:
-                self._keywordsLine[-3] = 'CALCFC'
+                self.keywords_line[-3] = 'CALCFC'
 
-        self.uiKeywordsLabel.setText(''.join(self._keywordsLine))
+        self.uiKeywordsLabel.setText(''.join(self.keywords_line))
         self.set_preview()
 
     def set_title(self, title):
@@ -999,16 +1005,16 @@ class Gaussian(qtw.QMainWindow):
                 self._link0Line[1] = ''
         elif widgetNumber == 2:
             if selection == 1:
-                [self._link0Widgets[i].setEnabled(False) for i in (3, 4)]
-                self._link0Widgets[3].setText(self._molecule.get_name)
+                [self.link_0_widgets[i].setEnabled(False) for i in (3, 4)]
+                self.link_0_widgets[3].setText(self._molecule.get_name)
             elif selection == 2:
-                [self._link0Widgets[i].setEnabled(True) for i in (3, 4)]
-                self._link0Widgets[3].clear()
-                self._link0Widgets[3].setPlaceholderText('Name_here')
+                [self.link_0_widgets[i].setEnabled(True) for i in (3, 4)]
+                self.link_0_widgets[3].clear()
+                self.link_0_widgets[3].setPlaceholderText('Name_here')
             else:
-                [self._link0Widgets[i].setEnabled(False) for i in (3, 4)]
-                self._link0Widgets[3].clear()
-            self.SetLink0(3, self._link0Widgets[3].text())
+                [self.link_0_widgets[i].setEnabled(False) for i in (3, 4)]
+                self.link_0_widgets[3].clear()
+            self.SetLink0(3, self.link_0_widgets[3].text())
         elif widgetNumber == 3:
             if selection == '':
                 self._link0Line[3] = ''
@@ -1022,20 +1028,20 @@ class Gaussian(qtw.QMainWindow):
                 filter='Chk files(*.chk)'
             )
             if self._chk:
-                self._link0Widgets[3].setText(f'{self._chk}.chk')
+                self.link_0_widgets[3].setText(f'{self._chk}.chk')
                 self.SetLink0(3, self._chk)
         elif widgetNumber == 5:
             if selection == 1:
-                [self._link0Widgets[i].setEnabled(False) for i in (6, 7)]
-                self._link0Widgets[6].setText(f'{self._molecule.get_name}')
+                [self.link_0_widgets[i].setEnabled(False) for i in (6, 7)]
+                self.link_0_widgets[6].setText(f'{self._molecule.get_name}')
             elif selection == 2:
-                [self._link0Widgets[i].setEnabled(True) for i in (6, 7)]
-                self._link0Widgets[6].clear()
-                self._link0Widgets[6].setPlaceholderText('Name_here')
+                [self.link_0_widgets[i].setEnabled(True) for i in (6, 7)]
+                self.link_0_widgets[6].clear()
+                self.link_0_widgets[6].setPlaceholderText('Name_here')
             else:
-                [self._link0Widgets[i].setEnabled(False) for i in (6, 7)]
-                self._link0Widgets[6].clear()
-            self.SetLink0(6, self._link0Widgets[6].text())
+                [self.link_0_widgets[i].setEnabled(False) for i in (6, 7)]
+                self.link_0_widgets[6].clear()
+            self.SetLink0(6, self.link_0_widgets[6].text())
         elif widgetNumber == 6:
             if selection == '':
                 self._link0Line[0] = ''
@@ -1048,10 +1054,10 @@ class Gaussian(qtw.QMainWindow):
                 filter='Chk files(*.chk)'
             )
             if self._oldChk:
-                self._link0Widgets[6].setText(f'{self._oldChk}.chk')
+                self.link_0_widgets[6].setText(f'{self._oldChk}.chk')
                 self.SetLink0(6, self._oldChk)
 
-        self._link0Widgets[8].setPlainText(''.join(self._link0Line))
+        self.link_0_widgets[8].setPlainText(''.join(self._link0Line))
         self.set_preview()
 
     def SetGeneral(self, widgetNumber, selection):
@@ -1060,40 +1066,40 @@ class Gaussian(qtw.QMainWindow):
         """
         if widgetNumber == 0:
             if selection:
-                self._keywordsLine[11] = ' SCF=QC'
+                self.keywords_line[11] = ' SCF=QC'
             else:
-                self._keywordsLine[11] = ''
+                self.keywords_line[11] = ''
         if widgetNumber == 1:
             if selection:
-                self._keywordsLine[12] = ' NOSYMM'
+                self.keywords_line[12] = ' NOSYMM'
             else:
-                self._keywordsLine[12] = ''
+                self.keywords_line[12] = ''
         if widgetNumber == 2:
             if selection:
-                self._coordinates = self._molecule.get_coordinates
+                self.coordinates = self._molecule.get_coordinates
             else:
-                self._coordinates = self._molecule.get_zmatrix
+                self.coordinates = self._molecule.get_zmatrix
         if widgetNumber == 7:
             if selection:
-                self._keywordsLine[0] = '#P '
+                self.keywords_line[0] = '#P '
             else:
-                self._keywordsLine[0] = '# '
+                self.keywords_line[0] = '# '
         if widgetNumber == 9:
             if selection:
-                self._keywordsLine[13] = ' POLAR'
+                self.keywords_line[13] = ' POLAR'
             else:
-                self._keywordsLine[13] = ''
+                self.keywords_line[13] = ''
         if widgetNumber == 11:
             if selection:
                 self._generalWidgets[12].setEnabled(True)
                 self.SetGeneral(12, self._generalWidgets[12].value())
             else:
                 self._generalWidgets[12].setEnabled(False)
-                self._keywordsLine[14] = ''
+                self.keywords_line[14] = ''
         if widgetNumber == 12:
-            self._keywordsLine[14] = f' MAXDISK={str(selection)}GB'
+            self.keywords_line[14] = f' MAXDISK={str(selection)}GB'
 
-        self.uiKeywordsLabel.setText(''.join(self._keywordsLine))
+        self.uiKeywordsLabel.setText(''.join(self.keywords_line))
         self.set_preview()
 
     def SetAddInput(self):
@@ -1112,24 +1118,28 @@ class Gaussian(qtw.QMainWindow):
         docstring
         """
         if self.uiAddInputCheckBox.isChecked():
-            self._addInput = '\n' + self.uiAddInputPlainText.toPlainText()
+            self.additional_input = '\n' + self.uiAddInputPlainText.toPlainText()
         else:
-            self._addInput = ''
+            self.additional_input = ''
 
-        self._input = [
-            self._link0Widgets[8].toPlainText(), self.uiKeywordsLabel.text(),
-            self.uiTitleLineEdit.text(), self.uiChargeMultLabel.text(),
-            self._coordinates, self._addInput
+        self.input = [
+            self.link_0_widgets[8].toPlainText(),
+            self.uiKeywordsLabel.text(),
+            self.uiTitleLineEdit.text(),
+            self.uiChargeMultLabel.text(),
+            self.coordinates,
+            self.additional_input
         ]
         self.uiPreviewPlainText.setPlainText(
-            '{}{}\n\n {}\n\n{}\n{}\n{}\n'.format(*self._input)
+            '{}{}\n\n {}\n\n{}\n{}\n{}\n'.format(*self.input)
         )
 
-    def queue_calculation(self):
+    def queue_calculation(self, job_type=False):
         """
         docstring
         """
-        job_type = self._jobTypes[self._jobsWidgets[0].currentIndex()]
+        if not job_type:
+            job_type = self._jobTypes[self._jobsWidgets[0].currentIndex()]
         name = f'molecules/{self._molecule.inchi_key}/{job_type}'
         existent_imputs = str(
             len(
@@ -1141,15 +1151,16 @@ class Gaussian(qtw.QMainWindow):
         charge_mult = self.uiChargeMultLabel.text().replace(' ', '/')
         with open(input_file, 'w') as f:
             f.write(self.uiPreviewPlainText.toPlainText())
-
         output_file = input_file.replace('.com', '.log')
         calculation = {
-            'type': job_type, 'keywords': keywords,
-            'charge_mult': charge_mult, 'input_file': input_file,
-            'output_file': output_file, 'molecule': self._molecule.get_name,
+            'type': job_type,
+            'keywords': keywords,
+            'charge_mult': charge_mult,
+            'input_file': input_file,
+            'output_file': output_file,
+            'molecule': self._molecule.get_name,
             'molecule_id': self._molecule.inchi_key
         }
-
         self.submitted.emit(calculation)
         self.close()
 
@@ -1165,11 +1176,13 @@ class GaussianWorker():
         '''
         Parameters
         ----------
-        input_file : the .com file as Gaussian input
+        input_file: the .com file as Gaussian input
+        output_file: the name of the .log file to be done
 
         Returns
         -------
-        log file corresponding to the output of required calculation
+        True if the input file is successfully run in the shell
+        False if something went wrong with the gaussian executable
         '''
         env = os.environ.copy()
         try:
@@ -1179,6 +1192,7 @@ class GaussianWorker():
             print('no leyó el ejecutable de Gaussian')
         cmd = f'{gauss_exec} < {input_file} > {output_file}'
         subprocess.run(cmd, shell=True)
+        return True
 
     def check(self, output_file):
         if not os.path.exists(output_file):
