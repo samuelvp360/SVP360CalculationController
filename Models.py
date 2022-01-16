@@ -92,7 +92,7 @@ class MoleculesModel(qtg.QStandardItemModel):
         trans = str.maketrans({
             '1': '\u2081', '2': '\u2082', '3': '\u2083', '4': '\u2084',
             '5': '\u2085', '6': '\u2086', '7': '\u2087', '8': '\u2088',
-            '9': '\u2089', '0': '\u2080'
+            '9': '\u2089', '0': '\u2080', '+': '\u207A', '-': '\u207B'
         })
         return formula.translate(trans)
 
@@ -143,6 +143,7 @@ class ProjectsModel(qtg.QStandardItemModel):
 
 
 class JobsModel(qtc.QAbstractTableModel):
+
     def __init__(self, jobs_list):
         super().__init__()
         self.jobs_list = jobs_list[::-1]
@@ -165,7 +166,10 @@ class JobsModel(qtc.QAbstractTableModel):
             elif index.column() == 3:
                 return str(value.charge_mult)
             elif index.column() == 4:
-                return str(value.keywords)
+                if value.type == 'Docking':
+                    return f'Docking to {value.keywords.get("receptor_name")}'
+                else:
+                    return str(value.keywords)
             elif index.column() == 5:
                 return str(value.output_file.split('/')[2])
             elif index.column() == 6:

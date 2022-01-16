@@ -2,16 +2,17 @@
 # -*- coding: utf-8 -*-
 
 import sys
-from Components import Molecule, Optimization, Project
+from Components import Molecule, Optimization, Project, Docking
 from Worker import Worker
 from Models import MoleculesModel, ProjectsModel, JobsModel
-from Calculations import Gaussian
+from Calculations import Gaussian, MyVina
 from PyQt5 import QtCore as qtc
 from PyQt5 import QtWidgets as qtw
 from PyQt5 import QtGui as qtg
 from PyQt5 import uic
 from DB.molecules_db import MyZODB
 from datetime import datetime
+# from loguru import logger
 # import pdb
 # from PyQt5.QtCore import pyqtRemoveInputHook
 
@@ -20,6 +21,7 @@ class MainWindow(qtw.QMainWindow):
 
     closed = qtc.pyqtSignal()
 
+    # @logger.catch
     def __init__(self):
         super().__init__()
         uic.loadUi('Views/uiMainWindow.ui', self)
@@ -66,6 +68,9 @@ class MainWindow(qtw.QMainWindow):
                 self.selected_mol = [
                     m for m in self.molecules_list if m.get_name == value.data().strip()
                 ][0]
+                self.statusBar().showMessage(
+                    f'Molécula seleccionada: {self.selected_mol.get_name} ({self.selected_mol.inchi_key})'
+                )
         else:
             self.selected_mol = None
 
@@ -85,6 +90,7 @@ class MainWindow(qtw.QMainWindow):
     def select_mol(self):
         selected_mol = self.selected_mol is not None
         if self.selected_project is not None:
+            print(self.selected_project.molecules)
             already_in = self.selected_mol in self.selected_project.molecules
             if selected_mol and not already_in:
                 self.selected_project.add_molecule(self.selected_mol)
@@ -92,11 +98,10 @@ class MainWindow(qtw.QMainWindow):
                 self.set_models()
 
     def unselect_mol(self):
-        pass
-        # if self.selected_mol is not None and self.selected_mol in self.mols_in_project_list:
-            # index = self.mols_in_project_list.index(self.selected_mol)
-            # self.mols_in_project_list.pop(index)
-            # self.set_models()
+        if self.selected_project is not None:
+            self.selected_project.remove_molecule()
+            self.database.commit()
+            self.set_models()
 
     def add_molecule(self):
         mol_path, _ = qtw.QFileDialog.getOpenFileNames(
@@ -125,6 +130,13 @@ class MainWindow(qtw.QMainWindow):
         # la bd. Si están pendientes, no correr tampoco
         if self.selected_mol:
             to_remove = self.selected_mol.inchi_key
+            for project in self.projects_list:
+                if self.selected_mol in project.molecules:
+                    qtw.QMessageBox.critical(
+                        self, 'Molécula en proyecto',
+                        f'La molécula {self.selected_mol.get_name} hace parte del proyecto {project.name}. No será borrada.'
+                    )
+                    return False
             self.database.remove(to_remove)
             self.set_models()
 
@@ -136,10 +148,11 @@ class MainWindow(qtw.QMainWindow):
                 self, 'Proyecto existente', f'El proyecto con nombre: {name} ya existe en la base de datos. No será creado.'
             )
         else:
-            project = Project(name)
-            self.database.set('projects', project.name, project)
-            self.uiProjectNameLine.clear()
-            self.set_models()
+            if name:
+                project = Project(name)
+                self.database.set('projects', project.name, project)
+                self.uiProjectNameLine.clear()
+                self.set_models()
 
     def add_group_calculation(self):
         calc = self.uiCalculationsComboBox.currentText()
@@ -150,7 +163,10 @@ class MainWindow(qtw.QMainWindow):
             self.gaussian_setup(group=True)
 
     def remove_group_calc(self):
-        pass
+        if self.selected_project is not None:
+            self.selected_project.remove_calculation()
+            self.database.commit()
+            self.set_models()
 
     def start_project(self):
         # escogre si ejecutar en serie o en paralelo
@@ -175,6 +191,17 @@ class MainWindow(qtw.QMainWindow):
             self.gauss_controller = Gaussian(self.selected_project.molecules[0])
             self.gauss_controller.submitted.connect(self.set_group_calc)
 
+    def vina_setup(self, group=False):
+        if not group:
+            self.vina_controller = MyVina(self.selected_mol)
+            self.vina_controller.submitted.connect(self.queue_manager)
+        else:
+            self.vina_controller = MyVina(
+                self.selected_project.molecules[0],
+                project=self.selected_project
+            )
+            self.vina_controller.submitted.connect(self.set_group_calc)
+
     @qtc.pyqtSlot(dict)
     def set_group_calc(self, calculation):
         self.selected_project.add_calculation(calculation)
@@ -186,9 +213,11 @@ class MainWindow(qtw.QMainWindow):
         calculation['id'] = self.database.get_job_id
         if calculation.get('type') == 'Optimization':
             job = Optimization(**calculation)
-            mol = self.database.get('molecules', calculation['molecule_id'])
-            mol.add_calculation(job.id)
-            self.database.set('jobs', job.id, job)
+        elif calculation.get('type') == 'Docking':
+            job = Docking(**calculation)
+        mol = self.database.get('molecules', calculation['molecule_id'])
+        mol.add_calculation(job.id)
+        self.database.set('jobs', job.id, job)
         self.set_models()
 
     def resume_queue(self):
@@ -226,7 +255,23 @@ class MainWindow(qtw.QMainWindow):
         self.uiPauseQueueButton.clicked.connect(self.worker.pause)
         self.thread.start()
 
-    def right_click(self, position):
+    def projects_right_click(self, position):
+        if self.selected_project:
+            menu = qtw.QMenu()
+            calculation = qtw.QMenu('Cálculo grupal')
+            menu.addMenu(calculation)
+            gauss = calculation.addAction('Gaussian')
+            vina = calculation.addAction('Vina')
+            local_react = calculation.addAction('Reactividad local')
+            action = menu.exec_(self.uiProjectsTreeView.mapToGlobal(position))
+            if action == gauss:
+                self.gaussian_setup(group=True)
+            elif action == vina:
+                self.vina_setup(group=True)
+            elif action == local_react:
+                pass
+
+    def molecules_right_click(self, position):
         if self.selected_mol:
             menu = qtw.QMenu()
             gauss = qtw.QMenu('Gaussian')
@@ -234,18 +279,12 @@ class MainWindow(qtw.QMainWindow):
             menu.addMenu(gauss)
             menu.addMenu(vina)
             calculate = gauss.addAction('Calcular')
-            prepare = vina.addAction('Preparar ligando')
-            prepare_2 = vina.addAction('Preparar receptor')
             docking = vina.addAction('Hacer Docking')
             action = menu.exec_(self.uiMoleculesTree.mapToGlobal(position))
             if action == calculate:
                 self.gaussian_setup()
-            elif action == prepare:
-                print('Preparando ligando')
-            elif action == prepare_2:
-                print('Preparando receptor')
             elif action == docking:
-                print('Docking')
+                self.vina_setup()
 
     def closeEvent(self, event):
         if hasattr(self, 'worker'):
@@ -261,4 +300,10 @@ if __name__ == '__main__':
     window = MainWindow()
     window.show()
     sys.exit(app.exec_())
+
+# TODO
+# Docking para proyecto,
+# Arreglar lo de los hidrógenos en la representación de grilla en los proyectos
+# Extraer energías de las poses después del docking
+# Gráfica de energías vs moléculas en el proyecto
 

@@ -11,6 +11,9 @@ from PyQt5 import QtWidgets as qtw
 from PyQt5 import QtCore as qtc
 from PyQt5 import uic
 from psutil import virtual_memory
+from vina import Vina
+from openbabel import openbabel as ob
+ob.obErrorLog.StopLogging()  # se puede cambiar por SetOutputLevel para logging
 
 
 class Gaussian(qtw.QMainWindow):
@@ -1149,8 +1152,9 @@ class Gaussian(qtw.QMainWindow):
         input_file = f'{name}_{existent_imputs}.com'
         keywords = self.uiKeywordsLabel.text()
         charge_mult = self.uiChargeMultLabel.text().replace(' ', '/')
-        with open(input_file, 'w') as f:
-            f.write(self.uiPreviewPlainText.toPlainText())
+        if not job_type:
+            with open(input_file, 'w') as f:
+                f.write(self.uiPreviewPlainText.toPlainText())
         output_file = input_file.replace('.com', '.log')
         calculation = {
             'type': job_type,
@@ -1165,43 +1169,125 @@ class Gaussian(qtw.QMainWindow):
         self.close()
 
 
-class GaussianWorker():
+# class GaussianWorker():
 
-    def run(self, input_file, output_file):
-        # pasar al módulo Calculations, formando una nueva clase llamada
-        # GaussianWorker, que en la función run recibe el input y output y
-        # retorna si el cálculo fue exitoso o no.
-        # Primero debe hacer checkeo a ver si ya existe ese output y si ya el
-        # cálculo está terminado. Si es así, debe retornar True de una vez
-        '''
-        Parameters
-        ----------
-        input_file: the .com file as Gaussian input
-        output_file: the name of the .log file to be done
+    # def run(self, input_file, output_file):
+        # # pasar al módulo Calculations, formando una nueva clase llamada
+        # # GaussianWorker, que en la función run recibe el input y output y
+        # # retorna si el cálculo fue exitoso o no.
+        # # Primero debe hacer checkeo a ver si ya existe ese output y si ya el
+        # # cálculo está terminado. Si es así, debe retornar True de una vez
+        # '''
+        # Parameters
+        # ----------
+        # input_file: the .com file as Gaussian input
+        # output_file: the name of the .log file to be done
 
-        Returns
-        -------
-        True if the input file is successfully run in the shell
-        False if something went wrong with the gaussian executable
-        '''
-        env = os.environ.copy()
-        try:
-            gauss_exec = env['GAUSS_EXEDIR'].split('/')[-1]
-        except KeyError:
-            return False
-            print('no leyó el ejecutable de Gaussian')
-        cmd = f'{gauss_exec} < {input_file} > {output_file}'
-        subprocess.run(cmd, shell=True)
-        return True
+        # Returns
+        # -------
+        # True if the input file is successfully run in the shell
+        # False if something went wrong with the gaussian executable
+        # '''
+        # env = os.environ.copy()
+        # try:
+            # gauss_exec = env['GAUSS_EXEDIR'].split('/')[-1]
+        # except KeyError:
+            # return False
+            # print('no leyó el ejecutable de Gaussian')
+        # cmd = f'{gauss_exec} < {input_file} > {output_file}'
+        # subprocess.run(cmd, shell=True)
+        # return True
 
-    def check(self, output_file):
-        if not os.path.exists(output_file):
-            return False
-        if 'Optimization' in output_file:
-            with open(output_file, 'r') as f:
-                file = f.read()
-                finished = re.findall('Optimization completed.', file)
-                if finished:
-                    return True
-                return False
+    # def check(self, output_file):
+        # if not os.path.exists(output_file):
+            # return False
+        # if 'Optimization' in output_file:
+            # with open(output_file, 'r') as f:
+                # file = f.read()
+                # finished = re.findall('Optimization completed.', file)
+                # if finished:
+                    # return True
+                # return False
+
+
+class MyVina(qtw.QWidget):
+
+    submitted = qtc.pyqtSignal(dict)
+
+    def __init__(self, molecule, *, keywords=False, project=False):
+        super().__init__()
+        uic.loadUi('Views/uiVina.ui', self)
+        self.molecule = molecule
+        self.project = project
+        self.show()
+
+    def open_receptor(self):
+        rec_path, _ = qtw.QFileDialog.getOpenFileName(
+            self, 'Selecciona el receptor',
+            options=qtw.QFileDialog.DontUseNativeDialog,
+            filter='Archivos pdb (*.pdb)'
+        )
+        if rec_path:
+            self.uiReceptorLine.setText(rec_path)
+            self.uiSubmitButton.setEnabled(True)
+
+    def receptor_prep(self, receptor_in, receptor_out):
+        if not os.path.exists(receptor_out):
+            mol2_file = receptor_out.split(".")[0] + '.mol2'
+            subprocess.run(
+                f'obabel -ipdb {receptor_in} -O{mol2_file} -h',
+                shell=True,
+                capture_output=True,
+                text=True
+            )
+            subprocess.run(
+                f'obabel -imol2 {mol2_file} -O{receptor_out} -p7.4 -xr',
+                shell=True,
+                capture_output=True,
+                text=True
+            )
+            os.remove(mol2_file)
+
+    def submit(self):
+        receptor = self.uiReceptorLine.text()
+        receptor_name = receptor.split('/')[-1].split('.')[0]
+        if self.project:
+            receptor_file = f'{project}/{receptor_name}_receptor.pdbqt'
+        else:
+            receptor_file = f'molecules/{self.molecule.inchi_key}/{receptor_name}_receptor.pdbqt'
+        output_file = f'molecules/{self.molecule.inchi_key}/{self.molecule.inchi_key}_{receptor_name}_out.pdbqt'
+        config = {
+            'receptor_in': receptor,
+            'receptor_out': receptor_file,
+            'receptor_name': receptor_name,
+            'ligand': self.molecule.dock_prep(),
+            'out': output_file,
+            'center': (
+                self.uiCenterXDouble.value(),
+                self.uiCenterYDouble.value(),
+                self.uiCenterZDouble.value()
+            ),
+            'size': (
+                self.uiSizeXDouble.value(),
+                self.uiSizeYDouble.value(),
+                self.uiSizeZDouble.value()
+            ),
+            'energy_range': self.uiDiffEnergySpin.value(),
+            'num_modes': self.uiNumModesSpin.value(),
+            'exhaustiveness': self.uiExhausSpin.value(),
+            'times': self.uiTimesSpin.value()
+        }
+        calculation = {
+            'type': 'Docking',
+            'keywords': config,
+            'charge_mult': f'{self.molecule.get_formal_charge}/1',
+            'input_file': config.get('ligand'),
+            'output_file': output_file,
+            'molecule': self.molecule.get_name,
+            'molecule_id': self.molecule.inchi_key
+        }
+        self.receptor_prep(config.get('receptor_in'), config.get('receptor_out'))
+        self.submitted.emit(calculation)
+        self.close()
+
 

@@ -118,6 +118,9 @@ QPushButton:hover {
        <property name="selectionMode">
         <enum>QAbstractItemView::SingleSelection</enum>
        </property>
+       <property name="verticalScrollMode">
+        <enum>QAbstractItemView::ScrollPerPixel</enum>
+       </property>
        <property name="animated">
         <bool>true</bool>
        </property>
@@ -307,6 +310,9 @@ QPushButton:hover {
        </property>
        <property name="alternatingRowColors">
         <bool>true</bool>
+       </property>
+       <property name="verticalScrollMode">
+        <enum>QAbstractItemView::ScrollPerPixel</enum>
        </property>
        <property name="animated">
         <bool>true</bool>
@@ -682,7 +688,7 @@ QPushButton:hover {
    <sender>uiMoleculesTree</sender>
    <signal>customContextMenuRequested(QPoint)</signal>
    <receiver>MainWindow</receiver>
-   <slot>right_click()</slot>
+   <slot>molecules_right_click()</slot>
    <hints>
     <hint type="sourcelabel">
      <x>284</x>
@@ -806,6 +812,22 @@ QPushButton:hover {
     </hint>
    </hints>
   </connection>
+  <connection>
+   <sender>uiProjectsTreeView</sender>
+   <signal>customContextMenuRequested(QPoint)</signal>
+   <receiver>MainWindow</receiver>
+   <slot>projects_right_click()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>1296</x>
+     <y>185</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>1308</x>
+     <y>31</y>
+    </hint>
+   </hints>
+  </connection>
  </connections>
  <slots>
   <slot>add_molecule()</slot>
@@ -813,7 +835,7 @@ QPushButton:hover {
   <slot>set_selected_mol()</slot>
   <slot>select_mol()</slot>
   <slot>unselect_mol()</slot>
-  <slot>right_click()</slot>
+  <slot>molecules_right_click()</slot>
   <slot>start_master_queue()</slot>
   <slot>pause_master_queue()</slot>
   <slot>add_group_calculation()</slot>
@@ -821,5 +843,6 @@ QPushButton:hover {
   <slot>set_selected_project()</slot>
   <slot>create_project()</slot>
   <slot>start_project()</slot>
+  <slot>projects_right_click()</slot>
  </slots>
 </ui>

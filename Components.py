@@ -4,6 +4,7 @@
 import os
 import re
 import shutil
+import subprocess
 import numpy as np
 from rdkit import Chem
 from rdkit.Chem import AllChem, Draw, Descriptors
@@ -11,6 +12,7 @@ from rdkit import RDLogger
 from openbabel import openbabel as ob
 from persistent import Persistent
 from datetime import datetime
+ob.obErrorLog.StopLogging()  # se puede cambiar por SetOutputLevel para logging
 
 
 class Molecule(Persistent):
@@ -37,6 +39,24 @@ class Molecule(Persistent):
             converter.ReadString(mol_ob, block)
             new_block = converter.WriteString(mol_ob)
             return Chem.MolFromSmiles(new_block)
+
+    def dock_prep(self):
+        mol_with_Hs = Chem.AddHs(self.mol)
+        AllChem.EmbedMolecule(mol_with_Hs, randomSeed=0xf00d)
+        converter = ob.OBConversion()
+        mol_ob = ob.OBMol()
+        converter.SetInAndOutFormats('mol', 'mol2')
+        file_name = f'molecules/{self.inchi_key}/{self.inchi_key}.mol2'
+        converter.ReadString(mol_ob, Chem.MolToMolBlock(mol_with_Hs))
+        converter.WriteFile(mol_ob, file_name)
+        subprocess.run(
+                f'obabel -imol2 {file_name} -O{file_name.split(".")[0]}.pdbqt -p7.4',
+                shell=True,
+                capture_output=True,
+                text=True
+            )
+        os.remove(file_name)
+        return file_name.split('.')[0] + '.pdbqt'
 
     def create_conformers(self):
         self.mol = Chem.AddHs(self.mol)
@@ -75,6 +95,8 @@ class Molecule(Persistent):
 
     @property
     def get_coordinates(self):
+        self.mol = Chem.AddHs(self.mol)
+        AllChem.EmbedMolecule(self.mol, randomSeed=0xf00d)
         coords = Chem.MolToXYZBlock(self.mol, confId=0).splitlines()
         new_coords = []
         for line in coords[2:]:
@@ -186,7 +208,8 @@ class Project(Persistent):
             os.makedirs(f'projects/{self.name}/')
         if self.molecules:
             img = Draw.MolsToGridImage(
-                [m.mol for m in self.molecules], molsPerRow=3,
+                [Chem.RemoveHs(m.mol) for m in self.molecules],
+                molsPerRow=3,
                 legends=[m.get_name for m in self.molecules]
             )
             img.save(self.grid_img)
@@ -196,8 +219,8 @@ class Project(Persistent):
         self.__create_grid_img()
         self._p_changed = True
 
-    def remove_molecule(self, molecule_id):
-        self.molecules.remove(molecule_id)
+    def remove_molecule(self):
+        self.molecules.pop()
         self.__create_grid_img()
         self._p_changed = True
 
@@ -205,10 +228,41 @@ class Project(Persistent):
         self.calculations.append(calc_data)
         self._p_changed = True
 
-    def remove_molecule(self, calculation_id):
-        self.calculations.remove(calculation_id)
+    def remove_calculation(self):
+        self.calculations.pop()
         self._p_changed = True
 
     def run_protocol(self):
         pass
+
+
+class Docking(Persistent):
+
+    def __init__(self, **kwargs):
+        for k, v in kwargs.items():
+            setattr(self, k, v)
+        self.programmed = datetime.now()
+        self.__status = 'Programmed'
+
+    def set_status(self, status):
+        self.__status = status
+        if status == 'Running':
+            self.started = datetime.now()
+        # elif status in 'Finished':
+            # self.opt_coords = self.__get_coordinates()
+            # self.mulliken_charges = self.__get_mulliken()
+            # self.homo = self.__get_homo()
+            # self.lumo = self.__get_lumo()
+            # self.finished = datetime.now()
+            # self.elapsed = self.finished - self.started
+            # print(self.opt_coords)
+        # else:
+            # self.finished = datetime.now()
+            # self.elapsed = self.finished - self.started
+        # self._p_changed = True
+
+    @property
+    def get_status(self):
+        return self.__status
+
 
