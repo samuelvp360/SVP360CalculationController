@@ -295,6 +295,9 @@
    <property name="text">
     <string>Aceptar</string>
    </property>
+   <property name="autoDefault">
+    <bool>true</bool>
+   </property>
   </widget>
   <widget class="QPushButton" name="uiCancelButton">
    <property name="geometry">
@@ -313,6 +316,9 @@
    </property>
    <property name="text">
     <string>Cancelar</string>
+   </property>
+   <property name="autoDefault">
+    <bool>true</bool>
    </property>
   </widget>
   <widget class="QWidget" name="layoutWidget">
@@ -396,7 +402,7 @@
    <sender>uiSubmitButton</sender>
    <signal>clicked()</signal>
    <receiver>Form</receiver>
-   <slot>submit()</slot>
+   <slot>queue_calculation()</slot>
    <hints>
     <hint type="sourcelabel">
      <x>263</x>
@@ -411,6 +417,6 @@
  </connections>
  <slots>
   <slot>open_receptor()</slot>
-  <slot>submit()</slot>
+  <slot>queue_calculation()</slot>
  </slots>
 </ui>

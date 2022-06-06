@@ -4,6 +4,7 @@ from PyQt5 import QtCore as qtc
 from PyQt5 import QtGui as qtg
 from Views import resources
 from rdkit.Chem import Draw
+from loguru import logger
 
 
 class StandardItem(qtg.QStandardItem):
@@ -166,12 +167,13 @@ class JobsModel(qtc.QAbstractTableModel):
             elif index.column() == 3:
                 return str(value.charge_mult)
             elif index.column() == 4:
-                if value.type == 'Docking':
-                    return f'Docking to {value.keywords.get("receptor_name")}'
-                else:
-                    return str(value.keywords)
+                return str(value.keywords)
             elif index.column() == 5:
-                return str(value.output_file.split('/')[2])
+                if isinstance(value.output_file, (list, tuple)):
+                    out = (i.split('/')[2] for i in value.output_file)
+                    return '\n'.join(out)
+                else:
+                    return str(value.output_file.split('/')[2])
             elif index.column() == 6:
                 return str(value.get_status)
             elif index.column() == 7:
@@ -323,52 +325,52 @@ class JobsModel(qtc.QAbstractTableModel):
         # return qtc.Qt.ItemIsEnabled | qtc.Qt.ItemIsSelectable
 
 
-# class IRDataModel(qtc.QAbstractTableModel):
-    # '''Model to populate the IR Bands Table'''
+class IRDataModel(qtc.QAbstractTableModel):
+    '''Model to populate the IR Bands Table'''
 
-    # def __init__(self, bandsDict, yAxis):
-        # super(IRDataModel, self).__init__()
-        # self._bands = bandsDict
-        # self._axis = yAxis
+    def __init__(self, bands_df, y_axis):
+        super().__init__()
+        self._bands = bands_df
+        self.y_axis = y_axis
 
-    # def data(self, index, role):
-        # if role == qtc.Qt.DisplayRole:
-            # if index.column() == 0:
-                # return str(round(self._bands.iloc[index.row(), index.column()], 2))
-            # elif index.column() == 1:
-                # return str(round(self._bands.loc[index.row(), self._axis], 6))
-            # elif index.column() == 2:
-                # return str(round(self._bands.loc[index.row(), 'HWHM'], 2))
-            # elif index.column() == 3:
-                # if self._bands.get('Beta') is not None:
-                    # return str(round(self._bands.loc[index.row(), 'Beta'], 4))
-                # else:
-                    # return ''
-        # if role == qtc.Qt.TextAlignmentRole:
-            # return qtc.Qt.AlignCenter
+    def data(self, index, role):
+        if role == qtc.Qt.DisplayRole:
+            if index.column() == 0:
+                return str(round(self._bands.iloc[index.row(), index.column()], 2))
+            elif index.column() == 1:
+                return str(round(self._bands.loc[index.row(), self.y_axis], 6))
+            elif index.column() == 2:
+                return str(round(self._bands.loc[index.row(), 'HWHM'], 2))
+            elif index.column() == 3:
+                if self._bands.get('Beta') is not None:
+                    return str(round(self._bands.loc[index.row(), 'Beta'], 4))
+                else:
+                    return ''
+        if role == qtc.Qt.TextAlignmentRole:
+            return qtc.Qt.AlignCenter
 
-    # def rowCount(self, index):
-        # return self._bands.shape[0]
+    def rowCount(self, index):
+        return self._bands.shape[0]
 
-    # def columnCount(self, index):
-        # return 4
+    def columnCount(self, index):
+        return 4
 
-    # def headerData(self, section, orientation, role):
-        # if role == qtc.Qt.DisplayRole:
-            # if orientation == qtc.Qt.Horizontal:
-                # if section == 0:
-                    # return 'Wavenumber'
-                # elif section == 1:
-                    # return self._axis
-                # elif section == 2:
-                    # return 'HWHM'
-                # else:
-                    # return 'Beta'
-            # if orientation == qtc.Qt.Vertical:
-                # return section + 1
+    def headerData(self, section, orientation, role):
+        if role == qtc.Qt.DisplayRole:
+            if orientation == qtc.Qt.Horizontal:
+                if section == 0:
+                    return 'Wavenumber'
+                elif section == 1:
+                    return self.y_axis
+                elif section == 2:
+                    return 'HWHM'
+                else:
+                    return 'Beta'
+            if orientation == qtc.Qt.Vertical:
+                return section + 1
 
-    # def flags(self, index):
-        # return qtc.Qt.ItemIsEnabled | qtc.Qt.ItemIsSelectable
+    def flags(self, index):
+        return qtc.Qt.ItemIsEnabled | qtc.Qt.ItemIsSelectable
 
 
 # class AvailableSpectraModel(qtc.QAbstractTableModel):

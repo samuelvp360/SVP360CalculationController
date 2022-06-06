@@ -4,6 +4,8 @@
 import re
 import subprocess
 import os
+import shutil
+from glob import glob
 import multiprocessing
 import numpy as np
 from os import listdir
@@ -20,13 +22,15 @@ class Gaussian(qtw.QMainWindow):
 
     submitted = qtc.pyqtSignal(dict)
 
-    def __init__(self, molecule, *, keywords=False):
+    def __init__(self, molecule, *, keywords=False, group=False, job_type=False):
         super().__init__()
         uic.loadUi('Views/uiCalculationsWindow.ui', self)
         self.uiOptGroupBox.setVisible(False)
         self.uiFreqGroupBox.setVisible(False)
         self.uiIRCGroupBox.setVisible(False)
     # ------------------------------------PROPERTIES-------------------------------------
+        self.group = group
+        self.job_type = job_type
         self.memory = virtual_memory().total // 1e9
         self.cpu = multiprocessing.cpu_count()
         self.keywords_line = []
@@ -1137,27 +1141,28 @@ class Gaussian(qtw.QMainWindow):
             '{}{}\n\n {}\n\n{}\n{}\n{}\n'.format(*self.input)
         )
 
-    def queue_calculation(self, job_type=False):
+    def queue_calculation(self):
         """
         docstring
         """
-        if not job_type:
-            job_type = self._jobTypes[self._jobsWidgets[0].currentIndex()]
-        name = f'molecules/{self._molecule.inchi_key}/{job_type}'
+        if not self.job_type:
+            self.job_type = self._jobTypes[self._jobsWidgets[0].currentIndex()]
+        name = f'molecules/{self._molecule.inchi_key}/{self.job_type}'
         existent_imputs = str(
             len(
-                [i for i in listdir(f'molecules/{self._molecule.inchi_key}/') if re.sub(r'_\d+\.com', '', i) == job_type]
+                [i for i in listdir(f'molecules/{self._molecule.inchi_key}/') if re.sub(r'_\d+\.com', '', i) == self.job_type]
             )
         )
         input_file = f'{name}_{existent_imputs}.com'
         keywords = self.uiKeywordsLabel.text()
         charge_mult = self.uiChargeMultLabel.text().replace(' ', '/')
-        if not job_type:
+        # error por solucionar
+        if not self.group:
             with open(input_file, 'w') as f:
                 f.write(self.uiPreviewPlainText.toPlainText())
         output_file = input_file.replace('.com', '.log')
         calculation = {
-            'type': job_type,
+            'type': self.job_type,
             'keywords': keywords,
             'charge_mult': charge_mult,
             'input_file': input_file,
@@ -1214,18 +1219,24 @@ class MyVina(qtw.QWidget):
 
     submitted = qtc.pyqtSignal(dict)
 
-    def __init__(self, molecule, *, keywords=False, project=False):
+    def __init__(
+        self, molecule, *,
+        config=False, project=False, times=1
+    ):
         super().__init__()
         uic.loadUi('Views/uiVina.ui', self)
         self.molecule = molecule
         self.project = project
-        self.show()
+        self.config = config
+        self.times = times
+        if not self.config:
+            self.show()
 
     def open_receptor(self):
         rec_path, _ = qtw.QFileDialog.getOpenFileName(
             self, 'Selecciona el receptor',
             options=qtw.QFileDialog.DontUseNativeDialog,
-            filter='Archivos pdb (*.pdb)'
+            filter='Archivos pdb o pdbqt (*.pdb *.pdbqt)'
         )
         if rec_path:
             self.uiReceptorLine.setText(rec_path)
@@ -1233,60 +1244,96 @@ class MyVina(qtw.QWidget):
 
     def receptor_prep(self, receptor_in, receptor_out):
         if not os.path.exists(receptor_out):
+            # water suppression
+            with open(receptor_in, 'r') as file:
+                lines = file.readlines()
+                new_lines = []
+                for line in lines:
+                    if line.startswith('HETATM'):
+                        col = line.split()
+                        if col[2] != 'O' and col[3] != 'HOH':
+                            lines.append(line)
+                    else:
+                        new_lines.append(line)
+            with open(receptor_in, 'w') as file:
+                file.writelines(new_lines)
+            # mol2 file generation in order to get the charges
             mol2_file = receptor_out.split(".")[0] + '.mol2'
             subprocess.run(
-                f'obabel -ipdb {receptor_in} -O{mol2_file} -h',
+                f'obabel {receptor_in} -O {mol2_file} -h',
                 shell=True,
                 capture_output=True,
                 text=True
             )
+            # pdbqt file generation  of a rigid prot. with proper Hs at pH = 7.4
             subprocess.run(
-                f'obabel -imol2 {mol2_file} -O{receptor_out} -p7.4 -xr',
+                f'obabel {mol2_file} -O {receptor_out} -p 7.4 -xr',
                 shell=True,
                 capture_output=True,
                 text=True
             )
             os.remove(mol2_file)
 
-    def submit(self):
-        receptor = self.uiReceptorLine.text()
-        receptor_name = receptor.split('/')[-1].split('.')[0]
-        if self.project:
-            receptor_file = f'{project}/{receptor_name}_receptor.pdbqt'
-        else:
-            receptor_file = f'molecules/{self.molecule.inchi_key}/{receptor_name}_receptor.pdbqt'
-        output_file = f'molecules/{self.molecule.inchi_key}/{self.molecule.inchi_key}_{receptor_name}_out.pdbqt'
-        config = {
-            'receptor_in': receptor,
-            'receptor_out': receptor_file,
-            'receptor_name': receptor_name,
-            'ligand': self.molecule.dock_prep(),
-            'out': output_file,
-            'center': (
+    def queue_calculation(self):
+        if not self.config:
+            receptor = self.uiReceptorLine.text()
+            *receptor_name, receptor_format = receptor.split('/')[-1].split('.')
+            if isinstance(receptor_name, list):
+                receptor_name = ''.join(receptor_name)
+            if self.project:
+                receptor_file = f'projects/{self.project.name}/{receptor_name}_receptor.pdbqt'
+            else:
+                receptor_file = f'molecules/{self.molecule.inchi_key}/{receptor_name}_receptor.pdbqt'
+            if receptor_format == 'pdbqt':
+                src = receptor
+                dst = receptor_file
+                shutil.copyfile(src, dst)
+            else:
+                self.receptor_prep(receptor, receptor_file)
+            center = (
                 self.uiCenterXDouble.value(),
                 self.uiCenterYDouble.value(),
                 self.uiCenterZDouble.value()
-            ),
-            'size': (
-                self.uiSizeXDouble.value(),
-                self.uiSizeYDouble.value(),
-                self.uiSizeZDouble.value()
-            ),
-            'energy_range': self.uiDiffEnergySpin.value(),
-            'num_modes': self.uiNumModesSpin.value(),
-            'exhaustiveness': self.uiExhausSpin.value(),
-            'times': self.uiTimesSpin.value()
-        }
+            )
+            self.times = self.uiTimesSpin.value()
+            self.config = {
+                'receptor': receptor_file,
+                'center_x': self.uiCenterXDouble.value(),
+                'center_y': self.uiCenterYDouble.value(),
+                'center_z': self.uiCenterZDouble.value(),
+                'size_x': self.uiSizeXDouble.value(),
+                'size_y': self.uiSizeYDouble.value(),
+                'size_z': self.uiSizeZDouble.value(),
+                'energy_range': self.uiDiffEnergySpin.value(),
+                'num_modes': self.uiNumModesSpin.value(),
+                'exhaustiveness': self.uiExhausSpin.value(),
+            }
+        center = (
+            self.config['center_x'],
+            self.config['center_y'],
+            self.config['center_z']
+        )
+        *receptor_name, receptor_format = self.config['receptor'].split('/')[-1].split('.')
+        ligand = self.molecule.dock_prep(center, receptor_name)
+        previous = len(glob(ligand.split('.')[0] + '_*.pdbqt'))
+        output_file = [
+            f'{ligand.split(".")[0]}_{i}.pdbqt' for i in range(previous + 1, self.times + 1)
+        ]
+        self.config.update({'ligand': ligand})
         calculation = {
             'type': 'Docking',
-            'keywords': config,
+            'config': self.config,
+            'receptor_in': receptor,
+            'receptor_out': receptor_file,
+            'receptor_name': receptor_name,
+            'times': self.times,
             'charge_mult': f'{self.molecule.get_formal_charge}/1',
-            'input_file': config.get('ligand'),
+            'keywords': f'Docking to {receptor_name}',
+            'input_file': f'{self.config.get("ligand").split(".")[0]}_conf.txt',
             'output_file': output_file,
             'molecule': self.molecule.get_name,
             'molecule_id': self.molecule.inchi_key
         }
-        self.receptor_prep(config.get('receptor_in'), config.get('receptor_out'))
         self.submitted.emit(calculation)
         self.close()
 

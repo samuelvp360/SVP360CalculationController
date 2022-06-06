@@ -12,7 +12,8 @@ from PyQt5 import QtGui as qtg
 from PyQt5 import uic
 from DB.molecules_db import MyZODB
 from datetime import datetime
-# from loguru import logger
+from loguru import logger
+# import threading
 # import pdb
 # from PyQt5.QtCore import pyqtRemoveInputHook
 
@@ -45,6 +46,7 @@ class MainWindow(qtw.QMainWindow):
         jobs_model = JobsModel(self.jobs_list)
         self.uiJobsTableView.setModel(jobs_model)
         self.uiJobsTableView.resizeColumnsToContents()
+        self.uiJobsTableView.resizeRowsToContents()
         # Molecules
         self.molecules_list = list(self.database.get_molecules_db)
         mol_tree_model = MoleculesModel(self.molecules_list, self.jobs_list)
@@ -90,7 +92,6 @@ class MainWindow(qtw.QMainWindow):
     def select_mol(self):
         selected_mol = self.selected_mol is not None
         if self.selected_project is not None:
-            print(self.selected_project.molecules)
             already_in = self.selected_mol in self.selected_project.molecules
             if selected_mol and not already_in:
                 self.selected_project.add_molecule(self.selected_mol)
@@ -107,7 +108,7 @@ class MainWindow(qtw.QMainWindow):
         mol_path, _ = qtw.QFileDialog.getOpenFileNames(
             self, 'Selecciona la molécula a cargar',
             options=qtw.QFileDialog.DontUseNativeDialog,
-            filter='Archivos de moléculas (*.mol *.mol2 *pdb)'
+            filter='Archivos de moléculas (*.mol *.mol2 *.pdb)'
         )
         if mol_path:
             for m in mol_path:
@@ -154,6 +155,7 @@ class MainWindow(qtw.QMainWindow):
                 self.uiProjectNameLine.clear()
                 self.set_models()
 
+    # revisar
     def add_group_calculation(self):
         calc = self.uiCalculationsComboBox.currentText()
         if calc == 'Gaussian':
@@ -168,27 +170,43 @@ class MainWindow(qtw.QMainWindow):
             self.database.commit()
             self.set_models()
 
-    def start_project(self):
+    @logger.catch
+    def start_project(self, log):
+        print(log)
         # escogre si ejecutar en serie o en paralelo
         project = self.selected_project
-        calculations = self.selected_project.calculations
-        if project is not None and calculations:
-            for calc in calculations:
+        if project is not None and self.selected_project.calculations:
+            for calc in self.selected_project.calculations:
                 if calc['type'] in ('Optimization', 'Energy', 'Frequency'):
+                    # esto sería para hacer en paralelo; invertir el if anterior y
+                    # el siguiente for para hacer en serie (según moléculas)
                     for molecule in project.molecules:
                         self.gauss_controller = Gaussian(
                             molecule,
                             keywords=calc['keywords'],
+                            job_type=calc['type']
                         )
                         self.gauss_controller.submitted.connect(self.queue_manager)
-                        self.gauss_controller.queue_calculation(calc['type'])
+                        self.gauss_controller.queue_calculation()
+                elif calc['type'] == 'Docking':
+                    for molecule in project.molecules:
+                        self.vina_controller = MyVina(
+                            molecule,
+                            config=calc['config'],
+                            project=project,
+                            times=calc['times']
+                        )
+                        self.vina_controller.submitted.connect(self.queue_manager)
+                        self.vina_controller.queue_calculation()
 
     def gaussian_setup(self, group=False):
         if not group:
             self.gauss_controller = Gaussian(self.selected_mol)
             self.gauss_controller.submitted.connect(self.queue_manager)
         else:
-            self.gauss_controller = Gaussian(self.selected_project.molecules[0])
+            self.gauss_controller = Gaussian(
+                self.selected_project.molecules[0], group=True
+            )
             self.gauss_controller.submitted.connect(self.set_group_calc)
 
     def vina_setup(self, group=False):
@@ -215,6 +233,7 @@ class MainWindow(qtw.QMainWindow):
             job = Optimization(**calculation)
         elif calculation.get('type') == 'Docking':
             job = Docking(**calculation)
+            job.create_config()
         mol = self.database.get('molecules', calculation['molecule_id'])
         mol.add_calculation(job.id)
         self.database.set('jobs', job.id, job)
@@ -237,20 +256,24 @@ class MainWindow(qtw.QMainWindow):
     @qtc.pyqtSlot(int, str)
     def workflow(self, job_id, status):
         job = self.database.get('jobs', job_id)
-        molecule = self.database.get('molecules', job.molecule_id)
+        # molecule = self.database.get('molecules', job.molecule_id)
         job.set_status(status)
         self.database.commit()
+        message = f'{job.type}: {job.molecule} -> {status}'
+        self.statusBar().showMessage(message)
         self.set_models()
 
     def start_master_queue(self):
         self.uiStartQueueButton.setEnabled(False)
         self.uiPauseQueueButton.setEnabled(True)
-        self.worker = Worker(self.master_queue)
+        self.worker = Worker(tuple(self.master_queue))
         self.thread = qtc.QThread()
         self.worker.moveToThread(self.thread)
         self.thread.started.connect(self.worker.start_queue)
         self.worker.finished.connect(self.thread.quit)
-        self.worker.finished.connect(lambda: self.uiStartQueueButton.setEnabled(True))
+        self.worker.finished.connect(
+            lambda: self.uiStartQueueButton.setEnabled(True)
+        )
         self.worker.workflow.connect(self.workflow)
         self.uiPauseQueueButton.clicked.connect(self.worker.pause)
         self.thread.start()
@@ -304,6 +327,7 @@ if __name__ == '__main__':
 # TODO
 # Docking para proyecto,
 # Arreglar lo de los hidrógenos en la representación de grilla en los proyectos
-# Extraer energías de las poses después del docking
 # Gráfica de energías vs moléculas en el proyecto
+# poder descartar un cálculo que fue programado, borrando los archivos que haya
+# generado
 

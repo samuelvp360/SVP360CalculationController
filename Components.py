@@ -8,9 +8,12 @@ import subprocess
 import numpy as np
 from rdkit import Chem
 from rdkit.Chem import AllChem, Draw, Descriptors
+from rdkit.Chem import rdMolAlign
+from rdkit.Geometry import Point3D
 from rdkit import RDLogger
 from openbabel import openbabel as ob
 from persistent import Persistent
+from vina import Vina
 from datetime import datetime
 ob.obErrorLog.StopLogging()  # se puede cambiar por SetOutputLevel para logging
 
@@ -40,23 +43,37 @@ class Molecule(Persistent):
             new_block = converter.WriteString(mol_ob)
             return Chem.MolFromSmiles(new_block)
 
-    def dock_prep(self):
+    def __set_mol_picture(self):
+        AllChem.Compute2DCoords(self.mol)
+        self.mol_pic = f'molecules/{self.inchi_key}/{self.inchi_key}.png'
+        if not os.path.exists(f'molecules/{self.inchi_key}/'):
+            os.makedirs(f'molecules/{self.inchi_key}/')
+        Draw.MolToFile(self.mol, self.mol_pic, size=(200, 200))
+
+    def dock_prep(self, center, receptor_name):
         mol_with_Hs = Chem.AddHs(self.mol)
         AllChem.EmbedMolecule(mol_with_Hs, randomSeed=0xf00d)
+        half = mol_with_Hs.GetNumAtoms() // 2
+        mol_ref = Chem.MolFromSmiles('C')
+        AllChem.EmbedMultipleConfs(mol_ref, 1)
+        conf = mol_ref.GetConformer(0)
+        conf.SetAtomPosition(0, Point3D(*center))
+        rdMolAlign.AlignMol(mol_with_Hs, mol_ref, atomMap=[(half, 0)])
         converter = ob.OBConversion()
         mol_ob = ob.OBMol()
         converter.SetInAndOutFormats('mol', 'mol2')
         file_name = f'molecules/{self.inchi_key}/{self.inchi_key}.mol2'
         converter.ReadString(mol_ob, Chem.MolToMolBlock(mol_with_Hs))
         converter.WriteFile(mol_ob, file_name)
+        new_name = f'{file_name.split(".")[0]}_{receptor_name}.pdbqt'
         subprocess.run(
-                f'obabel -imol2 {file_name} -O{file_name.split(".")[0]}.pdbqt -p7.4',
-                shell=True,
-                capture_output=True,
-                text=True
-            )
+            f'obabel -i mol2 {file_name} -O {new_name} -p 7.4',
+            shell=True,
+            capture_output=True,
+            text=True
+        )
         os.remove(file_name)
-        return file_name.split('.')[0] + '.pdbqt'
+        return new_name
 
     def create_conformers(self):
         self.mol = Chem.AddHs(self.mol)
@@ -69,13 +86,6 @@ class Molecule(Persistent):
         else:
             n_conf = 300
         AllChem.EmbedMultipleConfs(self.mol, n_conf)
-
-    def __set_mol_picture(self):
-        AllChem.Compute2DCoords(self.mol)
-        self.mol_pic = f'molecules/{self.inchi_key}/{self.inchi_key}.png'
-        if not os.path.exists(f'molecules/{self.inchi_key}/'):
-            os.makedirs(f'molecules/{self.inchi_key}/')
-        Draw.MolToFile(self.mol, self.mol_pic, size=(200, 200))
 
     def set_name(self, name, init=False):
         if init:
@@ -155,14 +165,13 @@ class Optimization(Persistent):
         self.__status = status
         if status == 'Running':
             self.started = datetime.now()
-        elif status in 'Finished':
+        elif status == 'Finished':
             self.opt_coords = self.__get_coordinates()
             self.mulliken_charges = self.__get_mulliken()
             self.homo = self.__get_homo()
             self.lumo = self.__get_lumo()
             self.finished = datetime.now()
             self.elapsed = self.finished - self.started
-            print(self.opt_coords)
         else:
             self.finished = datetime.now()
             self.elapsed = self.finished - self.started
@@ -248,21 +257,57 @@ class Docking(Persistent):
         self.__status = status
         if status == 'Running':
             self.started = datetime.now()
-        # elif status in 'Finished':
-            # self.opt_coords = self.__get_coordinates()
-            # self.mulliken_charges = self.__get_mulliken()
-            # self.homo = self.__get_homo()
-            # self.lumo = self.__get_lumo()
-            # self.finished = datetime.now()
-            # self.elapsed = self.finished - self.started
-            # print(self.opt_coords)
-        # else:
-            # self.finished = datetime.now()
-            # self.elapsed = self.finished - self.started
-        # self._p_changed = True
+        elif status in 'Finished':
+            self.energies = self.get_binding_energies(self.output_file)
+            print(self.energies)
+            self.finished = datetime.now()
+            self.elapsed = self.finished - self.started
+        else:
+            self.finished = datetime.now()
+            self.elapsed = self.finished - self.started
 
     @property
     def get_status(self):
         return self.__status
+
+    def get_binding_energies(self, outputs):
+        energies = np.zeros(len(outputs))
+        for index, out in enumerate(outputs):
+            with open(out, 'r') as file:
+                for line in file.readlines():
+                    if line.startswith('REMARK VINA RESULT:'):
+                        energies[index] = float(line.split()[3])
+                        break
+        return energies
+
+    def create_config(self):
+        conf = ''
+        with open(f'{self.config.get("ligand").split(".")[0]}_conf.txt', 'w') as file:
+            for k, v in self.config.items():
+                conf += f'{k} = {v}\n'
+            file.write(conf)
+        # input_file = []
+        # template = 'molecules/{0}/{0}_{1}_out_{2}.conf'
+        # receptor_name = self.config.get('receptor').split('/')[-1].split('_receptor')[0]
+        # previous = len(
+            # glob(
+                # template.format(
+                    # self.molecule.inchi_key,
+                    # receptor_name,
+                    # '*'
+                # )
+            # )
+        # )
+        # for i in range(previous, previous + self.times):
+            # output_file.append(
+                # template.format(
+                    # self.molecule.inchi_key,
+                    # receptor_name,
+                    # i
+                # )
+            # )
+        # self.config.update({'out': tuple(output_file)})
+
+
 
 
