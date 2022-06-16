@@ -22,12 +22,57 @@ from Views import resources
 matplotlib.use('Qt5Agg')
 
 
+class SnappingCursor:
+    """
+    A cross hair cursor that snaps to the data point of a line, which is
+    closest to the *x* position of the cursor.
+
+    For simplicity, this assumes that *x* values of the data are sorted.
+    """
+    def __init__(self, ax, line):
+        self.ax = ax
+        self.horizontal_line = ax.axhline(color='k', lw=0.8, ls='--')
+        self.vertical_line = ax.axvline(color='k', lw=0.8, ls='--')
+        self.x, self.y = line.get_data()
+        self._last_index = None
+        # text location in axes coords
+        self.text = ax.text(0.72, 0.9, '', transform=ax.transAxes)
+
+    def set_cross_hair_visible(self, visible):
+        need_redraw = self.horizontal_line.get_visible() != visible
+        self.horizontal_line.set_visible(visible)
+        self.vertical_line.set_visible(visible)
+        self.text.set_visible(visible)
+        return need_redraw
+
+    def on_mouse_move(self, event):
+        if not event.inaxes:
+            self._last_index = None
+            need_redraw = self.set_cross_hair_visible(False)
+            if need_redraw:
+                self.ax.figure.canvas.draw()
+        else:
+            self.set_cross_hair_visible(True)
+            x, y = event.xdata, event.ydata
+            index = len(self.x) - np.searchsorted(np.flip(self.x), x)
+            # index = min(np.searchsorted(self.x, x), len(self.x) - 1)
+            if index == self._last_index:
+                return  # still on the same data point. Nothing to do.
+            self._last_index = index
+            x = self.x[index]
+            y = self.y[index]
+            # update the line positions
+            self.horizontal_line.set_ydata(y)
+            self.vertical_line.set_xdata(x)
+            self.ax.figure.canvas.draw()
+
+
 class IRCanvas(FigureCanvasQTAgg):
     """
     docstring
     """
     def __init__(self):
-        self.fig = Figure(figsize=(6, 4), dpi=100, facecolor='#2d2a2e')
+        self.fig = Figure(figsize=(6, 4), dpi=100)  #, facecolor='#2d2a2e')
         self.grid = GridSpec(17, 1, left=0.1, bottom=0.15, right=0.94, top=0.94, wspace=0.3, hspace=0.3)
         self.ax = self.fig.add_subplot(self.grid[0:, 0])
         self.ax2 = self.ax.twinx()
@@ -42,12 +87,11 @@ class IRPlotter(qtw.QMainWindow):
 
     def __init__(
         self,
-        title='Nombre aquí',
-        solvent='Solvente aquí',
-        csv_path=None,
+        title='',
+        solvent='',
         df=None,
-        bands_df={},
-        predicted_bands={}
+        bands_df=None,
+        predicted_bands=None
     ):
         super().__init__()
         uic.loadUi('Views/uiIRPlotter_new.ui', self)
@@ -57,7 +101,6 @@ class IRPlotter(qtw.QMainWindow):
         self.uiDetectBaselineButton.setIcon(qtg.QIcon(':/icons/baselineIcon.png'))
         self.uiNormalizeButton.setIcon(qtg.QIcon(':/icons/normalizeIcon.png'))
         self.uiShowGridButton.setIcon(qtg.QIcon(':/icons/gridIcon.png'))
-
         self.canvas = IRCanvas()
         self.toolbar = NavigationToolbar(self.canvas, self)
         self.uiToolbarLayout.addWidget(self.toolbar)
@@ -67,9 +110,8 @@ class IRPlotter(qtw.QMainWindow):
         )
         self.title = title
         self.solvent = solvent
-        self.statusBar().showMessage(
-            f'Showing IR spectrum from {self.title} ({self.solvent})'
-        )
+        self.predicted_bands = predicted_bands
+        self.bands_fitted = False if not predicted_bands else True
         if bands_df is not None:
             self.uiBandFittingAutoButton.setEnabled(True)
             self.uiRemoveBandButton.setEnabled(True)
@@ -79,10 +121,14 @@ class IRPlotter(qtw.QMainWindow):
         self.order_base = self.uiOrderBaseSpinBox.value()
         self.order_bands = self.uiOrderBandsSpinBox.value()
         self.show_grid = True
-        self.normalized = self.uiNormalizeButton.isChecked()
+        self.normalized = False
+        self.snap_cursor = None
         self.baseline = False
 
-        self.df =  self.load_data(csv_path) if df is None else df
+        self.df = df
+        self.copied_cells = None
+        self.cwd = ''
+        self.y_axis = '%Transmittance'
         self.bands_df = pd.DataFrame({
             'Wavenumber': [],
             'Transmittance': [],
@@ -93,11 +139,6 @@ class IRPlotter(qtw.QMainWindow):
             'Absorbance(N)': [],
             'HWHM': []
         }) if not bands_df else bands_df
-        self.predicted_bands = predicted_bands
-        self.bands_fitted = False if not predicted_bands else True
-        if csv_path:
-            self.set_y_axis()
-        self.select_y_axis('%Transmittance')
 # ------------------------------------SIGNALS---------------------------------------------------------------
         self.uiTransButton.clicked.connect(lambda: self.select_y_axis('Transmittance'))
         self.uiPercentTransButton.clicked.connect(lambda: self.select_y_axis('%Transmittance'))
@@ -105,34 +146,53 @@ class IRPlotter(qtw.QMainWindow):
 
     def set_title(self, value):
         self.title = value
+        self.statusBar().showMessage(
+            f'Showing IR spectrum from {self.title} ({self.solvent})'
+        )
         self.plot()
 
     def set_solvent(self, value):
         self.solvent = value
+        self.statusBar().showMessage(
+            f'Showing IR spectrum from {self.title} ({self.solvent})'
+        )
         self.plot()
 
-    def load_data(self, path):
-        with open(path, 'r') as file:
-            lines = file.readlines()
-            new_lines = []
-            for line in lines:
-                if line[0].isdigit():
-                    new_lines.append(line)
+    def open_file(self):
+        filename, _ = qtw.QFileDialog.getOpenFileName(
+            self, 'Selecciona la molécula a cargar',
+            options=qtw.QFileDialog.DontUseNativeDialog,
+            filter='CSV files(*.csv)'
+        )
+        if filename:
+            *path, name = filename.split('/')
+            path = '/'.join(path)
+            name = ''.join(name.split('.')[:-1])
+            self.cwd = (path)
+            self.title = name
+            self.bands_df = None
+            with open(filename, 'r') as file:
+                lines = file.readlines()
+                new_lines = []
+                for line in lines:
+                    if line[0].isdigit():
+                        new_lines.append(line)
 
-            csv_str = ''.join(new_lines)
+                csv_str = ''.join(new_lines)
 
-        try:
-            df = pd.read_csv(
-                StringIO(csv_str), dtype=float,
-                names=('Wavenumber', 'Raw Data')
-            )
-        except ValueError:
-            df = pd.read_csv(
-                StringIO(csv_str), delimiter=';',
-                decimal=',', dtype=float,
-                names=('Wavenumber', 'Raw Data')
-            )
-        return df
+            try:
+                self.df = pd.read_csv(
+                    StringIO(csv_str), dtype=float,
+                    names=('Wavenumber', 'Raw Data')
+                )
+            except ValueError:
+                self.df = pd.read_csv(
+                    StringIO(csv_str), delimiter=';',
+                    decimal=',', dtype=float,
+                    names=('Wavenumber', 'Raw Data')
+                )
+            self.set_y_axis()
+            self.select_y_axis('%Transmittance')
 
     def plot(self):
         """
@@ -140,24 +200,29 @@ class IRPlotter(qtw.QMainWindow):
         """
         self.canvas.ax.clear()
         self.canvas.ax2.clear()
-        self.canvas.ax.plot(self.df['Wavenumber'], self.df[self.y_axis], linewidth=1.5, color='#272822')
-        self.canvas.ax.set_title(f'{self.title} ({self.solvent})', color='#ae81ff')
-        self.canvas.ax.set_xlabel('Wavenumber [cm-1]', color='#f92672')
-        self.canvas.ax.set_ylabel(self.y_axis, color='#f92672')
-        self.canvas.ax.tick_params(axis='x', colors='#66d9ef')
-        self.canvas.ax.tick_params(axis='y', colors='#66d9ef')
-        self.canvas.ax2.set_ylabel('Residuals', color='#f92672')
-        self.canvas.ax2.tick_params(axis='y', colors='#66d9ef')
+        self.line = self.canvas.ax.plot(self.df['Wavenumber'], self.df[self.y_axis], linewidth=1.5, color='#272822')
+        self.canvas.ax.set_title(f'{self.title} ({self.solvent})')
+        self.canvas.ax.set_xlabel('Wavenumber [cm-1]')
+        self.canvas.ax.set_ylabel(self.y_axis)  #, color='#f92672')
+        self.canvas.ax.tick_params(axis='x')  #, colors='#66d9ef')
+        self.canvas.ax.tick_params(axis='y')  #, colors='#66d9ef')
+        self.canvas.ax2.tick_params(axis='y')  #, colors='#66d9ef')
         self.canvas.ax.set_xlim(4000, 500)
         self.canvas.ax.grid(
-            True, color='#2d2a2e', linestyle=':', linewidth=0.5
+            True, linestyle=':', linewidth=0.5, color='#2d2a2e'
         ) if self.show_grid else self.canvas.ax.grid(False)
+        if self.uiBandManualButton.isChecked():
+            self.snap_cursor = SnappingCursor(self.canvas.ax, self.line[0])
+            self.canvas.mpl_connect('motion_notify_event', self.snap_cursor.on_mouse_move)
+        else:
+            self.snap_cursor = None
         if self.baseline:
             self.canvas.ax.plot(
                 self.df['Wavenumber'], self.baseline_df[self.y_axis],
                 linewidth=1.0, color='#f92672'
             )
         if self.bands_fitted:
+            self.canvas.ax2.set_ylabel('Residuals')  #, color='#f92672')
             for _, predicted in self.predicted_bands[self.y_axis].iteritems():
                 self.canvas.ax.plot(self.df['Wavenumber'], predicted, linewidth=0.0)
                 axis = self.y_axis.split('(')[0]
@@ -181,7 +246,7 @@ class IRPlotter(qtw.QMainWindow):
                     self.canvas.ax.fill_between(
                         self.df['Wavenumber'], predicted, 0, alpha=0.2
                     )
-        if self.bands_df.shape[0]:
+        if self.bands_df is not None and self.bands_df.shape[0]:
             for index, row in self.bands_df.iterrows():
                 axis = self.y_axis.split('(')[0]
                 if axis == 'Transmittance' or axis == '%Transmittance':
@@ -198,11 +263,11 @@ class IRPlotter(qtw.QMainWindow):
         self.set_model()
 
     def set_model(self):
-        self.bands_model = IRDataModel(self.bands_df, self.y_axis)
-        self.uiIRBandsTableView.setModel(self.bands_model)
-        self.uiIRBandsTableView.resizeColumnsToContents()
-        self.uiIRBandsTableView.resizeRowsToContents()
-        # self.bands_model.layoutChanged.emit()
+        if self.bands_df is not None:
+            self.bands_model = IRDataModel(self.bands_df, self.y_axis)
+            self.uiIRBandsTableView.setModel(self.bands_model)
+            self.uiIRBandsTableView.resizeColumnsToContents()
+            self.uiIRBandsTableView.resizeRowsToContents()
 
     def set_y_axis(self):
         """
@@ -371,7 +436,7 @@ class IRPlotter(qtw.QMainWindow):
         })
         self.predicted_bands = {}
         self.set_y_axis()
-        self.select_y_axis('Transmittance')
+        self.select_y_axis('%Transmittance(N)')
 
     def bands_detect_auto(self):
         """
@@ -401,6 +466,7 @@ class IRPlotter(qtw.QMainWindow):
         self.bands_df = self.bands_df.round(6)
         self.uiBandFittingAutoButton.setEnabled(True)
         self.uiRemoveBandButton.setEnabled(True)
+        self.uiToolBox.setCurrentIndex(3)
         self.plot()
 
     def bands_detect_manual(self, event):
@@ -429,6 +495,16 @@ class IRPlotter(qtw.QMainWindow):
                     'Absorbance(N)': [absorbance_N],
                     'HWHM': [self.HWHM(ix, percent_N)]
                 })
+                if self.bands_df is None:
+                    self.bands_df = pd.DataFrame({
+                        'Wavenumber': [],
+                        'Transmittance': [],
+                        '%Transmittance': [],
+                        'Absorbance': [],
+                        'Transmittance(N)': [],
+                        '%Transmittance(N)': [],
+                        'Absorbance(N)': [],
+                    })
                 self.bands_df = self.bands_df.append(new_band, ignore_index=True)
                 self.bands_df = self.bands_df.round(6)
             except IndexError:
@@ -556,28 +632,64 @@ class IRPlotter(qtw.QMainWindow):
         self.uiRemoveBandButton.setEnabled(True)
 
     def save_data(self):
-        date = datetime.now()
-        bands_df = self.bands_df if self.bands_df.shape[0] else None
-        predicted = self.predicted_bands if self.predicted_bands.items() else None
-        self.data_sent.emit({
-            'TYPE': 'FTIR',
-            'DATE': str(date),
-            'SOLVENT': self._solvent,
-            'DATA FRAME': self.df,
-            'BANDS': bands_df,
-            'PREDICTED': predicted
-        })
-        reply = qtw.QMessageBox.question(
-            self, 'Window Close',
-            'The spectrum has been stored, do you want to close the window?',
-            qtw.QMessageBox.Yes | qtw.QMessageBox.No,
-            qtw.QMessageBox.No
+        filename, _ = qtw.QFileDialog.getSaveFileName(
+            self, 'Save bands report in txt format',
+            options=qtw.QFileDialog.DontUseNativeDialog,
+            filter='Txt file (*.txt)',
+            directory=self.cwd
         )
+        if filename:
+            new_filename = filename + '.txt' if not '.txt' in filename else filename
+            general_info = f'Bands report for: {self.title} ({self.solvent})\n'
+            with open(new_filename, 'w') as file:
+                df_str = self.bands_df.to_string(header=True, index=True)
+                file.write(general_info + df_str)
 
-        if reply == qtw.QMessageBox.Yes:
-            self.close()
+    # def send_data(self):
+        # date = datetime.now()
+        # bands_df = self.bands_df if self.bands_df.shape[0] else None
+        # predicted = self.predicted_bands if self.predicted_bands.items() else None
+        # self.data_sent.emit({
+            # 'TYPE': 'FTIR',
+            # 'DATE': str(date),
+            # 'SOLVENT': self.solvent,
+            # 'DATA FRAME': self.df,
+            # 'BANDS': bands_df,
+            # 'PREDICTED': predicted
+        # })
+        # reply = qtw.QMessageBox.question(
+            # self, 'Window Close',
+            # 'The spectrum has been stored, do you want to close the window?',
+            # qtw.QMessageBox.Yes | qtw.QMessageBox.No,
+            # qtw.QMessageBox.No
+        # )
 
+        # if reply == qtw.QMessageBox.Yes:
+            # self.close()
 
+    def keyPressEvent(self, event):
+        ctrl_pressed = (event.modifiers() & qtc.Qt.ControlModifier)
+        selected = self.uiIRBandsTableView.selectedIndexes()
+        if event.key() == qtc.Qt.Key_C and ctrl_pressed:
+            self.copied_cells = sorted(selected)
+        elif event.key() == qtc.Qt.Key_V and ctrl_pressed and self.copied_cells:
+            for cell in self.copied_cells:
+                print(cell.data())
+        elif event.key() == qtc.Qt.Key_M:
+            if self.uiBandManualButton.isChecked():
+                self.uiBandManualButton.setChecked(False)
+                self.plot()
+            else:
+                self.uiBandManualButton.setChecked(True)
+                self.plot()
+        elif event.key() == qtc.Qt.Key_A:
+            self.bands_detect_auto()
+        elif event.key() == qtc.Qt.Key_Delete and selected:
+            self.remove_band()
+        if event.key() == qtc.Qt.Key_S and ctrl_pressed:
+            self.save_data()
+        if event.key() == qtc.Qt.Key_O and ctrl_pressed:
+            self.open_file()
 
 
 

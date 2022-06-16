@@ -330,27 +330,27 @@ class IRDataModel(qtc.QAbstractTableModel):
 
     def __init__(self, bands_df, y_axis):
         super().__init__()
-        self._bands = bands_df
+        self.bands = bands_df
         self.y_axis = y_axis
 
     def data(self, index, role):
         if role == qtc.Qt.DisplayRole:
             if index.column() == 0:
-                return str(round(self._bands.iloc[index.row(), index.column()], 2))
+                return str(round(self.bands.iloc[index.row(), index.column()], 2))
             elif index.column() == 1:
-                return str(round(self._bands.loc[index.row(), self.y_axis], 6))
+                return str(round(self.bands.loc[index.row(), self.y_axis], 6))
             elif index.column() == 2:
-                return str(round(self._bands.loc[index.row(), 'HWHM'], 2))
+                return str(round(self.bands.loc[index.row(), 'HWHM'], 2))
             elif index.column() == 3:
-                if self._bands.get('Beta') is not None:
-                    return str(round(self._bands.loc[index.row(), 'Beta'], 4))
+                if self.bands.get('Beta') is not None:
+                    return str(round(self.bands.loc[index.row(), 'Beta'], 4))
                 else:
                     return ''
         if role == qtc.Qt.TextAlignmentRole:
             return qtc.Qt.AlignCenter
 
     def rowCount(self, index):
-        return self._bands.shape[0]
+        return self.bands.shape[0]
 
     def columnCount(self, index):
         return 4
@@ -365,7 +365,7 @@ class IRDataModel(qtc.QAbstractTableModel):
                 elif section == 2:
                     return 'HWHM'
                 else:
-                    return 'Beta'
+                    return '\u03b2'
             if orientation == qtc.Qt.Vertical:
                 return section + 1
 
