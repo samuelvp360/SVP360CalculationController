@@ -20,12 +20,20 @@ ob.obErrorLog.StopLogging()  # se puede cambiar por SetOutputLevel para logging
 
 class Molecule(Persistent):
 
-    def __init__(self, path, file_format):
+    def __init__(self, path=None, file_format=None, smiles=None):
         RDLogger.DisableLog('rdApp.*')  # evita los mensajes adicionales no cruciales
-        self.mol = self.__create_mol(path, file_format)
+        if smiles:
+            if len(smiles.split(' ')) == 2:
+                smiles, name = smiles.split(' ')
+            else:
+                name = 'NN'
+            self.mol = self.__from_smiles(smiles)
+            self.set_name(name)
+        else:
+            self.mol = self.__from_path(path, file_format)
+            self.set_name(path, init=True)
         self.calculations = []
         if self.mol:
-            self.set_name(path, init=True)
             self.inchi_key = Chem.MolToInchiKey(self.mol)
             self.smiles = Chem.MolToSmiles(self.mol)
             self.MW = Chem.rdMolDescriptors.CalcExactMolWt(self.mol)
@@ -33,7 +41,15 @@ class Molecule(Persistent):
             self.__set_mol_picture()
             # self.create_conformers()
 
-    def __create_mol(self, path, file_format):
+    def __from_smiles(self, smiles):
+        converter = ob.OBConversion()
+        converter.SetInAndOutFormats('smi', 'can')
+        mol_ob = ob.OBMol()
+        converter.ReadString(mol_ob, smiles)
+        new_block = converter.WriteString(mol_ob)
+        return Chem.MolFromSmiles(new_block)
+
+    def __from_path(self, path, file_format):
         with open(path, 'r') as file:
             block = file.read()
             converter = ob.OBConversion()
@@ -91,7 +107,7 @@ class Molecule(Persistent):
         if init:
             self.__name = name.split('/')[-1].split('.')[0]
         else:
-            self.__name = name
+            self.__name = name.strip()
             self._p_changed = True
         self.mol.SetProp('_Name', self.__name)
 
@@ -209,6 +225,7 @@ class Project(Persistent):
         self.name = name
         self.molecules = []
         self.calculations = []
+        self.job_ids = []
         self.grid_img = f'projects/{self.name}/{self.name}.png'
         self.__create_grid_img()
 
@@ -237,6 +254,10 @@ class Project(Persistent):
         self.calculations.append(calc_data)
         self._p_changed = True
 
+    def add_job_id(self, job_id):
+        self.job_ids.append(job_id)
+        self._p_changed = True
+
     def remove_calculation(self):
         self.calculations.pop()
         self._p_changed = True
@@ -262,6 +283,7 @@ class Docking(Persistent):
             print(self.energies)
             self.finished = datetime.now()
             self.elapsed = self.finished - self.started
+            self._p_changed = True
         else:
             self.finished = datetime.now()
             self.elapsed = self.finished - self.started

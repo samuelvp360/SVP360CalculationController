@@ -36,13 +36,13 @@ class SnappingCursor:
         self.x, self.y = line.get_data()
         self._last_index = None
         # text location in axes coords
-        self.text = ax.text(0.72, 0.9, '', transform=ax.transAxes)
+        # self.text = ax.text(0.72, 0.9, '', transform=ax.transAxes)
 
     def set_cross_hair_visible(self, visible):
         need_redraw = self.horizontal_line.get_visible() != visible
         self.horizontal_line.set_visible(visible)
         self.vertical_line.set_visible(visible)
-        self.text.set_visible(visible)
+        # self.text.set_visible(visible)
         return need_redraw
 
     def on_mouse_move(self, event):
@@ -59,6 +59,8 @@ class SnappingCursor:
             if index == self._last_index:
                 return  # still on the same data point. Nothing to do.
             self._last_index = index
+            if index >= self.x.size:
+                return
             x = self.x[index]
             y = self.y[index]
             # update the line positions

@@ -92,8 +92,12 @@ class Worker(qtc.QObject):
             cmd += f' --{k} {v}'
         for out in self.job.output_file:
             new_cmd = cmd + f' --out {out}'
-            print(new_cmd)
-            subprocess.run(new_cmd, shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+            subprocess.run(
+                new_cmd,
+                shell=True,
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL
+            )
 
     def check_vina(self):
         return all((os.path.exists(out) for out in self.job.output_file))

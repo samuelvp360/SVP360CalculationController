@@ -7,7 +7,42 @@ from rdkit.Chem import Draw
 from loguru import logger
 
 
+class PandasModel(qtc.QAbstractTableModel):
+    '''Generic model to populate a pandas containing model'''
+
+    def __init__(self, data):
+        super().__init__()
+        self.data = data
+
+    def data(self, index, role):
+        value = self.data.iloc[index.row(), index.column()]
+        if role == qtc.Qt.DisplayRole:
+            return str(value)
+        elif role == qtc.Qt.TextAlignmentRole:
+            if index.column() == 0:
+                return qtc.Qt.AlignLeft | qtc.Qt.AlignVCenter
+            else:
+                return qtc.Qt.AlignRight | qtc.Qt.AlignVCenter
+
+    def rowCount(self, index):
+        return self.data.shape[0]
+
+    def columnCount(self, index):
+        return self.data.shape[1]
+
+    def headerData(self, section, orientation, role):
+        if role == qtc.Qt.DisplayRole:
+            if orientation == qtc.Qt.Vertical:
+                return str(section + 1)
+            elif orientation == qtc.Qt.Horizontal:
+                return self.data.columns[section]
+
+    def flags(self, index):
+        return qtc.Qt.ItemIsEnabled | qtc.Qt.ItemIsSelectable
+
+
 class StandardItem(qtg.QStandardItem):
+
     def __init__(
         self, txt='', img='', font_size=12, set_bold=False,
         color='black'

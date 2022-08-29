@@ -8,14 +8,35 @@ import shutil
 from glob import glob
 import multiprocessing
 import numpy as np
+import pandas as pd
 from os import listdir
 from PyQt5 import QtWidgets as qtw
 from PyQt5 import QtCore as qtc
 from PyQt5 import uic
 from psutil import virtual_memory
 from vina import Vina
+from Models import PandasModel
 from openbabel import openbabel as ob
+import matplotlib
+from matplotlib import pyplot as plt
+from matplotlib.figure import Figure
+from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg, NavigationToolbar2QT as NavigationToolbar
 ob.obErrorLog.StopLogging()  # se puede cambiar por SetOutputLevel para logging
+matplotlib.use('Qt5Agg')
+
+
+class PlotCanvas(FigureCanvasQTAgg):
+    """
+    docstring
+    """
+    def __init__(self, parent=None):
+        self.fig = Figure(
+            figsize=(12, 8), dpi=100,
+            # facecolor='#2d2a2e',
+            tight_layout=True
+        )
+        self.ax = self.fig.add_subplot(111)
+        super().__init__(self.fig)
 
 
 class Gaussian(qtw.QMainWindow):
@@ -1215,9 +1236,94 @@ class Gaussian(qtw.QMainWindow):
                 # return False
 
 
+class DockingPlotter(qtw.QWidget):
+
+    # @logger.catch
+    def __init__(self, project, jobs):
+        super().__init__()
+        uic.loadUi('Views/uiPlotResults.ui', self)
+        self.project = project
+        self.jobs = jobs
+        self.df = self.create_df(project, jobs)
+        self.canvas = PlotCanvas(self)
+        self.toolbar = NavigationToolbar(self.canvas, self)
+        self.uiToolbarLayout.addWidget(self.toolbar)
+        self.uiPlotLayout.addWidget(self.canvas)
+        self.set_model()
+        self.selected = []
+        self.plot()
+        self.show()
+
+    def set_model(self):
+        model = PandasModel(self.df)
+        self.uiResultsTableView.setModel(model)
+        self.uiResultsTableView.resizeColumnsToContents()
+        self.uiResultsTableView.resizeRowsToContents()
+
+    def select_molecules(self):
+        indexes = self.uiResultsTableView.selectedIndexes()
+        if indexes:
+            self.selected = [i.row() for i in indexes]
+            self.plot()
+        else:
+            self.selected = []
+        pass
+
+    def plot(self):
+        if not self.selected:
+            return
+        self.canvas.ax.clear()
+        self.canvas.ax.set_title('Docking')
+        self.canvas.ax.set_xlabel('Molecule')
+        self.canvas.ax.set_ylabel('Binding Energy ()')
+        self.canvas.ax.tick_params(axis='x', labelrotation=90)
+        colors = ['blue', 'red', 'green', 'magenta', 'orange']
+        receptors = pd.unique(self.df['Receptor'])
+        # num_of_receptors = receptors.shape[0]
+        to_plot = self.df.iloc[self.selected]
+        total = to_plot.shape[0]
+        # for i in range(num_of_receptors):
+        for i, rec in enumerate(receptors):
+            mask = to_plot['Receptor'] == rec
+            props={'color':colors[i], 'linewidth':1.0}
+            self.canvas.ax.plot([], c=colors[i], label=receptors[i])
+            self.canvas.ax.boxplot(
+                # positions=np.array(range(total)) * 2.0 - 0.4,
+                # x=to_plot.loc[:, 'Binding energies'],
+                x=to_plot.loc[mask, 'Binding energies'],
+                # labels=to_plot.loc[mask, 'Molecule'],
+                boxprops=props, medianprops=props,
+                whiskerprops=props, capprops=props,
+            )
+        self.canvas.ax.legend()
+        self.canvas.draw()
+
+    def create_df(self, project, jobs):
+        names = pd.Series(
+            [mol.get_name for mol in project.molecules], name='Names'
+        )
+        energies = []
+        names = []
+        receptor = []
+        box_size = []
+        for job in jobs:
+            if job.id in project.job_ids:
+                energies.append(job.energies)
+                names.append(job.molecule)
+                receptor.append(job.receptor_name)
+                box_size.append(job.config.get('size_x') ** 3)
+        df = pd.DataFrame({
+            'Molecule': names,
+            'Receptor': receptor,
+            'Box size (\u212B\u00B3)': box_size,
+            'Binding energies': energies
+        })
+        return df
+
+
 class MyVina(qtw.QWidget):
 
-    submitted = qtc.pyqtSignal(dict)
+    submitted = qtc.pyqtSignal(dict, str)
 
     def __init__(
         self, molecule, *,
@@ -1274,6 +1380,36 @@ class MyVina(qtw.QWidget):
             )
             os.remove(mol2_file)
 
+    def center_from_nat_ligand(self):
+        nat_lig_path, _ = qtw.QFileDialog.getOpenFileName(
+            self, 'Selecciona el ligando natural',
+            options=qtw.QFileDialog.DontUseNativeDialog,
+            filter='Archivos pdb o pdbqt (*.pdb *.pdbqt)'
+        )
+        if nat_lig_path:
+            with open(nat_lig_path, 'r') as file:
+                lines = file.readlines()
+                coords = np.empty((0, 3), dtype=float)
+                for line in lines:
+                    if line.startswith('HETATM'):
+                        x, y, z = line.split()[-6:-3]
+                        if not x.count('.'):
+                            x, y, z = line.split()[-5:-2]
+                    elif line.startswith('ATOM'):
+                        x, y, z = line.split()[-7:-4]
+                        if not x.count('.'):
+                            x, y, z = line.split()[-6:-3]
+                    else:
+                        continue
+                    coords = np.append(
+                        coords, np.array([[float(x), float(y), float(z)]]), axis=0
+                    )
+                center = tuple(np.average(coords, axis=0))
+                self.uiCenterXDouble.setValue(center[0])
+                self.uiCenterYDouble.setValue(center[1])
+                self.uiCenterZDouble.setValue(center[2])
+                self.uiNatLigLine.setText(nat_lig_path)
+
     def queue_calculation(self):
         if not self.config:
             receptor = self.uiReceptorLine.text()
@@ -1314,6 +1450,7 @@ class MyVina(qtw.QWidget):
             self.config['center_z']
         )
         *receptor_name, receptor_format = self.config['receptor'].split('/')[-1].split('.')
+        receptor_name = receptor_name[-1]
         ligand = self.molecule.dock_prep(center, receptor_name)
         previous = len(glob(ligand.split('.')[0] + '_*.pdbqt'))
         output_file = [
@@ -1323,8 +1460,8 @@ class MyVina(qtw.QWidget):
         calculation = {
             'type': 'Docking',
             'config': self.config,
-            'receptor_in': receptor,
-            'receptor_out': receptor_file,
+            'receptor_in': self.config['receptor'],
+            'receptor_out': self.config['receptor'],
             'receptor_name': receptor_name,
             'times': self.times,
             'charge_mult': f'{self.molecule.get_formal_charge}/1',
@@ -1334,7 +1471,10 @@ class MyVina(qtw.QWidget):
             'molecule': self.molecule.get_name,
             'molecule_id': self.molecule.inchi_key
         }
-        self.submitted.emit(calculation)
+        self.submitted.emit(calculation, self.project.name)
         self.close()
 
 
+#TODO:
+    # extraer las coordenadas del ligando natural (cocristalizado) para
+    # determinar la posición central

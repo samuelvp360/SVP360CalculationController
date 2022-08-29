@@ -5,7 +5,7 @@ import sys
 from Components import Molecule, Optimization, Project, Docking
 from Worker import Worker
 from Models import MoleculesModel, ProjectsModel, JobsModel
-from Calculations import Gaussian, MyVina
+from Calculations import Gaussian, MyVina, DockingPlotter
 from PyQt5 import QtCore as qtc
 from PyQt5 import QtWidgets as qtw
 from PyQt5 import QtGui as qtg
@@ -60,6 +60,7 @@ class MainWindow(qtw.QMainWindow):
         self.uiProjectsTreeView.header().setSectionResizeMode(qtw.QHeaderView.ResizeToContents)
         self.uiProjectsTreeView.expandAll()
 
+    @logger.catch
     def set_selected_mol(self, value):
         if self.molecules_list:
             has_parent = value.parent().data()
@@ -108,23 +109,33 @@ class MainWindow(qtw.QMainWindow):
         mol_path, _ = qtw.QFileDialog.getOpenFileNames(
             self, 'Selecciona la molécula a cargar',
             options=qtw.QFileDialog.DontUseNativeDialog,
-            filter='Archivos de moléculas (*.mol *.mol2 *.pdb)'
+            filter='Archivos de moléculas (*.mol *.mol2 *.pdb *.txt *.smi)'
         )
         if mol_path:
             for m in mol_path:
                 file_format = m.split('.')[-1]
-                molecule = Molecule(m, file_format)
-                if molecule.mol:
-                    exists = self.database.check('molecules', molecule.inchi_key)
-                    if not exists:
-                        self.database.set(
-                            'molecules', molecule.inchi_key, molecule
-                        )
-                        self.set_models()
-                    else:
-                        qtw.QMessageBox.critical(
-                            self, 'Molécula existente', f'La molécula con Inchy key: {molecule.inchi_key} ya existe en la base de datos. No será agregada.'
-                        )
+                if file_format in ('txt', 'smi'):
+                    with open(m, 'r') as file:
+                        smi_lines = file.readlines()
+                        for smi in smi_lines:
+                            molecule = Molecule(smiles=smi)
+                            self.store_molecule(molecule)
+                        return
+                molecule = Molecule(path=m, file_format=file_format)
+                self.store_molecule(molecule)
+
+    def store_molecule(self, molecule):
+        if molecule.mol:
+            exists = self.database.check('molecules', molecule.inchi_key)
+            if not exists:
+                self.database.set(
+                    'molecules', molecule.inchi_key, molecule
+                )
+                self.set_models()
+            else:
+                qtw.QMessageBox.critical(
+                    self, 'Molécula existente', f'La molécula con Inchy key: {molecule.inchi_key} ya existe en la base de datos. No será agregada.'
+                )
 
     def remove_molecule(self):
         # hay que colorear de rojo los trabajos de moléculas que ya no estén en
@@ -200,6 +211,16 @@ class MainWindow(qtw.QMainWindow):
                         self.vina_controller.queue_calculation()
 
     def gaussian_setup(self, group=False):
+        """gaussian_setup.
+        Opens the Gaussian controller to get the parameters for a calculation
+        with g11
+
+        Parameters
+        ----------
+        group :
+            bool, if True, the parameters for the first molecule will be used
+            for all the others.
+        """
         if not group:
             self.gauss_controller = Gaussian(self.selected_mol)
             self.gauss_controller.submitted.connect(self.queue_manager)
@@ -210,6 +231,16 @@ class MainWindow(qtw.QMainWindow):
             self.gauss_controller.submitted.connect(self.set_group_calc)
 
     def vina_setup(self, group=False):
+        """vina_setup.
+        Opens the Vina controller to get the parameters for a calculation
+        with vina
+
+        Parameters
+        ----------
+        group :
+            bool, if True, the parameters for the first molecule will be used
+            for all the others.
+        """
         if not group:
             self.vina_controller = MyVina(self.selected_mol)
             self.vina_controller.submitted.connect(self.queue_manager)
@@ -226,8 +257,8 @@ class MainWindow(qtw.QMainWindow):
         self.database.commit()
         self.set_models()
 
-    @qtc.pyqtSlot(dict)
-    def queue_manager(self, calculation):
+    @qtc.pyqtSlot(dict, str)
+    def queue_manager(self, calculation, project_name):
         calculation['id'] = self.database.get_job_id
         if calculation.get('type') == 'Optimization':
             job = Optimization(**calculation)
@@ -235,7 +266,9 @@ class MainWindow(qtw.QMainWindow):
             job = Docking(**calculation)
             job.create_config()
         mol = self.database.get('molecules', calculation['molecule_id'])
+        project = self.database.get('projects', project_name)
         mol.add_calculation(job.id)
+        project.add_job_id(job.id)
         self.database.set('jobs', job.id, job)
         self.set_models()
 
@@ -278,21 +311,34 @@ class MainWindow(qtw.QMainWindow):
         self.uiPauseQueueButton.clicked.connect(self.worker.pause)
         self.thread.start()
 
+    def plot_docking_results(self, project):
+        if self.selected_project.calculations:
+            for index, calculation in enumerate(self.selected_project.calculations):
+                if calculation.get('type') == 'Docking':
+                    self.docking_plotter = DockingPlotter(
+                        project, self.jobs_list
+                    )
+
     def projects_right_click(self, position):
         if self.selected_project:
             menu = qtw.QMenu()
             calculation = qtw.QMenu('Cálculo grupal')
+            results = qtw.QMenu('Visualizar resultados')
             menu.addMenu(calculation)
+            menu.addMenu(results)
             gauss = calculation.addAction('Gaussian')
             vina = calculation.addAction('Vina')
             local_react = calculation.addAction('Reactividad local')
+            docking_results = results.addAction('Docking')
             action = menu.exec_(self.uiProjectsTreeView.mapToGlobal(position))
-            if action == gauss:
+            if action == gauss and self.selected_project is not None:
                 self.gaussian_setup(group=True)
-            elif action == vina:
+            elif action == vina and self.selected_project is not None:
                 self.vina_setup(group=True)
             elif action == local_react:
                 pass
+            elif action == docking_results and self.selected_project is not None:
+                self.plot_docking_results(self.selected_project)
 
     def molecules_right_click(self, position):
         if self.selected_mol:

@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>Form</class>
+ <widget class="QWidget" name="Form">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>1088</width>
+    <height>888</height>
+   </rect>
+  </property>
+  <property name="windowTitle">
+   <string>Form</string>
+  </property>
+  <widget class="QWidget" name="layoutWidget">
+   <property name="geometry">
+    <rect>
+     <x>35</x>
+     <y>300</y>
+     <width>1016</width>
+     <height>576</height>
+    </rect>
+   </property>
+   <layout class="QVBoxLayout" name="verticalLayout_4" stretch="80,500">
+    <property name="spacing">
+     <number>0</number>
+    </property>
+    <item>
+     <layout class="QVBoxLayout" name="uiToolbarLayout"/>
+    </item>
+    <item>
+     <layout class="QVBoxLayout" name="uiPlotLayout"/>
+    </item>
+   </layout>
+  </widget>
+  <widget class="QTableView" name="uiResultsTableView">
+   <property name="geometry">
+    <rect>
+     <x>35</x>
+     <y>31</y>
+     <width>1016</width>
+     <height>266</height>
+    </rect>
+   </property>
+   <property name="alternatingRowColors">
+    <bool>true</bool>
+   </property>
+  </widget>
+ </widget>
+ <resources/>
+ <connections>
+  <connection>
+   <sender>uiResultsTableView</sender>
+   <signal>clicked(QModelIndex)</signal>
+   <receiver>Form</receiver>
+   <slot>select_molecules()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>270</x>
+     <y>66</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>284</x>
+     <y>-9</y>
+    </hint>
+   </hints>
+  </connection>
+ </connections>
+ <slots>
+  <slot>select_molecules()</slot>
+ </slots>
+</ui>
