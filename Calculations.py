@@ -5,6 +5,7 @@ import re
 import subprocess
 import os
 import shutil
+import copy
 from glob import glob
 import multiprocessing
 import numpy as np
@@ -1269,35 +1270,6 @@ class DockingPlotter(qtw.QWidget):
             self.selected = []
         pass
 
-    def plot(self):
-        if not self.selected:
-            return
-        self.canvas.ax.clear()
-        self.canvas.ax.set_title('Docking')
-        self.canvas.ax.set_xlabel('Molecule')
-        self.canvas.ax.set_ylabel('Binding Energy ()')
-        self.canvas.ax.tick_params(axis='x', labelrotation=90)
-        colors = ['blue', 'red', 'green', 'magenta', 'orange']
-        receptors = pd.unique(self.df['Receptor'])
-        # num_of_receptors = receptors.shape[0]
-        to_plot = self.df.iloc[self.selected]
-        total = to_plot.shape[0]
-        # for i in range(num_of_receptors):
-        for i, rec in enumerate(receptors):
-            mask = to_plot['Receptor'] == rec
-            props={'color':colors[i], 'linewidth':1.0}
-            self.canvas.ax.plot([], c=colors[i], label=receptors[i])
-            self.canvas.ax.boxplot(
-                # positions=np.array(range(total)) * 2.0 - 0.4,
-                # x=to_plot.loc[:, 'Binding energies'],
-                x=to_plot.loc[mask, 'Binding energies'],
-                # labels=to_plot.loc[mask, 'Molecule'],
-                boxprops=props, medianprops=props,
-                whiskerprops=props, capprops=props,
-            )
-        self.canvas.ax.legend()
-        self.canvas.draw()
-
     def create_df(self, project, jobs):
         names = pd.Series(
             [mol.get_name for mol in project.molecules], name='Names'
@@ -1311,7 +1283,10 @@ class DockingPlotter(qtw.QWidget):
                 energies.append(job.energies)
                 names.append(job.molecule)
                 receptor.append(job.receptor_name)
-                box_size.append(job.config.get('size_x') ** 3)
+                size_x = job.config.get('size_x')
+                size_y = job.config.get('size_y')
+                size_z = job.config.get('size_z')
+                box_size.append(f'{size_x}x{size_y}x{size_z}')
         df = pd.DataFrame({
             'Molecule': names,
             'Receptor': receptor,
@@ -1319,6 +1294,49 @@ class DockingPlotter(qtw.QWidget):
             'Binding energies': energies
         })
         return df
+
+    def plot(self):
+        if not self.selected:
+            return
+        self.canvas.ax.clear()
+        self.canvas.ax.set_title('Docking')
+        self.canvas.ax.set_xlabel('Molecule')
+        self.canvas.ax.set_ylabel('Binding Energy ()')
+        self.canvas.ax.tick_params(axis='x', labelrotation=90)
+        colors = ['blue', 'red', 'green', 'magenta', 'orange']
+        to_plot = self.df.iloc[self.selected]
+        receptors = pd.unique(to_plot['Receptor'])
+        total = to_plot.shape[0]
+        for i, rec in enumerate(receptors):
+            to_plot = self.df.iloc[self.selected]
+            mask = to_plot['Receptor'] == rec
+            mol_names = to_plot.loc[mask, 'Molecule']
+            to_plot = to_plot.loc[mask, 'Binding energies']
+            total = to_plot.shape[0]
+            props={'color':colors[i], 'linewidth':1.0}
+            positions = np.arange(total) * 2 - 0.4 * (-1) ** (i + 1)
+            self.canvas.ax.plot([], c=colors[i], label=receptors[i])
+            self.canvas.ax.boxplot(
+                positions=positions,
+                x=to_plot,
+                labels=mol_names,
+                boxprops=props, medianprops=props,
+                whiskerprops=props, capprops=props,
+            )
+        self.canvas.ax.legend()
+        self.canvas.draw()
+
+    def export_to_excel(self):
+        filename, _ = qtw.QFileDialog.getSaveFileName(
+            self, 'Save results as excel data sheet',
+            options=qtw.QFileDialog.DontUseNativeDialog,
+            filter='Excel file (*.xlsx *xls)'
+        )
+        if filename:
+            if '.xlsx' not in filename or '.xls' not in filename:
+                self.df.to_excel(filename + '.xlsx')
+            else:
+                self.df.to_excel(filename)
 
 
 class MyVina(qtw.QWidget):
@@ -1333,10 +1351,20 @@ class MyVina(qtw.QWidget):
         uic.loadUi('Views/uiVina.ui', self)
         self.molecule = molecule
         self.project = project
-        self.config = config
+        self.config = copy.deepcopy(config)
         self.times = times
         if not self.config:
             self.show()
+
+    def set_auto_box_size(self):
+        # according to a Rg to box size ratio of 0.35
+        if self.uiAutoBoxSize.isChecked():
+            box_size = 2.857 * self.molecule.Rg
+        else:
+            box_size = 0.
+        self.uiSizeXDouble.setValue(box_size)
+        self.uiSizeYDouble.setValue(box_size)
+        self.uiSizeZDouble.setValue(box_size)
 
     def open_receptor(self):
         rec_path, _ = qtw.QFileDialog.getOpenFileName(
@@ -1454,7 +1482,7 @@ class MyVina(qtw.QWidget):
         ligand = self.molecule.dock_prep(center, receptor_name)
         previous = len(glob(ligand.split('.')[0] + '_*.pdbqt'))
         output_file = [
-            f'{ligand.split(".")[0]}_{i}.pdbqt' for i in range(previous + 1, self.times + 1)
+            f'{ligand.split(".")[0]}_{i}.pdbqt' for i in range(previous + 1, previous + self.times + 1)
         ]
         self.config.update({'ligand': ligand})
         calculation = {

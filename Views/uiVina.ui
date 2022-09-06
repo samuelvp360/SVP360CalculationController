@@ -19,49 +19,28 @@
      <x>25</x>
      <y>125</y>
      <width>474</width>
-     <height>127</height>
+     <height>161</height>
     </rect>
    </property>
    <property name="title">
-    <string>Volumen del receptor</string>
+    <string>Receptor volume</string>
    </property>
    <layout class="QVBoxLayout" name="verticalLayout">
     <item>
      <layout class="QGridLayout" name="gridLayout">
-      <item row="0" column="1">
-       <widget class="QLabel" name="label">
-        <property name="text">
-         <string>X</string>
+      <item row="1" column="3">
+       <widget class="QDoubleSpinBox" name="uiCenterZDouble">
+        <property name="locale">
+         <locale language="English" country="Kenya"/>
         </property>
-        <property name="alignment">
-         <set>Qt::AlignCenter</set>
+        <property name="decimals">
+         <number>6</number>
         </property>
-       </widget>
-      </item>
-      <item row="0" column="2">
-       <widget class="QLabel" name="label_2">
-        <property name="text">
-         <string>Y</string>
+        <property name="maximum">
+         <double>10000.000000000000000</double>
         </property>
-        <property name="alignment">
-         <set>Qt::AlignCenter</set>
-        </property>
-       </widget>
-      </item>
-      <item row="0" column="3">
-       <widget class="QLabel" name="label_3">
-        <property name="text">
-         <string>Z</string>
-        </property>
-        <property name="alignment">
-         <set>Qt::AlignCenter</set>
-        </property>
-       </widget>
-      </item>
-      <item row="1" column="0">
-       <widget class="QLabel" name="label_4">
-        <property name="text">
-         <string>Centro:</string>
+        <property name="singleStep">
+         <double>0.100000000000000</double>
         </property>
        </widget>
       </item>
@@ -81,6 +60,29 @@
         </property>
        </widget>
       </item>
+      <item row="0" column="2">
+       <widget class="QLabel" name="label_2">
+        <property name="text">
+         <string>Y</string>
+        </property>
+        <property name="alignment">
+         <set>Qt::AlignCenter</set>
+        </property>
+       </widget>
+      </item>
+      <item row="2" column="2">
+       <widget class="QDoubleSpinBox" name="uiSizeYDouble">
+        <property name="locale">
+         <locale language="English" country="Kenya"/>
+        </property>
+        <property name="decimals">
+         <number>4</number>
+        </property>
+        <property name="value">
+         <double>18.000000000000000</double>
+        </property>
+       </widget>
+      </item>
       <item row="1" column="2">
        <widget class="QDoubleSpinBox" name="uiCenterYDouble">
         <property name="locale">
@@ -97,26 +99,23 @@
         </property>
        </widget>
       </item>
-      <item row="1" column="3">
-       <widget class="QDoubleSpinBox" name="uiCenterZDouble">
+      <item row="2" column="3">
+       <widget class="QDoubleSpinBox" name="uiSizeZDouble">
         <property name="locale">
          <locale language="English" country="Kenya"/>
         </property>
         <property name="decimals">
-         <number>6</number>
+         <number>4</number>
         </property>
-        <property name="maximum">
-         <double>10000.000000000000000</double>
-        </property>
-        <property name="singleStep">
-         <double>0.100000000000000</double>
+        <property name="value">
+         <double>18.000000000000000</double>
         </property>
        </widget>
       </item>
-      <item row="2" column="0">
-       <widget class="QLabel" name="label_5">
+      <item row="1" column="0">
+       <widget class="QLabel" name="label_4">
         <property name="text">
-         <string>Tamaño:</string>
+         <string>Center</string>
         </property>
        </widget>
       </item>
@@ -136,29 +135,37 @@
         </property>
        </widget>
       </item>
-      <item row="2" column="2">
-       <widget class="QDoubleSpinBox" name="uiSizeYDouble">
-        <property name="locale">
-         <locale language="English" country="Kenya"/>
+      <item row="0" column="1">
+       <widget class="QLabel" name="label">
+        <property name="text">
+         <string>X</string>
         </property>
-        <property name="decimals">
-         <number>4</number>
-        </property>
-        <property name="value">
-         <double>18.000000000000000</double>
+        <property name="alignment">
+         <set>Qt::AlignCenter</set>
         </property>
        </widget>
       </item>
-      <item row="2" column="3">
-       <widget class="QDoubleSpinBox" name="uiSizeZDouble">
-        <property name="locale">
-         <locale language="English" country="Kenya"/>
+      <item row="0" column="3">
+       <widget class="QLabel" name="label_3">
+        <property name="text">
+         <string>Z</string>
         </property>
-        <property name="decimals">
-         <number>4</number>
+        <property name="alignment">
+         <set>Qt::AlignCenter</set>
         </property>
-        <property name="value">
-         <double>18.000000000000000</double>
+       </widget>
+      </item>
+      <item row="2" column="0">
+       <widget class="QLabel" name="label_5">
+        <property name="text">
+         <string>Box size</string>
+        </property>
+       </widget>
+      </item>
+      <item row="3" column="0" colspan="4">
+       <widget class="QCheckBox" name="uiAutoBoxSize">
+        <property name="text">
+         <string>Box size auto</string>
         </property>
        </widget>
       </item>
@@ -170,7 +177,7 @@
    <property name="geometry">
     <rect>
      <x>30</x>
-     <y>285</y>
+     <y>330</y>
      <width>456</width>
      <height>171</height>
     </rect>
@@ -184,21 +191,21 @@
       <item row="1" column="0">
        <widget class="QLabel" name="label_7">
         <property name="text">
-         <string>Exhaustividad de la búsqueda</string>
+         <string>Exhaustiveness</string>
         </property>
        </widget>
       </item>
       <item row="2" column="0">
        <widget class="QLabel" name="label_8">
         <property name="text">
-         <string>Diferencia máxima de energía (kcal/mol)</string>
+         <string>Max energy difference (kcal/mol)</string>
         </property>
        </widget>
       </item>
       <item row="0" column="0">
        <widget class="QLabel" name="label_6">
         <property name="text">
-         <string>Número de modos de enlace</string>
+         <string>Binding modes</string>
         </property>
        </widget>
       </item>
@@ -253,7 +260,7 @@
       <item row="3" column="0">
        <widget class="QLabel" name="label_9">
         <property name="text">
-         <string>Número de corridas</string>
+         <string>Num of runs</string>
         </property>
        </widget>
       </item>
@@ -293,7 +300,7 @@
     </size>
    </property>
    <property name="text">
-    <string>Aceptar</string>
+    <string>Submit</string>
    </property>
    <property name="autoDefault">
     <bool>true</bool>
@@ -315,7 +322,7 @@
     </size>
    </property>
    <property name="text">
-    <string>Cancelar</string>
+    <string>Cancel</string>
    </property>
    <property name="autoDefault">
     <bool>true</bool>
@@ -334,7 +341,7 @@
     <item>
      <widget class="QPushButton" name="uiOpenReceptorButton">
       <property name="text">
-       <string>Abrir</string>
+       <string>Open receptor</string>
       </property>
      </widget>
     </item>
@@ -360,7 +367,7 @@
     <item>
      <widget class="QPushButton" name="uiOpenNatLigButton">
       <property name="text">
-       <string>Abrir</string>
+       <string>Open ligand</string>
       </property>
      </widget>
     </item>
@@ -456,10 +463,27 @@
     </hint>
    </hints>
   </connection>
+  <connection>
+   <sender>uiAutoBoxSize</sender>
+   <signal>stateChanged(int)</signal>
+   <receiver>Form</receiver>
+   <slot>set_auto_box_size()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>51</x>
+     <y>257</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>83</x>
+     <y>290</y>
+    </hint>
+   </hints>
+  </connection>
  </connections>
  <slots>
   <slot>open_receptor()</slot>
   <slot>queue_calculation()</slot>
   <slot>center_from_nat_ligand()</slot>
+  <slot>set_auto_box_size()</slot>
  </slots>
 </ui>

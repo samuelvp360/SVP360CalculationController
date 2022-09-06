@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>1088</width>
-    <height>888</height>
+    <height>916</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -17,7 +17,7 @@
    <property name="geometry">
     <rect>
      <x>35</x>
-     <y>300</y>
+     <y>325</y>
      <width>1016</width>
      <height>576</height>
     </rect>
@@ -38,13 +38,26 @@
    <property name="geometry">
     <rect>
      <x>35</x>
-     <y>31</y>
+     <y>56</y>
      <width>1016</width>
      <height>266</height>
     </rect>
    </property>
    <property name="alternatingRowColors">
     <bool>true</bool>
+   </property>
+  </widget>
+  <widget class="QPushButton" name="pushButton">
+   <property name="geometry">
+    <rect>
+     <x>883</x>
+     <y>9</y>
+     <width>156</width>
+     <height>41</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>Export to Excel</string>
    </property>
   </widget>
  </widget>
@@ -62,12 +75,29 @@
     </hint>
     <hint type="destinationlabel">
      <x>284</x>
-     <y>-9</y>
+     <y>0</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>pushButton</sender>
+   <signal>clicked()</signal>
+   <receiver>Form</receiver>
+   <slot>export_to_excel()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>897</x>
+     <y>30</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>839</x>
+     <y>5</y>
     </hint>
    </hints>
   </connection>
  </connections>
  <slots>
   <slot>select_molecules()</slot>
+  <slot>export_to_excel()</slot>
  </slots>
 </ui>

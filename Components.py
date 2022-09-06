@@ -39,7 +39,7 @@ class Molecule(Persistent):
             self.MW = Chem.rdMolDescriptors.CalcExactMolWt(self.mol)
             self.formula = Chem.rdMolDescriptors.CalcMolFormula(self.mol)
             self.__set_mol_picture()
-            # self.create_conformers()
+            self.set_Rg()
 
     def __from_smiles(self, smiles):
         converter = ob.OBConversion()
@@ -64,7 +64,7 @@ class Molecule(Persistent):
         self.mol_pic = f'molecules/{self.inchi_key}/{self.inchi_key}.png'
         if not os.path.exists(f'molecules/{self.inchi_key}/'):
             os.makedirs(f'molecules/{self.inchi_key}/')
-        Draw.MolToFile(self.mol, self.mol_pic, size=(200, 200))
+        Draw.MolToFile(self.mol, self.mol_pic, size=(300, 300))
 
     def dock_prep(self, center, receptor_name):
         mol_with_Hs = Chem.AddHs(self.mol)
@@ -83,7 +83,7 @@ class Molecule(Persistent):
         converter.WriteFile(mol_ob, file_name)
         new_name = f'{file_name.split(".")[0]}_{receptor_name}.pdbqt'
         subprocess.run(
-            f'obabel -i mol2 {file_name} -O {new_name} -p 7.4',
+            f'obabel {file_name} -O {new_name} -p 7.4', # cambio aquí
             shell=True,
             capture_output=True,
             text=True
@@ -91,7 +91,7 @@ class Molecule(Persistent):
         os.remove(file_name)
         return new_name
 
-    def create_conformers(self):
+    def __create_conformers(self):
         self.mol = Chem.AddHs(self.mol)
         AllChem.EmbedMolecule(self.mol, randomSeed=0xf00d)
         num_rot_bonds = Chem.rdMolDescriptors.CalcNumRotatableBonds(self.mol)
@@ -102,6 +102,31 @@ class Molecule(Persistent):
         else:
             n_conf = 300
         AllChem.EmbedMultipleConfs(self.mol, n_conf)
+
+    def __minimize(self):
+        self.__create_conformers()
+        energies = AllChem.MMFFOptimizeMoleculeConfs(
+            self.mol, maxIters=2000, nonBondedThresh=100.
+        )
+        energies_list = [e[1] for e in energies]
+        min_e_index = energies_list.index(min(energies_list))
+        return min_e_index
+
+    def set_Rg(self):
+        conf_id = self.__minimize()
+        conf = self.mol.GetConformer(conf_id)
+        centroid = Chem.rdMolTransforms.ComputeCentroid(conf)
+        centroid_coords = centroid.x, centroid.y, centroid.z
+        Rg = 0.
+        num_atoms = 0
+        for i, atom in enumerate(self.mol.GetAtoms()):
+            if not atom.GetAtomicNum() == 1:
+                position = conf.GetAtomPosition(i)
+                print(position.x, position.y, position.z)
+                Rg += (position.x - centroid[0]) ** 2 + (position.y - centroid[1]) ** 2 + (position.z - centroid[2]) ** 2
+                num_atoms += 1
+        self.Rg = np.sqrt(Rg / num_atoms)
+        print(num_atoms, self.Rg)
 
     def set_name(self, name, init=False):
         if init:
@@ -121,15 +146,14 @@ class Molecule(Persistent):
 
     @property
     def get_coordinates(self):
-        self.mol = Chem.AddHs(self.mol)
-        AllChem.EmbedMolecule(self.mol, randomSeed=0xf00d)
-        coords = Chem.MolToXYZBlock(self.mol, confId=0).splitlines()
-        new_coords = []
-        for line in coords[2:]:
-            line = line.split()
-            line = ' {0:<20}{1:>14}{2:>14}{3:>14}'.format(*line)
-            new_coords.append(line)
-        return '\n'.join(new_coords)
+        new_mol = self.__minimize()
+        conf = new_mol.GetConformer(0)
+        num_atoms = new_mol.GetNumAtoms()
+        atoms_coords = np.empty((num_atoms, 3))
+        for i, atom in enumerate(new_mol.GetAtoms()):
+            position = conf.GetAtomPosition(i)
+            atoms_coords[i] = np.array((position.x, position.y, position.z))
+        return atoms_coords
 
     @property
     def get_zmatrix(self):
@@ -226,6 +250,7 @@ class Project(Persistent):
         self.molecules = []
         self.calculations = []
         self.job_ids = []
+        self.status = 'Pending'
         self.grid_img = f'projects/{self.name}/{self.name}.png'
         self.__create_grid_img()
 
@@ -239,6 +264,10 @@ class Project(Persistent):
                 legends=[m.get_name for m in self.molecules]
             )
             img.save(self.grid_img)
+
+    def set_status(self, status):
+        self.status = status
+        self._p_changed = True
 
     def add_molecule(self, molecule):
         self.molecules.append(molecule)
@@ -271,6 +300,7 @@ class Docking(Persistent):
     def __init__(self, **kwargs):
         for k, v in kwargs.items():
             setattr(self, k, v)
+        self.energies = []
         self.programmed = datetime.now()
         self.__status = 'Programmed'
 

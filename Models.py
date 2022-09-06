@@ -90,11 +90,14 @@ class MoleculesModel(qtg.QStandardItemModel):
                 inchi_2 = StandardItem(f'{mol.inchi_key}', font_size=10)
                 smiles_1 = StandardItem('Smiles', font_size=10)
                 smiles_2 = StandardItem(f'{mol.smiles}', font_size=10)
+                Rg_1 = StandardItem('Rg', font_size=10)
+                Rg_2 = StandardItem(f'{mol.Rg:.2f}', font_size=10)
                 std_item_list.append((m_std_item_1, m_std_item_2))
                 summary.appendRow([formula_1, formula_2])
                 summary.appendRow([FW_1, FW_2])
                 summary.appendRow([inchi_1, inchi_2])
                 summary.appendRow([smiles_1, smiles_2])
+                summary.appendRow([Rg_1, Rg_2])
                 calculations = StandardItem(
                     'Cálculos disponibles', font_size=12, set_bold=True
                 )
@@ -159,7 +162,8 @@ class ProjectsModel(qtg.QStandardItemModel):
                     'Cálculos', font_size=10, set_bold=True
                 )
                 for index, calc in enumerate(project.calculations):
-                    string = f'{index + 1}.\nTipo:\t\t{calc["type"]}\nKeywords:\t\t{calc["keywords"]}\nMultipl.:\t\t{calc["charge_mult"].split("/")[1]}\n'
+                    print(calc)
+                    string = f'{index + 1}.\nTipo:\t\t{calc["type"]}\nKeywords:\t\t{calc["keywords"]}\nMultipl.:\t\t{calc["charge_mult"].split("/")[1]}\nStatus:\t\t{calc.get("status")}'
                     calc_std_item = StandardItem(string, font_size=8)
                     calculations.appendRow(calc_std_item)
                 p_std_item.appendRows([molecules, calculations])

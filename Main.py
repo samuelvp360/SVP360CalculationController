@@ -181,12 +181,29 @@ class MainWindow(qtw.QMainWindow):
             self.database.commit()
             self.set_models()
 
+    @qtc.pyqtSlot(dict, str)
+    def queue_manager(self, calculation, project_name):
+        calculation['id'] = self.database.get_job_id
+        if calculation.get('type') == 'Optimization':
+            job = Optimization(**calculation)
+        elif calculation.get('type') == 'Docking':
+            job = Docking(**calculation)
+            job.create_config()
+        mol = self.database.get('molecules', calculation['molecule_id'])
+        project = self.database.get('projects', project_name)
+        mol.add_calculation(job.id)
+        project.add_job_id(job.id)
+        self.database.set('jobs', job.id, job)
+        self.set_models()
+
     @logger.catch
     def start_project(self, log):
-        print(log)
+        # print(log)
         # escogre si ejecutar en serie o en paralelo
         project = self.selected_project
-        if project is not None and self.selected_project.calculations:
+        has_calculations = project.calculations
+        already_programmed = project.status == 'Programmed'
+        if project is not None and has_calculation and not already_programmed:
             for calc in self.selected_project.calculations:
                 if calc['type'] in ('Optimization', 'Energy', 'Frequency'):
                     # esto sería para hacer en paralelo; invertir el if anterior y
@@ -209,6 +226,8 @@ class MainWindow(qtw.QMainWindow):
                         )
                         self.vina_controller.submitted.connect(self.queue_manager)
                         self.vina_controller.queue_calculation()
+            project.set_status('Programmed')
+            self.database.commit()
 
     def gaussian_setup(self, group=False):
         """gaussian_setup.
@@ -255,21 +274,6 @@ class MainWindow(qtw.QMainWindow):
     def set_group_calc(self, calculation):
         self.selected_project.add_calculation(calculation)
         self.database.commit()
-        self.set_models()
-
-    @qtc.pyqtSlot(dict, str)
-    def queue_manager(self, calculation, project_name):
-        calculation['id'] = self.database.get_job_id
-        if calculation.get('type') == 'Optimization':
-            job = Optimization(**calculation)
-        elif calculation.get('type') == 'Docking':
-            job = Docking(**calculation)
-            job.create_config()
-        mol = self.database.get('molecules', calculation['molecule_id'])
-        project = self.database.get('projects', project_name)
-        mol.add_calculation(job.id)
-        project.add_job_id(job.id)
-        self.database.set('jobs', job.id, job)
         self.set_models()
 
     def resume_queue(self):
