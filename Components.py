@@ -38,8 +38,8 @@ class Molecule(Persistent):
             self.smiles = Chem.MolToSmiles(self.mol)
             self.MW = Chem.rdMolDescriptors.CalcExactMolWt(self.mol)
             self.formula = Chem.rdMolDescriptors.CalcMolFormula(self.mol)
+            self.Rg = False
             self.__set_mol_picture()
-            self.set_Rg()
 
     def __from_smiles(self, smiles):
         converter = ob.OBConversion()
@@ -67,19 +67,21 @@ class Molecule(Persistent):
         Draw.MolToFile(self.mol, self.mol_pic, size=(300, 300))
 
     def dock_prep(self, center, receptor_name):
-        mol_with_Hs = Chem.AddHs(self.mol)
-        AllChem.EmbedMolecule(mol_with_Hs, randomSeed=0xf00d)
+        conf_id = self.__minimize()
+        mol_conf = self.mol.GetConformer(conf_id)
+        # mol_with_Hs = Chem.AddHs(self.mol)
+        # AllChem.EmbedMolecule(mol_with_Hs, randomSeed=0xf00d)
         half = mol_with_Hs.GetNumAtoms() // 2
         mol_ref = Chem.MolFromSmiles('C')
         AllChem.EmbedMultipleConfs(mol_ref, 1)
         conf = mol_ref.GetConformer(0)
         conf.SetAtomPosition(0, Point3D(*center))
-        rdMolAlign.AlignMol(mol_with_Hs, mol_ref, atomMap=[(half, 0)])
+        rdMolAlign.AlignMol(mol_conf, mol_ref, atomMap=[(half, 0)])
         converter = ob.OBConversion()
         mol_ob = ob.OBMol()
         converter.SetInAndOutFormats('mol', 'mol2')
         file_name = f'molecules/{self.inchi_key}/{self.inchi_key}.mol2'
-        converter.ReadString(mol_ob, Chem.MolToMolBlock(mol_with_Hs))
+        converter.ReadString(mol_ob, Chem.MolToMolBlock(mol_conf))
         converter.WriteFile(mol_ob, file_name)
         new_name = f'{file_name.split(".")[0]}_{receptor_name}.pdbqt'
         subprocess.run(
@@ -112,7 +114,7 @@ class Molecule(Persistent):
         min_e_index = energies_list.index(min(energies_list))
         return min_e_index
 
-    def set_Rg(self):
+    def calculate_Rg(self):
         conf_id = self.__minimize()
         conf = self.mol.GetConformer(conf_id)
         centroid = Chem.rdMolTransforms.ComputeCentroid(conf)
@@ -122,11 +124,13 @@ class Molecule(Persistent):
         for i, atom in enumerate(self.mol.GetAtoms()):
             if not atom.GetAtomicNum() == 1:
                 position = conf.GetAtomPosition(i)
-                print(position.x, position.y, position.z)
                 Rg += (position.x - centroid[0]) ** 2 + (position.y - centroid[1]) ** 2 + (position.z - centroid[2]) ** 2
                 num_atoms += 1
-        self.Rg = np.sqrt(Rg / num_atoms)
-        print(num_atoms, self.Rg)
+        return np.sqrt(Rg / num_atoms)
+
+    def set_Rg(self, Rg):
+        self.Rg = Rg
+        self._p_changed = True
 
     def set_name(self, name, init=False):
         if init:
@@ -145,7 +149,7 @@ class Molecule(Persistent):
         return self.__name
 
     @property
-    def get_coordinates(self):
+    def get_coordinates(self): # arreglar
         new_mol = self.__minimize()
         conf = new_mol.GetConformer(0)
         num_atoms = new_mol.GetNumAtoms()

@@ -47,7 +47,7 @@
     <bool>true</bool>
    </property>
   </widget>
-  <widget class="QPushButton" name="pushButton">
+  <widget class="QPushButton" name="uiExportButton">
    <property name="geometry">
     <rect>
      <x>883</x>
@@ -57,7 +57,20 @@
     </rect>
    </property>
    <property name="text">
-    <string>Export to Excel</string>
+    <string>Export to excel</string>
+   </property>
+  </widget>
+  <widget class="QPushButton" name="uiImportButton">
+   <property name="geometry">
+    <rect>
+     <x>710</x>
+     <y>10</y>
+     <width>156</width>
+     <height>41</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>Import from excel</string>
    </property>
   </widget>
  </widget>
@@ -80,7 +93,7 @@
    </hints>
   </connection>
   <connection>
-   <sender>pushButton</sender>
+   <sender>uiExportButton</sender>
    <signal>clicked()</signal>
    <receiver>Form</receiver>
    <slot>export_to_excel()</slot>
@@ -95,9 +108,26 @@
     </hint>
    </hints>
   </connection>
+  <connection>
+   <sender>uiImportButton</sender>
+   <signal>clicked()</signal>
+   <receiver>Form</receiver>
+   <slot>import_from_excel()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>781</x>
+     <y>34</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>640</x>
+     <y>-8</y>
+    </hint>
+   </hints>
+  </connection>
  </connections>
  <slots>
   <slot>select_molecules()</slot>
   <slot>export_to_excel()</slot>
+  <slot>import_from_excel()</slot>
  </slots>
 </ui>

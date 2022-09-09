@@ -1291,7 +1291,7 @@ class DockingPlotter(qtw.QWidget):
             'Molecule': names,
             'Receptor': receptor,
             'Box size (\u212B\u00B3)': box_size,
-            'Binding energies': energies
+            'Binding energies': list(energies)
         })
         return df
 
@@ -1338,6 +1338,22 @@ class DockingPlotter(qtw.QWidget):
             else:
                 self.df.to_excel(filename)
 
+    def import_from_excel(self):
+        filename, _ = qtw.QFileDialog.getOpenFileName(
+            self, 'Save results as excel data sheet',
+            options=qtw.QFileDialog.DontUseNativeDialog,
+            filter='Excel file (*.xlsx *xls)'
+        )
+        if filename:
+            new_df = pd.read_excel(filename)
+            new_df['Binding energies'] = new_df['Binding energies'].apply(
+                lambda x: np.array(
+                    [float(i) for i in x.replace('[', '').replace(']', '').split()]
+            ))
+            new_df = new_df.iloc[:, 1:]
+            self.df = pd.concat([self.df, new_df])
+            self.set_model()
+
 
 class MyVina(qtw.QWidget):
 
@@ -1345,7 +1361,7 @@ class MyVina(qtw.QWidget):
 
     def __init__(
         self, molecule, *,
-        config=False, project=False, times=1
+        config=False, project=False, times=1, auto_box_size=False
     ):
         super().__init__()
         uic.loadUi('Views/uiVina.ui', self)
@@ -1353,15 +1369,18 @@ class MyVina(qtw.QWidget):
         self.project = project
         self.config = copy.deepcopy(config)
         self.times = times
+        self.uiAutoBoxSize.setChecked(auto_box_size)
+        self.set_auto_box_size()
         if not self.config:
             self.show()
 
     def set_auto_box_size(self):
         # according to a Rg to box size ratio of 0.35
-        if self.uiAutoBoxSize.isChecked():
+        self.auto_box_size = self.uiAutoBoxSize.isChecked()
+        if self.auto_box_size:
             box_size = 2.857 * self.molecule.Rg
         else:
-            box_size = 0.
+            box_size = 30.
         self.uiSizeXDouble.setValue(box_size)
         self.uiSizeYDouble.setValue(box_size)
         self.uiSizeZDouble.setValue(box_size)
@@ -1484,7 +1503,19 @@ class MyVina(qtw.QWidget):
         output_file = [
             f'{ligand.split(".")[0]}_{i}.pdbqt' for i in range(previous + 1, previous + self.times + 1)
         ]
-        self.config.update({'ligand': ligand})
+        self.config.update(
+            {
+                'ligand': ligand,
+                'size_x':self.uiSizeXDouble.value(),
+                'size_y':self.uiSizeYDouble.value(),
+                'size_z':self.uiSizeZDouble.value(),
+            }
+        )
+        keywords = ''
+        for k, v in self.config.items():
+            if k in ('ligand', 'receptor'):
+                v = v.split('/')[-1]
+            keywords += f'{k}: {v}\n'
         calculation = {
             'type': 'Docking',
             'config': self.config,
@@ -1493,11 +1524,12 @@ class MyVina(qtw.QWidget):
             'receptor_name': receptor_name,
             'times': self.times,
             'charge_mult': f'{self.molecule.get_formal_charge}/1',
-            'keywords': f'Docking to {receptor_name}',
+            'keywords': keywords,
             'input_file': f'{self.config.get("ligand").split(".")[0]}_conf.txt',
             'output_file': output_file,
             'molecule': self.molecule.get_name,
-            'molecule_id': self.molecule.inchi_key
+            'molecule_id': self.molecule.inchi_key,
+            'auto_box_size': self.auto_box_size
         }
         self.submitted.emit(calculation, self.project.name)
         self.close()

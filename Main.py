@@ -3,7 +3,7 @@
 
 import sys
 from Components import Molecule, Optimization, Project, Docking
-from Worker import Worker
+from Worker import Worker, MolWorker
 from Models import MoleculesModel, ProjectsModel, JobsModel
 from Calculations import Gaussian, MyVina, DockingPlotter
 from PyQt5 import QtCore as qtc
@@ -14,7 +14,6 @@ from DB.molecules_db import MyZODB
 from datetime import datetime
 from loguru import logger
 # import threading
-# import pdb
 # from PyQt5.QtCore import pyqtRemoveInputHook
 
 
@@ -34,6 +33,10 @@ class MainWindow(qtw.QMainWindow):
         calc_items = (
             'Gaussian', 'Vina', 'Reactividad local'
         )
+        to_calculate_Rg = [mol for mol in self.molecules_list if mol.Rg == 0]
+        print([m.get_name for m in to_calculate_Rg])
+        if to_calculate_Rg:
+            self.Rg_calculation(to_calculate_Rg)
         self.uiCalculationsComboBox.addItems(calc_items)
         # pyqtRemoveInputHook()
 
@@ -112,6 +115,7 @@ class MainWindow(qtw.QMainWindow):
             filter='Archivos de moléculas (*.mol *.mol2 *.pdb *.txt *.smi)'
         )
         if mol_path:
+            mol_list = []
             for m in mol_path:
                 file_format = m.split('.')[-1]
                 if file_format in ('txt', 'smi'):
@@ -120,9 +124,23 @@ class MainWindow(qtw.QMainWindow):
                         for smi in smi_lines:
                             molecule = Molecule(smiles=smi)
                             self.store_molecule(molecule)
+                            mol_list.append(molecule)
+                        self.Rg_calculation(mol_list)
                         return
                 molecule = Molecule(path=m, file_format=file_format)
                 self.store_molecule(molecule)
+                mol_list.append(molecule)
+                self.Rg_calculation(mol_list)
+
+    @logger.catch
+    def Rg_calculation(self, mol_list):
+        self.mol_worker = MolWorker(tuple(mol_list))
+        self.mol_thread = qtc.QThread()
+        self.mol_worker.moveToThread(self.mol_thread)
+        self.mol_thread.started.connect(self.mol_worker.start)
+        self.mol_worker.finished.connect(self.mol_thread.quit)
+        self.mol_worker.workflow.connect(self.Rg_workflow)
+        self.mol_thread.start()
 
     def store_molecule(self, molecule):
         if molecule.mol:
@@ -203,7 +221,7 @@ class MainWindow(qtw.QMainWindow):
         project = self.selected_project
         has_calculations = project.calculations
         already_programmed = project.status == 'Programmed'
-        if project is not None and has_calculation and not already_programmed:
+        if project is not None and has_calculations and not already_programmed:
             for calc in self.selected_project.calculations:
                 if calc['type'] in ('Optimization', 'Energy', 'Frequency'):
                     # esto sería para hacer en paralelo; invertir el if anterior y
@@ -222,7 +240,8 @@ class MainWindow(qtw.QMainWindow):
                             molecule,
                             config=calc['config'],
                             project=project,
-                            times=calc['times']
+                            times=calc['times'],
+                            auto_box_size=calc['auto_box_size']
                         )
                         self.vina_controller.submitted.connect(self.queue_manager)
                         self.vina_controller.queue_calculation()
@@ -264,6 +283,11 @@ class MainWindow(qtw.QMainWindow):
             self.vina_controller = MyVina(self.selected_mol)
             self.vina_controller.submitted.connect(self.queue_manager)
         else:
+            Rg_pending = [mol for mol in self.selected_project.molecules if mol.Rg == 0]
+            if Rg_pending:
+                message = 'Some molecules in this project are pending for the calculation of Rg values. wait for a moment until they are done, then try again'
+                qtw.QMessageBox.critical(self, 'Rg calculation pending', message)
+                return
             self.vina_controller = MyVina(
                 self.selected_project.molecules[0],
                 project=self.selected_project
@@ -297,6 +321,15 @@ class MainWindow(qtw.QMainWindow):
         job.set_status(status)
         self.database.commit()
         message = f'{job.type}: {job.molecule} -> {status}'
+        self.statusBar().showMessage(message)
+        self.set_models()
+
+    @qtc.pyqtSlot(float, str)
+    def Rg_workflow(self, Rg, inchi_key):
+        molecule = self.database.get('molecules', inchi_key)
+        molecule.set_Rg(Rg)
+        self.database.commit()
+        message = f'Rg value for {molecule.get_name} -> {Rg:.2f}'
         self.statusBar().showMessage(message)
         self.set_models()
 

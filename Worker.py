@@ -240,3 +240,21 @@ class IRWorkerThread(qtc.QObject):
 
         return sum(res)
 
+class MolWorker(qtc.QObject):
+
+    finished = qtc.pyqtSignal()
+    workflow = qtc.pyqtSignal(float, str)
+
+    def __init__(self, mol_list):
+        super().__init__(parent=None)
+        self.mol_list = copy.deepcopy(mol_list)
+
+    @qtc.pyqtSlot()
+    def start(self):
+        for mol in self.mol_list:
+            Rg = mol.calculate_Rg()
+            self.workflow.emit(Rg, mol.inchi_key)
+        self.finished.emit()
+        self.deleteLater()
+
+
