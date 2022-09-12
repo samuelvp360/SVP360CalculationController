@@ -67,21 +67,21 @@ class Molecule(Persistent):
         Draw.MolToFile(self.mol, self.mol_pic, size=(300, 300))
 
     def dock_prep(self, center, receptor_name):
-        conf_id = self.__minimize()
-        mol_conf = self.mol.GetConformer(conf_id)
+        # conf_id = self.__minimize()
+        # mol_conf = self.mol.GetConformer(0)
         # mol_with_Hs = Chem.AddHs(self.mol)
         # AllChem.EmbedMolecule(mol_with_Hs, randomSeed=0xf00d)
-        half = mol_with_Hs.GetNumAtoms() // 2
+        half = self.mol.GetNumAtoms() // 2
         mol_ref = Chem.MolFromSmiles('C')
         AllChem.EmbedMultipleConfs(mol_ref, 1)
         conf = mol_ref.GetConformer(0)
         conf.SetAtomPosition(0, Point3D(*center))
-        rdMolAlign.AlignMol(mol_conf, mol_ref, atomMap=[(half, 0)])
+        rdMolAlign.AlignMol(self.mol, mol_ref, atomMap=[(half, 0)])
         converter = ob.OBConversion()
         mol_ob = ob.OBMol()
         converter.SetInAndOutFormats('mol', 'mol2')
         file_name = f'molecules/{self.inchi_key}/{self.inchi_key}.mol2'
-        converter.ReadString(mol_ob, Chem.MolToMolBlock(mol_conf))
+        converter.ReadString(mol_ob, Chem.MolToMolBlock(self.mol))
         converter.WriteFile(mol_ob, file_name)
         new_name = f'{file_name.split(".")[0]}_{receptor_name}.pdbqt'
         subprocess.run(
@@ -92,6 +92,13 @@ class Molecule(Persistent):
         )
         os.remove(file_name)
         return new_name
+
+    def set_conformer(self, conf):
+        self.mol = Chem.AddHs(self.mol)
+        AllChem.EmbedMolecule(self.mol, randomSeed=0xf00d)
+        AllChem.EmbedMultipleConfs(self.mol, 1)
+        self.mol.AddConformer(conf, assignId=0)
+        self._p_changed = True
 
     def __create_conformers(self):
         self.mol = Chem.AddHs(self.mol)
@@ -126,7 +133,7 @@ class Molecule(Persistent):
                 position = conf.GetAtomPosition(i)
                 Rg += (position.x - centroid[0]) ** 2 + (position.y - centroid[1]) ** 2 + (position.z - centroid[2]) ** 2
                 num_atoms += 1
-        return np.sqrt(Rg / num_atoms)
+        return np.sqrt(Rg / num_atoms), conf
 
     def set_Rg(self, Rg):
         self.Rg = Rg
@@ -138,7 +145,10 @@ class Molecule(Persistent):
         else:
             self.__name = name.strip()
             self._p_changed = True
-        self.mol.SetProp('_Name', self.__name)
+        if self.mol:
+            self.mol.SetProp('_Name', self.__name)
+        else:
+            return False
 
     def add_calculation(self, calculation_id):
         self.calculations.append(calculation_id)

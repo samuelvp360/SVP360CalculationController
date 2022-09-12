@@ -33,10 +33,9 @@ class MainWindow(qtw.QMainWindow):
         calc_items = (
             'Gaussian', 'Vina', 'Reactividad local'
         )
-        to_calculate_Rg = [mol for mol in self.molecules_list if mol.Rg == 0]
-        print([m.get_name for m in to_calculate_Rg])
-        if to_calculate_Rg:
-            self.Rg_calculation(to_calculate_Rg)
+        # to_calculate_Rg = [mol for mol in self.molecules_list if mol.Rg == 0]
+        # if to_calculate_Rg:
+            # self.Rg_calculation(to_calculate_Rg)
         self.uiCalculationsComboBox.addItems(calc_items)
         # pyqtRemoveInputHook()
 
@@ -56,6 +55,11 @@ class MainWindow(qtw.QMainWindow):
         self.uiMoleculesTree.setModel(mol_tree_model.create_model())
         self.uiMoleculesTree.header().setSectionResizeMode(qtw.QHeaderView.ResizeToContents)
         self.selected_mol = None
+        to_calculate_Rg = [mol for mol in self.molecules_list if mol.Rg == 0]
+        if to_calculate_Rg and not hasattr(self, 'mol_thread'):
+            self.Rg_calculation(to_calculate_Rg)
+        elif hasattr(self, 'mol_thread') and self.mol_thread.isFinished():
+            self.Rg_calculation(to_calculate_Rg)
         # Projects
         self.projects_list = list(self.database.get_projects_db)
         proj_tree_model = ProjectsModel(self.projects_list)
@@ -108,29 +112,15 @@ class MainWindow(qtw.QMainWindow):
             self.database.commit()
             self.set_models()
 
-    def add_molecule(self):
-        mol_path, _ = qtw.QFileDialog.getOpenFileNames(
-            self, 'Selecciona la molécula a cargar',
-            options=qtw.QFileDialog.DontUseNativeDialog,
-            filter='Archivos de moléculas (*.mol *.mol2 *.pdb *.txt *.smi)'
-        )
-        if mol_path:
-            mol_list = []
-            for m in mol_path:
-                file_format = m.split('.')[-1]
-                if file_format in ('txt', 'smi'):
-                    with open(m, 'r') as file:
-                        smi_lines = file.readlines()
-                        for smi in smi_lines:
-                            molecule = Molecule(smiles=smi)
-                            self.store_molecule(molecule)
-                            mol_list.append(molecule)
-                        self.Rg_calculation(mol_list)
-                        return
-                molecule = Molecule(path=m, file_format=file_format)
-                self.store_molecule(molecule)
-                mol_list.append(molecule)
-                self.Rg_calculation(mol_list)
+    @qtc.pyqtSlot(float, str, object)
+    def Rg_workflow(self, Rg, inchi_key, conf):
+        molecule = self.database.get('molecules', inchi_key)
+        molecule.set_Rg(Rg)
+        molecule.set_conformer(conf)
+        self.database.commit()
+        message = f'Rg value for {molecule.get_name} -> {Rg:.2f}'
+        self.statusBar().showMessage(message)
+        self.set_models()
 
     @logger.catch
     def Rg_calculation(self, mol_list):
@@ -141,6 +131,36 @@ class MainWindow(qtw.QMainWindow):
         self.mol_worker.finished.connect(self.mol_thread.quit)
         self.mol_worker.workflow.connect(self.Rg_workflow)
         self.mol_thread.start()
+
+    def add_molecule(self):
+        mol_path, _ = qtw.QFileDialog.getOpenFileNames(
+            self, 'Selecciona la molécula a cargar',
+            options=qtw.QFileDialog.DontUseNativeDialog,
+            filter='Archivos de moléculas (*.mol *.mol2 *.pdb *.txt *.smi)'
+        )
+        if mol_path:
+            # mol_list = []
+            for m in mol_path:
+                file_format = m.split('.')[-1]
+                if file_format in ('txt', 'smi'):
+                    with open(m, 'r') as file:
+                        smi_lines = file.readlines()
+                        for smi in smi_lines:
+                            molecule = Molecule(smiles=smi)
+                            if molecule.mol:
+                                self.store_molecule(molecule)
+                            else:
+                                del molecule # a message can be displayed
+                            # mol_list.append(molecule)
+                        # self.Rg_calculation(mol_list)
+                        return
+                molecule = Molecule(path=m, file_format=file_format)
+                if molecule.mol:
+                    self.store_molecule(molecule)
+                else:
+                    del molecule
+                # mol_list.append(molecule)
+                # self.Rg_calculation(mol_list)
 
     def store_molecule(self, molecule):
         if molecule.mol:
@@ -321,15 +341,6 @@ class MainWindow(qtw.QMainWindow):
         job.set_status(status)
         self.database.commit()
         message = f'{job.type}: {job.molecule} -> {status}'
-        self.statusBar().showMessage(message)
-        self.set_models()
-
-    @qtc.pyqtSlot(float, str)
-    def Rg_workflow(self, Rg, inchi_key):
-        molecule = self.database.get('molecules', inchi_key)
-        molecule.set_Rg(Rg)
-        self.database.commit()
-        message = f'Rg value for {molecule.get_name} -> {Rg:.2f}'
         self.statusBar().showMessage(message)
         self.set_models()
 
