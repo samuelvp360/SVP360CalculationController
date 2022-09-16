@@ -89,9 +89,9 @@ class Worker(qtc.QObject):
     def run_vina(self):
         cmd = 'vina --verbosity 0'
         for k, v in self.job.config.items():
-            cmd += f' --{k} {v}'
+            cmd += f' --{k} "{v}"'
         for out in self.job.output_file:
-            new_cmd = cmd + f' --out {out}'
+            new_cmd = cmd + f' --out "{out}"'
             subprocess.run(
                 new_cmd,
                 shell=True,

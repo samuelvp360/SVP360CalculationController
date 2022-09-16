@@ -15,14 +15,14 @@ from PyQt5 import QtWidgets as qtw
 from PyQt5 import QtCore as qtc
 from PyQt5 import uic
 from psutil import virtual_memory
-from vina import Vina
+# from vina import Vina
 from Models import PandasModel
-from openbabel import openbabel as ob
+# from openbabel import openbabel as ob
 import matplotlib
 from matplotlib import pyplot as plt
 from matplotlib.figure import Figure
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg, NavigationToolbar2QT as NavigationToolbar
-ob.obErrorLog.StopLogging()  # se puede cambiar por SetOutputLevel para logging
+# ob.obErrorLog.StopLogging()  # se puede cambiar por SetOutputLevel para logging
 matplotlib.use('Qt5Agg')
 
 
@@ -37,6 +37,7 @@ class PlotCanvas(FigureCanvasQTAgg):
             tight_layout=True
         )
         self.ax = self.fig.add_subplot(111)
+        self.ax2 = self.ax.twinx()
         super().__init__(self.fig)
 
 
@@ -1252,7 +1253,10 @@ class DockingPlotter(qtw.QWidget):
         self.uiPlotLayout.addWidget(self.canvas)
         self.set_model()
         self.selected = []
-        self.plot()
+        if self.jobs[0].redocking:
+            self.plot_rmsd()
+        else:
+            self.plot()
         self.show()
 
     def set_model(self):
@@ -1265,7 +1269,10 @@ class DockingPlotter(qtw.QWidget):
         indexes = self.uiResultsTableView.selectedIndexes()
         if indexes:
             self.selected = [i.row() for i in indexes]
-            self.plot()
+            if self.jobs[0].redocking:
+                self.plot_rmsd()
+            else:
+                self.plot()
         else:
             self.selected = []
         pass
@@ -1278,6 +1285,7 @@ class DockingPlotter(qtw.QWidget):
         names = []
         receptor = []
         box_size = []
+        rmsd = []
         for job in jobs:
             if job.id in project.job_ids:
                 energies.append(job.energies)
@@ -1287,6 +1295,7 @@ class DockingPlotter(qtw.QWidget):
                 size_y = job.config.get('size_y')
                 size_z = job.config.get('size_z')
                 box_size.append(f'{size_x}x{size_y}x{size_z}')
+                rmsd.append(job.rmsd)
         df = pd.DataFrame({
             'Molecule': names,
             'Receptor': receptor,
@@ -1295,13 +1304,40 @@ class DockingPlotter(qtw.QWidget):
         })
         return df
 
+    def plot_rmsd(self):
+        self.canvas.ax.clear()
+        self.canvas.ax2.clear()
+        self.canvas.ax.set_title('Redocking')
+        self.canvas.ax.set_xlabel('Molecule')
+        self.canvas.ax.set_ylabel('RMSD')
+        self.canvas.ax.tick_params(axis='x', labelrotation=90)
+        self.canvas.ax.set_ylim(bottom=0., top=2.5)
+        props={'color': 'blue', 'linewidth': 1.0}
+        self.canvas.ax.boxplot(
+            x=[self.jobs[0].rmsd], positions=[-0.5],
+            labels=[self.jobs[0].molecule],
+            boxprops=props, medianprops=props,
+            whiskerprops=props, capprops=props,
+        )
+        self.canvas.ax2.set_ylabel('Binding Energy (kcal/mol)')
+        props={'color': 'red', 'linewidth': 1.0}
+        self.canvas.ax2.boxplot(
+            x=[self.jobs[0].energies], positions=[0.5],
+            labels=[self.jobs[0].molecule],
+            boxprops=props, medianprops=props,
+            whiskerprops=props, capprops=props
+        )
+        self.uiImportButton.setEnabled(False)
+        self.uiExportButton.setEnabled(False)
+        self.canvas.draw()
+
     def plot(self):
         if not self.selected:
             return
         self.canvas.ax.clear()
         self.canvas.ax.set_title('Docking')
         self.canvas.ax.set_xlabel('Molecule')
-        self.canvas.ax.set_ylabel('Binding Energy ()')
+        self.canvas.ax.set_ylabel('Binding Energy (kcal/mol)')
         self.canvas.ax.tick_params(axis='x', labelrotation=90)
         colors = ['blue', 'red', 'green', 'magenta', 'orange']
         to_plot = self.df.iloc[self.selected]
@@ -1313,7 +1349,7 @@ class DockingPlotter(qtw.QWidget):
             mol_names = to_plot.loc[mask, 'Molecule']
             to_plot = to_plot.loc[mask, 'Binding energies']
             total = to_plot.shape[0]
-            props={'color':colors[i], 'linewidth':1.0}
+            props={'color': colors[i], 'linewidth': 1.0}
             positions = np.arange(total) * 2 - 0.4 * (-1) ** (i + 1)
             self.canvas.ax.plot([], c=colors[i], label=receptors[i])
             self.canvas.ax.boxplot(
@@ -1361,7 +1397,9 @@ class MyVina(qtw.QWidget):
 
     def __init__(
         self, molecule, *,
-        config=False, project=False, times=1, auto_box_size=False
+        config=False, project=False, times=1,
+        auto_box_size=False, redocking=False,
+        nat_lig_path=''
     ):
         super().__init__()
         uic.loadUi('Views/uiVina.ui', self)
@@ -1369,6 +1407,8 @@ class MyVina(qtw.QWidget):
         self.project = project
         self.config = copy.deepcopy(config)
         self.times = times
+        self.nat_lig_path = nat_lig_path
+        self.redocking = redocking
         self.uiAutoBoxSize.setChecked(auto_box_size)
         self.set_auto_box_size()
         if not self.config:
@@ -1427,6 +1467,10 @@ class MyVina(qtw.QWidget):
             )
             os.remove(mol2_file)
 
+    def redocking(self):
+        self.redocking = self.uiRedockingCheck.isChecked()
+        print(self.redocking)
+
     def center_from_nat_ligand(self):
         nat_lig_path, _ = qtw.QFileDialog.getOpenFileName(
             self, 'Selecciona el ligando natural',
@@ -1434,6 +1478,8 @@ class MyVina(qtw.QWidget):
             filter='Archivos pdb o pdbqt (*.pdb *.pdbqt)'
         )
         if nat_lig_path:
+            self.nat_lig_path = nat_lig_path
+            self.uiRedockingCheck.setEnabled(True)
             with open(nat_lig_path, 'r') as file:
                 lines = file.readlines()
                 coords = np.empty((0, 3), dtype=float)
@@ -1529,7 +1575,9 @@ class MyVina(qtw.QWidget):
             'output_file': output_file,
             'molecule': self.molecule.get_name,
             'molecule_id': self.molecule.inchi_key,
-            'auto_box_size': self.auto_box_size
+            'auto_box_size': self.auto_box_size,
+            'nat_lig_path': self.nat_lig_path,
+            'redocking': self.redocking
         }
         self.submitted.emit(calculation, self.project.name)
         self.close()

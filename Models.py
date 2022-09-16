@@ -162,7 +162,7 @@ class ProjectsModel(qtg.QStandardItemModel):
                     'Cálculos', font_size=10, set_bold=True
                 )
                 for index, calc in enumerate(project.calculations):
-                    string = f'{index + 1}.\nTipo:\t\t{calc["type"]}\nKeywords:\t\t{calc.get("keywords")}\nMultipl.:\t\t{calc["charge_mult"].split("/")[1]}\nStatus:\t\t{calc.get("status")}'
+                    string = f'{index + 1}.\nTipo:\t\t{calc["type"]}\nKeywords:\t\t{calc.get("keywords")}\nMultipl.:\t\t{calc["charge_mult"].split("/")[1]}'
                     calc_std_item = StandardItem(string, font_size=8)
                     calculations.appendRow(calc_std_item)
                 p_std_item.appendRows([molecules, calculations])

@@ -23,7 +23,7 @@
     </rect>
    </property>
    <property name="title">
-    <string>Receptor volume</string>
+    <string>Receptor</string>
    </property>
    <layout class="QVBoxLayout" name="verticalLayout">
     <item>
@@ -183,7 +183,7 @@
     </rect>
    </property>
    <property name="title">
-    <string>Opciones avanzadas</string>
+    <string>Advanced options</string>
    </property>
    <layout class="QHBoxLayout" name="horizontalLayout_2">
     <item>
@@ -333,48 +333,54 @@
     <rect>
      <x>30</x>
      <y>25</y>
-     <width>456</width>
-     <height>27</height>
+     <width>466</width>
+     <height>91</height>
     </rect>
    </property>
-   <layout class="QHBoxLayout" name="horizontalLayout">
-    <item>
-     <widget class="QPushButton" name="uiOpenReceptorButton">
+   <layout class="QGridLayout" name="gridLayout_3">
+    <item row="0" column="0">
+     <layout class="QHBoxLayout" name="horizontalLayout">
+      <item>
+       <widget class="QPushButton" name="uiOpenReceptorButton">
+        <property name="text">
+         <string>Open receptor</string>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QLineEdit" name="uiReceptorLine">
+        <property name="placeholderText">
+         <string>Receptor</string>
+        </property>
+       </widget>
+      </item>
+     </layout>
+    </item>
+    <item row="1" column="0">
+     <layout class="QHBoxLayout" name="horizontalLayout_3">
+      <item>
+       <widget class="QPushButton" name="uiOpenNatLigButton">
+        <property name="text">
+         <string>Open ligand</string>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QLineEdit" name="uiNatLigLine">
+        <property name="placeholderText">
+         <string>Ligando natural </string>
+        </property>
+       </widget>
+      </item>
+     </layout>
+    </item>
+    <item row="2" column="0">
+     <widget class="QCheckBox" name="uiRedockingCheck">
+      <property name="enabled">
+       <bool>false</bool>
+      </property>
       <property name="text">
-       <string>Open receptor</string>
-      </property>
-     </widget>
-    </item>
-    <item>
-     <widget class="QLineEdit" name="uiReceptorLine">
-      <property name="placeholderText">
-       <string>Receptor</string>
-      </property>
-     </widget>
-    </item>
-   </layout>
-  </widget>
-  <widget class="QWidget" name="layoutWidget_2">
-   <property name="geometry">
-    <rect>
-     <x>30</x>
-     <y>75</y>
-     <width>456</width>
-     <height>27</height>
-    </rect>
-   </property>
-   <layout class="QHBoxLayout" name="horizontalLayout_3">
-    <item>
-     <widget class="QPushButton" name="uiOpenNatLigButton">
-      <property name="text">
-       <string>Open ligand</string>
-      </property>
-     </widget>
-    </item>
-    <item>
-     <widget class="QLineEdit" name="uiNatLigLine">
-      <property name="placeholderText">
-       <string>Ligando natural </string>
+       <string>Redocking</string>
       </property>
      </widget>
     </item>
@@ -479,11 +485,28 @@
     </hint>
    </hints>
   </connection>
+  <connection>
+   <sender>uiRedockingCheck</sender>
+   <signal>stateChanged(int)</signal>
+   <receiver>Form</receiver>
+   <slot>redocking()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>34</x>
+     <y>92</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>36</x>
+     <y>16</y>
+    </hint>
+   </hints>
+  </connection>
  </connections>
  <slots>
   <slot>open_receptor()</slot>
   <slot>queue_calculation()</slot>
   <slot>center_from_nat_ligand()</slot>
   <slot>set_auto_box_size()</slot>
+  <slot>redocking()</slot>
  </slots>
 </ui>

@@ -67,10 +67,6 @@ class Molecule(Persistent):
         Draw.MolToFile(self.mol, self.mol_pic, size=(300, 300))
 
     def dock_prep(self, center, receptor_name):
-        # conf_id = self.__minimize()
-        # mol_conf = self.mol.GetConformer(0)
-        # mol_with_Hs = Chem.AddHs(self.mol)
-        # AllChem.EmbedMolecule(mol_with_Hs, randomSeed=0xf00d)
         half = self.mol.GetNumAtoms() // 2
         mol_ref = Chem.MolFromSmiles('C')
         AllChem.EmbedMultipleConfs(mol_ref, 1)
@@ -279,9 +275,9 @@ class Project(Persistent):
             )
             img.save(self.grid_img)
 
-    def set_status(self, status):
-        self.status = status
-        self._p_changed = True
+    # def set_status(self, status):
+        # self.status = status
+        # self._p_changed = True
 
     def add_molecule(self, molecule):
         self.molecules.append(molecule)
@@ -324,6 +320,9 @@ class Docking(Persistent):
             self.started = datetime.now()
         elif status in 'Finished':
             self.energies = self.get_binding_energies(self.output_file)
+            if self.redocking:
+                self.rmsd = self.get_rmsd(self.nat_lig_path)
+                print(self.rmsd)
             print(self.energies)
             self.finished = datetime.now()
             self.elapsed = self.finished - self.started
@@ -335,6 +334,38 @@ class Docking(Persistent):
     @property
     def get_status(self):
         return self.__status
+
+    def get_rmsd(self, nat_lig_path):
+        lig_format = nat_lig_path.split('.')[-1]
+        converter = ob.OBConversion()
+        rmsd = np.empty(len(self.output_file))
+        with open(nat_lig_path, 'r') as file:
+            nat_lig_block = file.read()
+        # if lig_format == 'pdb':
+        converter.SetInAndOutFormats(lig_format, 'mol2')
+            # mol_ref = Chem.rdmolfiles.MolFromPDBBlock(nat_lig_block)
+        # elif lig_format == 'pdbqt':
+            # converter.SetInAndOutFormats('pdbqt', 'mol2')
+        mol_ob = ob.OBMol()
+        converter.ReadString(mol_ob, nat_lig_block)
+        new_block = converter.WriteString(mol_ob)
+        mol_ref = Chem.MolFromMol2Block(new_block)
+        mol_ref_neworder = tuple(zip(*sorted([(j, i) for i, j in enumerate(Chem.CanonicalRankAtoms(mol_ref))])))[1]
+        mol_ref = Chem.RenumberAtoms(mol_ref, mol_ref_neworder)
+        if mol_ref:
+            output_files = self.output_file
+            for i, out in enumerate(output_files):
+                with open(out, 'r') as file:
+                    block = file.read()
+                    mol_ob = ob.OBMol()
+                    converter.SetInAndOutFormats('pdbqt', 'mol2')
+                    converter.ReadString(mol_ob, block)
+                    new_block = converter.WriteString(mol_ob)
+                    mol = Chem.MolFromMol2Block(new_block)
+                    mol_neworder = tuple(zip(*sorted([(j, i) for i, j in enumerate(Chem.CanonicalRankAtoms(mol))])))[1]
+                    mol = Chem.RenumberAtoms(mol, mol_neworder)
+                    rmsd[i] = rdMolAlign.GetBestRMS(mol, mol_ref)
+            return rmsd
 
     def get_binding_energies(self, outputs):
         energies = np.zeros(len(outputs))

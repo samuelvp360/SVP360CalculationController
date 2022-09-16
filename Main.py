@@ -62,6 +62,7 @@ class MainWindow(qtw.QMainWindow):
             self.Rg_calculation(to_calculate_Rg)
         # Projects
         self.projects_list = list(self.database.get_projects_db)
+        print([p.__dict__ for p in self.projects_list])
         proj_tree_model = ProjectsModel(self.projects_list)
         self.uiProjectsTreeView.setModel(proj_tree_model.create_model())
         self.uiProjectsTreeView.header().setSectionResizeMode(qtw.QHeaderView.ResizeToContents)
@@ -240,8 +241,8 @@ class MainWindow(qtw.QMainWindow):
         # escogre si ejecutar en serie o en paralelo
         project = self.selected_project
         has_calculations = project.calculations
-        already_programmed = project.status == 'Programmed'
-        if project is not None and has_calculations and not already_programmed:
+        # already_programmed = project.status == 'Programmed'
+        if project is not None and has_calculations:
             for calc in self.selected_project.calculations:
                 if calc['type'] in ('Optimization', 'Energy', 'Frequency'):
                     # esto sería para hacer en paralelo; invertir el if anterior y
@@ -254,18 +255,20 @@ class MainWindow(qtw.QMainWindow):
                         )
                         self.gauss_controller.submitted.connect(self.queue_manager)
                         self.gauss_controller.queue_calculation()
-                elif calc['type'] == 'Docking':
+                elif calc['type'] == 'Docking': # buscar otra forma con menos args
                     for molecule in project.molecules:
                         self.vina_controller = MyVina(
                             molecule,
                             config=calc['config'],
                             project=project,
                             times=calc['times'],
-                            auto_box_size=calc['auto_box_size']
+                            auto_box_size=calc['auto_box_size'],
+                            nat_lig_path=calc['nat_lig_path'],
+                            redocking=calc['redocking']
                         )
                         self.vina_controller.submitted.connect(self.queue_manager)
                         self.vina_controller.queue_calculation()
-            project.set_status('Programmed')
+            # project.set_status('Programmed')
             self.database.commit()
 
     def gaussian_setup(self, group=False):
@@ -364,7 +367,7 @@ class MainWindow(qtw.QMainWindow):
             for index, calculation in enumerate(self.selected_project.calculations):
                 if calculation.get('type') == 'Docking':
                     self.docking_plotter = DockingPlotter(
-                        project, self.jobs_list
+                        project, [j for j in self.jobs_list if j.id in project.job_ids]
                     )
 
     def projects_right_click(self, position):
