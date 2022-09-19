@@ -62,7 +62,7 @@ class MainWindow(qtw.QMainWindow):
             self.Rg_calculation(to_calculate_Rg)
         # Projects
         self.projects_list = list(self.database.get_projects_db)
-        print([p.__dict__ for p in self.projects_list])
+        # print([p.__dict__ for p in self.projects_list])
         proj_tree_model = ProjectsModel(self.projects_list)
         self.uiProjectsTreeView.setModel(proj_tree_model.create_model())
         self.uiProjectsTreeView.header().setSectionResizeMode(qtw.QHeaderView.ResizeToContents)
@@ -152,16 +152,14 @@ class MainWindow(qtw.QMainWindow):
                                 self.store_molecule(molecule)
                             else:
                                 del molecule # a message can be displayed
-                            # mol_list.append(molecule)
-                        # self.Rg_calculation(mol_list)
+                        self.set_models()
                         return
                 molecule = Molecule(path=m, file_format=file_format)
                 if molecule.mol:
                     self.store_molecule(molecule)
+                    self.set_models()
                 else:
                     del molecule
-                # mol_list.append(molecule)
-                # self.Rg_calculation(mol_list)
 
     def store_molecule(self, molecule):
         if molecule.mol:
@@ -170,7 +168,7 @@ class MainWindow(qtw.QMainWindow):
                 self.database.set(
                     'molecules', molecule.inchi_key, molecule
                 )
-                self.set_models()
+                # self.set_models()
             else:
                 qtw.QMessageBox.critical(
                     self, 'Molécula existente', f'La molécula con Inchy key: {molecule.inchi_key} ya existe en la base de datos. No será agregada.'
@@ -326,8 +324,8 @@ class MainWindow(qtw.QMainWindow):
     def resume_queue(self):
         if self.master_queue:
             reply = qtw.QMessageBox.question(
-                self, 'Trabajo pendiente en cola',
-                'Aún hay trabajo en cola. ¿Desea reanudar?',
+                self, 'Work pending in the queue',
+                'There are some works pending in the queue, do you want to resume?',
                 qtw.QMessageBox.Yes | qtw.QMessageBox.No
             )
             if reply == qtw.QMessageBox.Yes:
@@ -340,7 +338,6 @@ class MainWindow(qtw.QMainWindow):
     @qtc.pyqtSlot(int, str)
     def workflow(self, job_id, status):
         job = self.database.get('jobs', job_id)
-        # molecule = self.database.get('molecules', job.molecule_id)
         job.set_status(status)
         self.database.commit()
         message = f'{job.type}: {job.molecule} -> {status}'

@@ -38,7 +38,7 @@ class Molecule(Persistent):
             self.smiles = Chem.MolToSmiles(self.mol)
             self.MW = Chem.rdMolDescriptors.CalcExactMolWt(self.mol)
             self.formula = Chem.rdMolDescriptors.CalcMolFormula(self.mol)
-            self.Rg = False
+            self.Rg = 0.
             self.__set_mol_picture()
 
     def __from_smiles(self, smiles):
@@ -86,7 +86,7 @@ class Molecule(Persistent):
             capture_output=True,
             text=True
         )
-        os.remove(file_name)
+        # os.remove(file_name)
         return new_name
 
     def set_conformer(self, conf):
@@ -97,34 +97,39 @@ class Molecule(Persistent):
         self._p_changed = True
 
     def __create_conformers(self):
-        self.mol = Chem.AddHs(self.mol)
-        AllChem.EmbedMolecule(self.mol, randomSeed=0xf00d)
-        num_rot_bonds = Chem.rdMolDescriptors.CalcNumRotatableBonds(self.mol)
+        new_mol = Chem.AddHs(self.mol)
+        AllChem.EmbedMolecule(new_mol, randomSeed=0xf00d)
+        num_rot_bonds = Chem.rdMolDescriptors.CalcNumRotatableBonds(new_mol)
         if num_rot_bonds <= 7:
             n_conf = 50
         elif 8 <= num_rot_bonds <= 12:
             n_conf = 200
         else:
             n_conf = 300
-        AllChem.EmbedMultipleConfs(self.mol, n_conf)
+        AllChem.EmbedMultipleConfs(new_mol, n_conf)
+        return new_mol
 
     def __minimize(self):
-        self.__create_conformers()
+        new_mol = self.__create_conformers()
         energies = AllChem.MMFFOptimizeMoleculeConfs(
-            self.mol, maxIters=2000, nonBondedThresh=100.
+            new_mol, maxIters=2000, nonBondedThresh=100.
         )
         energies_list = [e[1] for e in energies]
         min_e_index = energies_list.index(min(energies_list))
-        return min_e_index
+        conf = new_mol.GetConformer(min_e_index)
+        return conf
 
     def calculate_Rg(self):
-        conf_id = self.__minimize()
-        conf = self.mol.GetConformer(conf_id)
+        conf = self.__minimize()
         centroid = Chem.rdMolTransforms.ComputeCentroid(conf)
         centroid_coords = centroid.x, centroid.y, centroid.z
+        new_mol = Chem.AddHs(self.mol)
+        AllChem.EmbedMolecule(new_mol, randomSeed=0xf00d)
+        AllChem.EmbedMultipleConfs(new_mol, 1)
+        new_mol.AddConformer(conf, assignId=0)
         Rg = 0.
         num_atoms = 0
-        for i, atom in enumerate(self.mol.GetAtoms()):
+        for i, atom in enumerate(new_mol.GetAtoms()):
             if not atom.GetAtomicNum() == 1:
                 position = conf.GetAtomPosition(i)
                 Rg += (position.x - centroid[0]) ** 2 + (position.y - centroid[1]) ** 2 + (position.z - centroid[2]) ** 2
@@ -269,7 +274,7 @@ class Project(Persistent):
             os.makedirs(f'projects/{self.name}/')
         if self.molecules:
             img = Draw.MolsToGridImage(
-                [Chem.RemoveHs(m.mol) for m in self.molecules],
+                [Chem.MolFromSmiles(m.smiles) for m in self.molecules],
                 molsPerRow=3,
                 legends=[m.get_name for m in self.molecules]
             )

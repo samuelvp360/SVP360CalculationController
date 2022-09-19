@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1088</width>
+    <width>1615</width>
     <height>916</height>
    </rect>
   </property>
@@ -18,7 +18,7 @@
     <rect>
      <x>35</x>
      <y>325</y>
-     <width>1016</width>
+     <width>1551</width>
      <height>576</height>
     </rect>
    </property>
@@ -39,7 +39,7 @@
     <rect>
      <x>35</x>
      <y>56</y>
-     <width>1016</width>
+     <width>1556</width>
      <height>266</height>
     </rect>
    </property>
@@ -50,7 +50,7 @@
   <widget class="QPushButton" name="uiExportButton">
    <property name="geometry">
     <rect>
-     <x>883</x>
+     <x>1433</x>
      <y>9</y>
      <width>156</width>
      <height>41</height>
@@ -63,7 +63,7 @@
   <widget class="QPushButton" name="uiImportButton">
    <property name="geometry">
     <rect>
-     <x>710</x>
+     <x>1260</x>
      <y>10</y>
      <width>156</width>
      <height>41</height>
@@ -71,6 +71,35 @@
    </property>
    <property name="text">
     <string>Import from excel</string>
+   </property>
+  </widget>
+  <widget class="QPushButton" name="uiRefreshButton">
+   <property name="geometry">
+    <rect>
+     <x>35</x>
+     <y>10</y>
+     <width>89</width>
+     <height>41</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>Refresh</string>
+   </property>
+  </widget>
+  <widget class="QCheckBox" name="uiSortedCheck">
+   <property name="enabled">
+    <bool>false</bool>
+   </property>
+   <property name="geometry">
+    <rect>
+     <x>185</x>
+     <y>20</y>
+     <width>92</width>
+     <height>23</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>Sorted</string>
    </property>
   </widget>
  </widget>
@@ -124,10 +153,44 @@
     </hint>
    </hints>
   </connection>
+  <connection>
+   <sender>uiRefreshButton</sender>
+   <signal>clicked()</signal>
+   <receiver>Form</receiver>
+   <slot>set_model()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>83</x>
+     <y>24</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>118</x>
+     <y>-7</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>uiSortedCheck</sender>
+   <signal>stateChanged(int)</signal>
+   <receiver>Form</receiver>
+   <slot>plot()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>193</x>
+     <y>30</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>211</x>
+     <y>-5</y>
+    </hint>
+   </hints>
+  </connection>
  </connections>
  <slots>
   <slot>select_molecules()</slot>
   <slot>export_to_excel()</slot>
   <slot>import_from_excel()</slot>
+  <slot>set_model()</slot>
+  <slot>plot()</slot>
  </slots>
 </ui>

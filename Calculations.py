@@ -33,11 +33,10 @@ class PlotCanvas(FigureCanvasQTAgg):
     def __init__(self, parent=None):
         self.fig = Figure(
             figsize=(12, 8), dpi=100,
-            # facecolor='#2d2a2e',
             tight_layout=True
         )
         self.ax = self.fig.add_subplot(111)
-        self.ax2 = self.ax.twinx()
+        # self.ax2 = self.ax.twinx()
         super().__init__(self.fig)
 
 
@@ -1246,17 +1245,13 @@ class DockingPlotter(qtw.QWidget):
         uic.loadUi('Views/uiPlotResults.ui', self)
         self.project = project
         self.jobs = jobs
-        self.df = self.create_df(project, jobs)
         self.canvas = PlotCanvas(self)
         self.toolbar = NavigationToolbar(self.canvas, self)
         self.uiToolbarLayout.addWidget(self.toolbar)
         self.uiPlotLayout.addWidget(self.canvas)
-        self.set_model()
         self.selected = []
-        if self.jobs[0].redocking:
-            self.plot_rmsd()
-        else:
-            self.plot()
+        self.df = self.create_df(self.project, self.jobs)
+        self.set_model()
         self.show()
 
     def set_model(self):
@@ -1264,6 +1259,10 @@ class DockingPlotter(qtw.QWidget):
         self.uiResultsTableView.setModel(model)
         self.uiResultsTableView.resizeColumnsToContents()
         self.uiResultsTableView.resizeRowsToContents()
+        if self.jobs[0].redocking:
+            self.plot_rmsd()
+        else:
+            self.plot(False)
 
     def select_molecules(self):
         indexes = self.uiResultsTableView.selectedIndexes()
@@ -1272,10 +1271,9 @@ class DockingPlotter(qtw.QWidget):
             if self.jobs[0].redocking:
                 self.plot_rmsd()
             else:
-                self.plot()
+                self.plot(False)
         else:
             self.selected = []
-        pass
 
     def create_df(self, project, jobs):
         names = pd.Series(
@@ -1288,6 +1286,8 @@ class DockingPlotter(qtw.QWidget):
         rmsd = []
         for job in jobs:
             if job.id in project.job_ids:
+                if len(job.energies) == 0:
+                    continue
                 energies.append(job.energies)
                 names.append(job.molecule)
                 receptor.append(job.receptor_name)
@@ -1295,18 +1295,22 @@ class DockingPlotter(qtw.QWidget):
                 size_y = job.config.get('size_y')
                 size_z = job.config.get('size_z')
                 box_size.append(f'{size_x}x{size_y}x{size_z}')
-                rmsd.append(job.rmsd)
-        df = pd.DataFrame({
+                if job.redocking:
+                    rmsd.append(job.rmsd)
+        values = {
             'Molecule': names,
             'Receptor': receptor,
             'Box size (\u212B\u00B3)': box_size,
-            'Binding energies': list(energies)
-        })
-        return df
+            'Binding energies': list(energies),
+        }
+        if jobs[0].redocking:
+            values.update({'RMSD': rmsd})
+        return pd.DataFrame(values)
 
     def plot_rmsd(self):
+        self.ax2 = self.canvas.ax.twinx()
         self.canvas.ax.clear()
-        self.canvas.ax2.clear()
+        self.ax2.clear()
         self.canvas.ax.set_title('Redocking')
         self.canvas.ax.set_xlabel('Molecule')
         self.canvas.ax.set_ylabel('RMSD')
@@ -1319,9 +1323,9 @@ class DockingPlotter(qtw.QWidget):
             boxprops=props, medianprops=props,
             whiskerprops=props, capprops=props,
         )
-        self.canvas.ax2.set_ylabel('Binding Energy (kcal/mol)')
+        self.ax2.set_ylabel('Binding Energy (kcal/mol)')
         props={'color': 'red', 'linewidth': 1.0}
-        self.canvas.ax2.boxplot(
+        self.ax2.boxplot(
             x=[self.jobs[0].energies], positions=[0.5],
             labels=[self.jobs[0].molecule],
             boxprops=props, medianprops=props,
@@ -1331,34 +1335,35 @@ class DockingPlotter(qtw.QWidget):
         self.uiExportButton.setEnabled(False)
         self.canvas.draw()
 
-    def plot(self):
+    def plot(self, sorted_values):
         if not self.selected:
             return
+        self.uiSortedCheck.setEnabled(True)
         self.canvas.ax.clear()
         self.canvas.ax.set_title('Docking')
         self.canvas.ax.set_xlabel('Molecule')
         self.canvas.ax.set_ylabel('Binding Energy (kcal/mol)')
         self.canvas.ax.tick_params(axis='x', labelrotation=90)
+        self.canvas.ax.axhline(-7., linewidth=.5, color='red')
         colors = ['blue', 'red', 'green', 'magenta', 'orange']
         to_plot = self.df.iloc[self.selected]
         receptors = pd.unique(to_plot['Receptor'])
         total = to_plot.shape[0]
-        for i, rec in enumerate(receptors):
-            to_plot = self.df.iloc[self.selected]
-            mask = to_plot['Receptor'] == rec
-            mol_names = to_plot.loc[mask, 'Molecule']
-            to_plot = to_plot.loc[mask, 'Binding energies']
-            total = to_plot.shape[0]
-            props={'color': colors[i], 'linewidth': 1.0}
-            positions = np.arange(total) * 2 - 0.4 * (-1) ** (i + 1)
-            self.canvas.ax.plot([], c=colors[i], label=receptors[i])
-            self.canvas.ax.boxplot(
-                positions=positions,
-                x=to_plot,
-                labels=mol_names,
-                boxprops=props, medianprops=props,
-                whiskerprops=props, capprops=props,
-            )
+        if sorted_values:
+            to_plot['Medians'] = to_plot['Binding energies'].apply(np.median)
+            to_plot.sort_values(by='Medians', inplace=True)
+        props={'color': colors[0], 'linewidth': 1.0}
+        # positions = np.arange(total) * 2 - 0.4 * (-1) ** (i + 1)
+        positions = np.arange(total)
+        self.canvas.ax.set_xlim(left=-2, right=positions[-1] + 2)
+        self.canvas.ax.plot([], c=colors[0], label=receptors[0])
+        self.canvas.ax.boxplot(
+            positions=positions,
+            x=to_plot['Binding energies'],
+            labels=to_plot['Molecule'],
+            boxprops=props, medianprops=props,
+            whiskerprops=props, capprops=props,
+        )
         self.canvas.ax.legend()
         self.canvas.draw()
 
@@ -1387,7 +1392,7 @@ class DockingPlotter(qtw.QWidget):
                     [float(i) for i in x.replace('[', '').replace(']', '').split()]
             ))
             new_df = new_df.iloc[:, 1:]
-            self.df = pd.concat([self.df, new_df])
+            self.df = pd.concat([self.df, new_df], ignore_index=True)
             self.set_model()
 
 
