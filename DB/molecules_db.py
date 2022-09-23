@@ -80,8 +80,7 @@ class MyZODB(object):
     def check(self, kind, key):
         return key in self.dbroot[kind]
 
-    def remove(self, key):
-        del self.dbroot['molecules'][key]
+    def remove(self, kind, key):
+        del self.dbroot[kind][key]
         self.dbroot._p_changed = True
-        self.commit()
 

@@ -75,13 +75,13 @@ class Molecule(Persistent):
         rdMolAlign.AlignMol(self.mol, mol_ref, atomMap=[(half, 0)])
         converter = ob.OBConversion()
         mol_ob = ob.OBMol()
-        converter.SetInAndOutFormats('mol', 'mol2')
+        converter.SetInAndOutFormats('pdb', 'mol2')
         file_name = f'molecules/{self.inchi_key}/{self.inchi_key}.mol2'
-        converter.ReadString(mol_ob, Chem.MolToMolBlock(self.mol))
+        converter.ReadString(mol_ob, Chem.MolToPDBBlock(self.mol, confId=0))
         converter.WriteFile(mol_ob, file_name)
         new_name = f'{file_name.split(".")[0]}_{receptor_name}.pdbqt'
         subprocess.run(
-            f'obabel {file_name} -O {new_name} -p 7.4', # cambio aquí
+            f'obabel {file_name} -O {new_name} -p 7.4 -xp',
             shell=True,
             capture_output=True,
             text=True
@@ -151,8 +151,12 @@ class Molecule(Persistent):
         else:
             return False
 
-    def add_calculation(self, calculation_id):
-        self.calculations.append(calculation_id)
+    def add_calculation(self, job_id):
+        self.calculations.append(job_id)
+        self._p_changed = True
+
+    def remove_calculation(self, job_id):
+        self.calculations.remove(job_id)
         self._p_changed = True
 
     @property
@@ -353,10 +357,23 @@ class Docking(Persistent):
             # converter.SetInAndOutFormats('pdbqt', 'mol2')
         mol_ob = ob.OBMol()
         converter.ReadString(mol_ob, nat_lig_block)
+        # mol_ob.AddHydrogens()
         new_block = converter.WriteString(mol_ob)
+        # new_name = nat_lig_path.split(".")[0] + '.mol2'
+        # subprocess.run(
+            # f'obabel {nat_lig_path} -O {new_name}',
+            # shell=True,
+            # capture_output=True,
+            # text=True
+        # )
+        # with open(new_name, 'r') as file:
+            # block = file.read()
+        # mol_ref = Chem.MolFromMol2Block(block)
+        # os.remove(new_name)
         mol_ref = Chem.MolFromMol2Block(new_block)
         mol_ref_neworder = tuple(zip(*sorted([(j, i) for i, j in enumerate(Chem.CanonicalRankAtoms(mol_ref))])))[1]
         mol_ref = Chem.RenumberAtoms(mol_ref, mol_ref_neworder)
+        # print(Chem.MolToMolBlock(mol_ref))
         if mol_ref:
             output_files = self.output_file
             for i, out in enumerate(output_files):
@@ -365,11 +382,17 @@ class Docking(Persistent):
                     mol_ob = ob.OBMol()
                     converter.SetInAndOutFormats('pdbqt', 'mol2')
                     converter.ReadString(mol_ob, block)
+                    # mol_ob.AddHydrogens()
                     new_block = converter.WriteString(mol_ob)
                     mol = Chem.MolFromMol2Block(new_block)
                     mol_neworder = tuple(zip(*sorted([(j, i) for i, j in enumerate(Chem.CanonicalRankAtoms(mol))])))[1]
                     mol = Chem.RenumberAtoms(mol, mol_neworder)
-                    rmsd[i] = rdMolAlign.GetBestRMS(mol, mol_ref)
+                    # print(Chem.MolToMolBlock(mol))
+                    try:
+                        rmsd[i] = rdMolAlign.GetBestRMS(mol, mol_ref)
+                    except RuntimeError:
+                        print('An error occurred. Try again.')
+                        return rmsd
             return rmsd
 
     def get_binding_energies(self, outputs):

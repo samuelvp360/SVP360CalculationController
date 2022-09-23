@@ -1,0 +1,342 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>uiDockingResults</class>
+ <widget class="QWidget" name="uiDockingResults">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>1615</width>
+    <height>916</height>
+   </rect>
+  </property>
+  <property name="windowTitle">
+   <string>Docking Results</string>
+  </property>
+  <widget class="QWidget" name="layoutWidget">
+   <property name="geometry">
+    <rect>
+     <x>35</x>
+     <y>325</y>
+     <width>1551</width>
+     <height>576</height>
+    </rect>
+   </property>
+   <layout class="QVBoxLayout" name="verticalLayout_4" stretch="80,500">
+    <property name="spacing">
+     <number>0</number>
+    </property>
+    <item>
+     <layout class="QVBoxLayout" name="uiToolbarLayout"/>
+    </item>
+    <item>
+     <layout class="QVBoxLayout" name="uiPlotLayout"/>
+    </item>
+   </layout>
+  </widget>
+  <widget class="QTableView" name="uiResultsTableView">
+   <property name="geometry">
+    <rect>
+     <x>35</x>
+     <y>56</y>
+     <width>1181</width>
+     <height>266</height>
+    </rect>
+   </property>
+   <property name="alternatingRowColors">
+    <bool>true</bool>
+   </property>
+  </widget>
+  <widget class="QCheckBox" name="uiSortedCheck">
+   <property name="enabled">
+    <bool>false</bool>
+   </property>
+   <property name="geometry">
+    <rect>
+     <x>50</x>
+     <y>20</y>
+     <width>92</width>
+     <height>23</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>Sorted</string>
+   </property>
+  </widget>
+  <widget class="QGroupBox" name="groupBox">
+   <property name="geometry">
+    <rect>
+     <x>1220</x>
+     <y>10</y>
+     <width>366</width>
+     <height>316</height>
+    </rect>
+   </property>
+   <property name="title">
+    <string>Available projects</string>
+   </property>
+   <layout class="QVBoxLayout" name="verticalLayout">
+    <property name="leftMargin">
+     <number>2</number>
+    </property>
+    <property name="topMargin">
+     <number>2</number>
+    </property>
+    <property name="rightMargin">
+     <number>2</number>
+    </property>
+    <property name="bottomMargin">
+     <number>2</number>
+    </property>
+    <item>
+     <widget class="QScrollArea" name="uiProjectsArea">
+      <property name="widgetResizable">
+       <bool>true</bool>
+      </property>
+      <widget class="QWidget" name="scrollAreaWidgetContents">
+       <property name="geometry">
+        <rect>
+         <x>0</x>
+         <y>0</y>
+         <width>354</width>
+         <height>284</height>
+        </rect>
+       </property>
+       <widget class="QWidget" name="verticalLayoutWidget">
+        <property name="geometry">
+         <rect>
+          <x>0</x>
+          <y>0</y>
+          <width>351</width>
+          <height>281</height>
+         </rect>
+        </property>
+        <layout class="QVBoxLayout" name="uiProjectsLayout">
+         <property name="sizeConstraint">
+          <enum>QLayout::SetNoConstraint</enum>
+         </property>
+        </layout>
+       </widget>
+      </widget>
+     </widget>
+    </item>
+   </layout>
+  </widget>
+  <widget class="QWidget" name="">
+   <property name="geometry">
+    <rect>
+     <x>190</x>
+     <y>5</y>
+     <width>1026</width>
+     <height>52</height>
+    </rect>
+   </property>
+   <layout class="QHBoxLayout" name="horizontalLayout">
+    <item>
+     <widget class="QPushButton" name="uiRefreshButton">
+      <property name="minimumSize">
+       <size>
+        <width>0</width>
+        <height>50</height>
+       </size>
+      </property>
+      <property name="text">
+       <string>Refresh</string>
+      </property>
+     </widget>
+    </item>
+    <item>
+     <widget class="Line" name="line_2">
+      <property name="orientation">
+       <enum>Qt::Vertical</enum>
+      </property>
+     </widget>
+    </item>
+    <item>
+     <widget class="QPushButton" name="uiCompareProjectButton">
+      <property name="minimumSize">
+       <size>
+        <width>0</width>
+        <height>50</height>
+       </size>
+      </property>
+      <property name="text">
+       <string>Compare project</string>
+      </property>
+     </widget>
+    </item>
+    <item>
+     <widget class="QPushButton" name="uiCompareReceptorButton">
+      <property name="minimumSize">
+       <size>
+        <width>0</width>
+        <height>50</height>
+       </size>
+      </property>
+      <property name="text">
+       <string>Compare receptor</string>
+      </property>
+     </widget>
+    </item>
+    <item>
+     <widget class="Line" name="line">
+      <property name="orientation">
+       <enum>Qt::Vertical</enum>
+      </property>
+     </widget>
+    </item>
+    <item>
+     <widget class="QPushButton" name="uiImportButton">
+      <property name="minimumSize">
+       <size>
+        <width>0</width>
+        <height>50</height>
+       </size>
+      </property>
+      <property name="text">
+       <string>Import from excel</string>
+      </property>
+     </widget>
+    </item>
+    <item>
+     <widget class="QPushButton" name="uiExportButton">
+      <property name="minimumSize">
+       <size>
+        <width>0</width>
+        <height>50</height>
+       </size>
+      </property>
+      <property name="text">
+       <string>Export to excel</string>
+      </property>
+     </widget>
+    </item>
+   </layout>
+  </widget>
+ </widget>
+ <resources/>
+ <connections>
+  <connection>
+   <sender>uiResultsTableView</sender>
+   <signal>clicked(QModelIndex)</signal>
+   <receiver>uiDockingResults</receiver>
+   <slot>select_jobs()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>270</x>
+     <y>66</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>284</x>
+     <y>0</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>uiExportButton</sender>
+   <signal>clicked()</signal>
+   <receiver>uiDockingResults</receiver>
+   <slot>export_to_excel()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>1019</x>
+     <y>27</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>839</x>
+     <y>5</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>uiImportButton</sender>
+   <signal>clicked()</signal>
+   <receiver>uiDockingResults</receiver>
+   <slot>import_from_excel()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>825</x>
+     <y>34</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>640</x>
+     <y>-8</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>uiRefreshButton</sender>
+   <signal>clicked()</signal>
+   <receiver>uiDockingResults</receiver>
+   <slot>create_df()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>239</x>
+     <y>20</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>118</x>
+     <y>-7</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>uiSortedCheck</sender>
+   <signal>stateChanged(int)</signal>
+   <receiver>uiDockingResults</receiver>
+   <slot>plot()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>58</x>
+     <y>30</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>211</x>
+     <y>-5</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>uiCompareProjectButton</sender>
+   <signal>clicked()</signal>
+   <receiver>uiDockingResults</receiver>
+   <slot>compare_project()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>527</x>
+     <y>18</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>439</x>
+     <y>-15</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>uiCompareReceptorButton</sender>
+   <signal>clicked()</signal>
+   <receiver>uiDockingResults</receiver>
+   <slot>compare_receptor()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>644</x>
+     <y>30</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>659</x>
+     <y>-1</y>
+    </hint>
+   </hints>
+  </connection>
+ </connections>
+ <slots>
+  <slot>select_jobs()</slot>
+  <slot>export_to_excel()</slot>
+  <slot>import_from_excel()</slot>
+  <slot>set_model()</slot>
+  <slot>plot()</slot>
+  <slot>create_df()</slot>
+  <slot>compare_project()</slot>
+  <slot>compare_receptor()</slot>
+ </slots>
+</ui>

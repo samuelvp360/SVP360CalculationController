@@ -5,7 +5,7 @@ import sys
 from Components import Molecule, Optimization, Project, Docking
 from Worker import Worker, MolWorker
 from Models import MoleculesModel, ProjectsModel, JobsModel
-from Calculations import Gaussian, MyVina, DockingPlotter
+from Calculations import Gaussian, MyVina, DockingPlotter, RedockingPlotter
 from PyQt5 import QtCore as qtc
 from PyQt5 import QtWidgets as qtw
 from PyQt5 import QtGui as qtg
@@ -33,9 +33,6 @@ class MainWindow(qtw.QMainWindow):
         calc_items = (
             'Gaussian', 'Vina', 'Reactividad local'
         )
-        # to_calculate_Rg = [mol for mol in self.molecules_list if mol.Rg == 0]
-        # if to_calculate_Rg:
-            # self.Rg_calculation(to_calculate_Rg)
         self.uiCalculationsComboBox.addItems(calc_items)
         # pyqtRemoveInputHook()
 
@@ -62,7 +59,6 @@ class MainWindow(qtw.QMainWindow):
             self.Rg_calculation(to_calculate_Rg)
         # Projects
         self.projects_list = list(self.database.get_projects_db)
-        # print([p.__dict__ for p in self.projects_list])
         proj_tree_model = ProjectsModel(self.projects_list)
         self.uiProjectsTreeView.setModel(proj_tree_model.create_model())
         self.uiProjectsTreeView.header().setSectionResizeMode(qtw.QHeaderView.ResizeToContents)
@@ -140,7 +136,6 @@ class MainWindow(qtw.QMainWindow):
             filter='Archivos de moléculas (*.mol *.mol2 *.pdb *.txt *.smi)'
         )
         if mol_path:
-            # mol_list = []
             for m in mol_path:
                 file_format = m.split('.')[-1]
                 if file_format in ('txt', 'smi'):
@@ -168,7 +163,6 @@ class MainWindow(qtw.QMainWindow):
                 self.database.set(
                     'molecules', molecule.inchi_key, molecule
                 )
-                # self.set_models()
             else:
                 qtw.QMessageBox.critical(
                     self, 'Molécula existente', f'La molécula con Inchy key: {molecule.inchi_key} ya existe en la base de datos. No será agregada.'
@@ -186,7 +180,8 @@ class MainWindow(qtw.QMainWindow):
                         f'La molécula {self.selected_mol.get_name} hace parte del proyecto {project.name}. No será borrada.'
                     )
                     return False
-            self.database.remove(to_remove)
+            self.database.remove('molecules', to_remove)
+            self.database.commit()
             self.set_models()
 
     def create_project(self):
@@ -217,6 +212,23 @@ class MainWindow(qtw.QMainWindow):
             self.selected_project.remove_calculation()
             self.database.commit()
             self.set_models()
+
+    def remove_project(self):
+        if self.selected_project is not None:
+            reply = qtw.QMessageBox.question(
+                self, 'Remove a project',
+                f'All the calculations made in this project will be removed as well. Do you want to continue removing {self.selected_project.name} project',
+                qtw.QMessageBox.Yes | qtw.QMessageBox.No
+            )
+            if reply == qtw.QMessageBox.Yes:
+                for job_id in self.selected_project.job_ids:
+                    job = self.database.get('jobs', job_id)
+                    molecule = self.database.get('molecules', job.molecule_id)
+                    molecule.remove_calculation(job_id)
+                    self.database.remove('jobs', job_id)
+                self.database.remove('projects', self.selected_project.name)
+                self.database.commit()
+                self.set_models()
 
     @qtc.pyqtSlot(dict, str)
     def queue_manager(self, calculation, project_name):
@@ -359,13 +371,19 @@ class MainWindow(qtw.QMainWindow):
         self.uiPauseQueueButton.clicked.connect(self.worker.pause)
         self.thread.start()
 
-    def plot_docking_results(self, project):
-        if self.selected_project.calculations:
-            for index, calculation in enumerate(self.selected_project.calculations):
-                if calculation.get('type') == 'Docking':
-                    self.docking_plotter = DockingPlotter(
-                        project, [j for j in self.jobs_list if j.id in project.job_ids]
-                    )
+    def plot_docking_results(self, dock_type):
+        if dock_type == 'docking':
+            projects = [
+                p for p in self.projects_list if p.calculations and \
+                not p.calculations[0].get('redocking')
+            ]
+            self.docking_plotter = DockingPlotter(projects, self.jobs_list)
+        elif dock_type == 'redocking':
+            projects = [
+                p for p in self.projects_list if p.calculations and \
+                p.calculations[0].get('redocking')
+            ]
+            self.docking_plotter = RedockingPlotter(projects, self.jobs_list)
 
     def projects_right_click(self, position):
         if self.selected_project:
@@ -378,6 +396,7 @@ class MainWindow(qtw.QMainWindow):
             vina = calculation.addAction('Vina')
             local_react = calculation.addAction('Reactividad local')
             docking_results = results.addAction('Docking')
+            redocking_results = results.addAction('Redocking')
             action = menu.exec_(self.uiProjectsTreeView.mapToGlobal(position))
             if action == gauss and self.selected_project is not None:
                 self.gaussian_setup(group=True)
@@ -385,8 +404,10 @@ class MainWindow(qtw.QMainWindow):
                 self.vina_setup(group=True)
             elif action == local_react:
                 pass
-            elif action == docking_results and self.selected_project is not None:
-                self.plot_docking_results(self.selected_project)
+            elif action == docking_results:
+                self.plot_docking_results('docking')
+            elif action == redocking_results:
+                self.plot_docking_results('redocking')
 
     def molecules_right_click(self, position):
         if self.selected_mol:

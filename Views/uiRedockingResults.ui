@@ -1,0 +1,139 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>uiDockingResults</class>
+ <widget class="QWidget" name="uiDockingResults">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>1615</width>
+    <height>916</height>
+   </rect>
+  </property>
+  <property name="windowTitle">
+   <string>Docking Results</string>
+  </property>
+  <widget class="QWidget" name="layoutWidget">
+   <property name="geometry">
+    <rect>
+     <x>35</x>
+     <y>325</y>
+     <width>1551</width>
+     <height>576</height>
+    </rect>
+   </property>
+   <layout class="QVBoxLayout" name="verticalLayout_4" stretch="80,500">
+    <property name="spacing">
+     <number>0</number>
+    </property>
+    <item>
+     <layout class="QVBoxLayout" name="uiToolbarLayout"/>
+    </item>
+    <item>
+     <layout class="QVBoxLayout" name="uiPlotLayout"/>
+    </item>
+   </layout>
+  </widget>
+  <widget class="QTableView" name="uiResultsTableView">
+   <property name="geometry">
+    <rect>
+     <x>35</x>
+     <y>56</y>
+     <width>1181</width>
+     <height>266</height>
+    </rect>
+   </property>
+   <property name="alternatingRowColors">
+    <bool>true</bool>
+   </property>
+  </widget>
+  <widget class="QGroupBox" name="groupBox">
+   <property name="geometry">
+    <rect>
+     <x>1220</x>
+     <y>10</y>
+     <width>366</width>
+     <height>316</height>
+    </rect>
+   </property>
+   <property name="title">
+    <string>Available projects</string>
+   </property>
+   <layout class="QVBoxLayout" name="verticalLayout">
+    <property name="leftMargin">
+     <number>2</number>
+    </property>
+    <property name="topMargin">
+     <number>2</number>
+    </property>
+    <property name="rightMargin">
+     <number>2</number>
+    </property>
+    <property name="bottomMargin">
+     <number>2</number>
+    </property>
+    <item>
+     <widget class="QScrollArea" name="uiProjectsArea">
+      <property name="widgetResizable">
+       <bool>true</bool>
+      </property>
+      <widget class="QWidget" name="scrollAreaWidgetContents">
+       <property name="geometry">
+        <rect>
+         <x>0</x>
+         <y>0</y>
+         <width>354</width>
+         <height>284</height>
+        </rect>
+       </property>
+       <widget class="QWidget" name="verticalLayoutWidget">
+        <property name="geometry">
+         <rect>
+          <x>0</x>
+          <y>0</y>
+          <width>351</width>
+          <height>281</height>
+         </rect>
+        </property>
+        <layout class="QVBoxLayout" name="uiProjectsLayout">
+         <property name="sizeConstraint">
+          <enum>QLayout::SetNoConstraint</enum>
+         </property>
+        </layout>
+       </widget>
+      </widget>
+     </widget>
+    </item>
+   </layout>
+  </widget>
+ </widget>
+ <resources/>
+ <connections>
+  <connection>
+   <sender>uiResultsTableView</sender>
+   <signal>clicked(QModelIndex)</signal>
+   <receiver>uiDockingResults</receiver>
+   <slot>select_jobs()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>270</x>
+     <y>66</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>284</x>
+     <y>0</y>
+    </hint>
+   </hints>
+  </connection>
+ </connections>
+ <slots>
+  <slot>select_jobs()</slot>
+  <slot>export_to_excel()</slot>
+  <slot>import_from_excel()</slot>
+  <slot>set_model()</slot>
+  <slot>plot()</slot>
+  <slot>create_df()</slot>
+  <slot>compare_project()</slot>
+  <slot>compare_receptor()</slot>
+ </slots>
+</ui>
