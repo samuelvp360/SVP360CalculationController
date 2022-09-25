@@ -109,7 +109,11 @@ class MoleculesModel(qtg.QStandardItemModel):
                 for c in mol.calculations:
                     calc_type = [
                         calc.type for calc in calculations_list if calc.id == c
-                    ][0]
+                    ]
+                    if not calc_type:
+                        continue
+                    else:
+                        calc_type = calc_type[0]
                     calc_type = StandardItem(calc_type, font_size=10)
                     calc_id = StandardItem(str(c), font_size=10)
                     calculations.appendRow([calc_id, calc_type])

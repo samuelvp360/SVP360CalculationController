@@ -156,6 +156,29 @@ class MainWindow(qtw.QMainWindow):
                 else:
                     del molecule
 
+    def create_project(self):
+        name = self.uiProjectNameLine.text()
+        exists = self.database.check('projects', name)
+        if exists:
+            qtw.QMessageBox.critical(
+                self, 'Proyecto existente', f'El proyecto con nombre: {name} ya existe en la base de datos. No será creado.'
+            )
+        else:
+            if name:
+                project = Project(name)
+                self.database.set('projects', project.name, project)
+                self.uiProjectNameLine.clear()
+                self.set_models()
+
+    # revisar
+    def add_group_calculation(self):
+        calc = self.uiCalculationsComboBox.currentText()
+        if calc == 'Gaussian':
+            qtw.QMessageBox.critical(
+                self, 'Cálculo grupal', 'Los valores (keywords) utilizados para la primera molécula serán aplicados el resto.'
+            )
+            self.gaussian_setup(group=True)
+
     def store_molecule(self, molecule):
         if molecule.mol:
             exists = self.database.check('molecules', molecule.inchi_key)
@@ -184,29 +207,6 @@ class MainWindow(qtw.QMainWindow):
             self.database.commit()
             self.set_models()
 
-    def create_project(self):
-        name = self.uiProjectNameLine.text()
-        exists = self.database.check('projects', name)
-        if exists:
-            qtw.QMessageBox.critical(
-                self, 'Proyecto existente', f'El proyecto con nombre: {name} ya existe en la base de datos. No será creado.'
-            )
-        else:
-            if name:
-                project = Project(name)
-                self.database.set('projects', project.name, project)
-                self.uiProjectNameLine.clear()
-                self.set_models()
-
-    # revisar
-    def add_group_calculation(self):
-        calc = self.uiCalculationsComboBox.currentText()
-        if calc == 'Gaussian':
-            qtw.QMessageBox.critical(
-                self, 'Cálculo grupal', 'Los valores (keywords) utilizados para la primera molécula serán aplicados el resto.'
-            )
-            self.gaussian_setup(group=True)
-
     def remove_group_calc(self):
         if self.selected_project is not None:
             self.selected_project.remove_calculation()
@@ -223,6 +223,8 @@ class MainWindow(qtw.QMainWindow):
             if reply == qtw.QMessageBox.Yes:
                 for job_id in self.selected_project.job_ids:
                     job = self.database.get('jobs', job_id)
+                    if not job:
+                        continue
                     molecule = self.database.get('molecules', job.molecule_id)
                     molecule.remove_calculation(job_id)
                     self.database.remove('jobs', job_id)
@@ -374,14 +376,14 @@ class MainWindow(qtw.QMainWindow):
     def plot_docking_results(self, dock_type):
         if dock_type == 'docking':
             projects = [
-                p for p in self.projects_list if p.calculations and \
-                not p.calculations[0].get('redocking')
+                p for p in self.projects_list if p.calculations \
+               # and not p.calculations[0].get('redocking')
             ]
             self.docking_plotter = DockingPlotter(projects, self.jobs_list)
         elif dock_type == 'redocking':
             projects = [
-                p for p in self.projects_list if p.calculations and \
-                p.calculations[0].get('redocking')
+                p for p in self.projects_list if p.calculations \
+                and p.calculations[0].get('redocking')
             ]
             self.docking_plotter = RedockingPlotter(projects, self.jobs_list)
 

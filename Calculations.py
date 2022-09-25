@@ -1397,8 +1397,8 @@ class DockingPlotter(qtw.QWidget):
             self.canvas.ax.plot([], c=colors[i], label=projects[i])
             self.canvas.ax.boxplot(
                 positions=positions,
-                x=to_plot.loc[mask, 'Binding energies'],
-                labels=to_plot.loc[mask, 'Molecule'],
+                x=both_df[i].loc[:, 'Binding energies'],
+                labels=molecules_p1,
                 boxprops=props, medianprops=props,
                 whiskerprops=props, capprops=props,
             )
@@ -1409,14 +1409,18 @@ class DockingPlotter(qtw.QWidget):
         x2 = both_df[1]['Binding energies'].apply(np.median).values.tolist()
         plt.figure(figsize=(10,10))
         plt.scatter(x1, x2, alpha=0.3)
-        plt.title('Linear correlation between project')
+        plt.title('Linear correlation between projects')
         plt.xlabel(projects[0])
         plt.ylabel(projects[1])
         fit = np.polyfit(x1, x2, 1)
         f = np.poly1d(fit)
+        m, b = fit
         r2 = r2_score(x2, f(x1))
-        plt.plot(x1, f(x1), color='red')
-        plt.annotate(f'r\u00B2 = {r2:.5f}', (min(x1), max(x1)))
+        plt.scatter(x1, f(x1), color='orange', alpha=0.5, label='Trend line')
+        plt.annotate(
+            f'r\u00B2 = {r2:.5f}\nm = {m:.5f}\nb = {b:.5f}', (min(x1), max(x2) - 0.5)
+        )
+        plt.legend(loc='lower right')
         plt.show()
 
     def compare_receptor(self):
@@ -1476,7 +1480,10 @@ class DockingPlotter(qtw.QWidget):
         f = np.poly1d(fit)
         m, b = fit
         r2 = r2_score(x2, f(x1))
-        plt.scatter(x1, f(x1), color='orange', alpha=0.5, label='Trend line')
+        x = np.linspace(min(x1), max(x1), num=100)
+        plt.plot(
+            x, f(x), c='orange', label='Trend line', linewidth=0.5
+        )
         plt.annotate(
             f'r\u00B2 = {r2:.5f}\nm = {m:.5f}\nb = {b:.5f}', (min(x1), max(x2) - 0.5)
         )
@@ -1591,16 +1598,17 @@ class RedockingPlotter(qtw.QWidget):
             return
         self.ax2 = self.canvas.ax.twinx()
         self.ax2.clear()
-        self.canvas.ax.set_title('Redocking')
-        self.canvas.ax.set_xlabel('Molecule')
         self.canvas.ax.set_ylabel('RMSD')
         self.canvas.ax.tick_params(axis='x', labelrotation=90)
         self.canvas.ax.set_ylim(bottom=0., top=2.5)
         props={'color': 'blue', 'linewidth': 1.0}
         to_plot = self.df.iloc[self.selected_jobs]
+        self.canvas.ax.set_xlabel(to_plot['Molecule'])
+        receptor_name = to_plot.loc[0, 'Receptor']
+        self.canvas.ax.set_title(f'Docking on {receptor_name}')
         self.canvas.ax.boxplot(
             x=to_plot['RMSD'], positions=[-0.5],
-            labels=to_plot['Molecule'],
+            # labels=to_plot['Molecule'],
             boxprops=props, medianprops=props,
             whiskerprops=props, capprops=props,
         )

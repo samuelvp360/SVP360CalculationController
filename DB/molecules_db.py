@@ -71,7 +71,8 @@ class MyZODB(object):
 
     @property
     def get_job_id(self):
-        return len(self.dbroot['jobs'])
+        # return len(self.dbroot['jobs'])
+        return max(self.dbroot['jobs'].keys()) + 1
 
     @property
     def get_config(self):

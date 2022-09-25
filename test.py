@@ -58,18 +58,13 @@ class Molecule():
         converter.WriteFile(mol_ob, file_name)
         new_name = f'{file_name.split(".")[0]}.pdbqt'
         subprocess.run(
-            f'obabel {file_name} -O {new_name} -p 7.4 -xp', # cambio aquí
+            f'obabel {file_name} -O {new_name} -p 7.4', # cambio aquí
             shell=True,
             capture_output=True,
             text=True
         )
 
-    def depict_3D(self):
-        self.__minimize()
-        self.viewer = PyMol.MolViewer()
-        self.viewer.ShowMol(self.mol, name='Samu')
 
 if __name__ == '__main__':
     a_molecule = Molecule(smiles)
-# a_molecule.dock_prep()
-    a_molecule.depict_3D()
+    a_molecule.dock_prep()

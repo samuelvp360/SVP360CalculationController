@@ -81,7 +81,7 @@ class Molecule(Persistent):
         converter.WriteFile(mol_ob, file_name)
         new_name = f'{file_name.split(".")[0]}_{receptor_name}.pdbqt'
         subprocess.run(
-            f'obabel {file_name} -O {new_name} -p 7.4 -xp',
+            f'obabel {file_name} -O {new_name} -p 7.4',
             shell=True,
             capture_output=True,
             text=True
