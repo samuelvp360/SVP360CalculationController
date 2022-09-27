@@ -1416,7 +1416,10 @@ class DockingPlotter(qtw.QWidget):
         f = np.poly1d(fit)
         m, b = fit
         r2 = r2_score(x2, f(x1))
-        plt.scatter(x1, f(x1), color='orange', alpha=0.5, label='Trend line')
+        x = np.linspace(min(x1), max(x1), num=100)
+        plt.plot(
+            x, f(x), c='orange', label='Trend line', linewidth=0.5
+        )
         plt.annotate(
             f'r\u00B2 = {r2:.5f}\nm = {m:.5f}\nb = {b:.5f}', (min(x1), max(x2) - 0.5)
         )
@@ -1665,7 +1668,7 @@ class MyVina(qtw.QWidget):
         # according to a Rg to box size ratio of 0.35
         self.auto_box_size = self.uiAutoBoxSize.isChecked()
         if self.auto_box_size:
-            box_size = 2.857 * self.molecule.Rg
+            box_size = 2.857 * self.molecule.descriptors.loc[0, 'Rg']
         else:
             box_size = 30.
         self.uiSizeXDouble.setValue(box_size)
@@ -1832,3 +1835,14 @@ class MyVina(qtw.QWidget):
 #TODO:
     # extraer las coordenadas del ligando natural (cocristalizado) para
     # determinar la posición central
+
+
+class DisplayData(qtw.QWidget):
+
+    def __init__(self, data):
+        super().__init__()
+        uic.loadUi('Views/uiDisplayData.ui', self)
+        model = PandasModel(data)
+        self.uiDescriptorsTable.setModel(model)
+        self.uiDescriptorsTable.resizeColumnsToContents()
+        self.uiDescriptorsTable.resizeRowsToContents()

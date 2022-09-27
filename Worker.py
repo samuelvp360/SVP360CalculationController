@@ -244,7 +244,7 @@ class IRWorkerThread(qtc.QObject):
 class MolWorker(qtc.QObject):
 
     finished = qtc.pyqtSignal()
-    workflow = qtc.pyqtSignal(float, str, object)
+    workflow = qtc.pyqtSignal(str, object)
 
     def __init__(self, mol_list):
         super().__init__(parent=None)
@@ -253,8 +253,8 @@ class MolWorker(qtc.QObject):
     @qtc.pyqtSlot()
     def start(self):
         for mol in self.mol_list:
-            Rg, conf = mol.calculate_Rg()
-            self.workflow.emit(Rg, mol.inchi_key, conf)
+            conf = mol.minimize()
+            self.workflow.emit(mol.inchi_key, conf)
         self.finished.emit()
         self.deleteLater()
 

@@ -4,8 +4,8 @@
 import sys
 from Components import Molecule, Optimization, Project, Docking
 from Worker import Worker, MolWorker
-from Models import MoleculesModel, ProjectsModel, JobsModel
-from Calculations import Gaussian, MyVina, DockingPlotter, RedockingPlotter
+from Models import MoleculesModel, ProjectsModel, JobsModel, PandasModel
+from Calculations import Gaussian, MyVina, DockingPlotter, RedockingPlotter, DisplayData
 from PyQt5 import QtCore as qtc
 from PyQt5 import QtWidgets as qtw
 from PyQt5 import QtGui as qtg
@@ -13,6 +13,7 @@ from PyQt5 import uic
 from DB.molecules_db import MyZODB
 from datetime import datetime
 from loguru import logger
+# import pandas as pd
 # import threading
 # from PyQt5.QtCore import pyqtRemoveInputHook
 
@@ -52,17 +53,33 @@ class MainWindow(qtw.QMainWindow):
         self.uiMoleculesTree.setModel(mol_tree_model.create_model())
         self.uiMoleculesTree.header().setSectionResizeMode(qtw.QHeaderView.ResizeToContents)
         self.selected_mol = None
-        to_calculate_Rg = [mol for mol in self.molecules_list if mol.Rg == 0]
-        if to_calculate_Rg and not hasattr(self, 'mol_thread'):
-            self.Rg_calculation(to_calculate_Rg)
+        to_calculate_descriptors = [
+            mol for mol in self.molecules_list if not hasattr(mol, 'descriptors')
+        ]
+        if to_calculate_descriptors and not hasattr(self, 'mol_thread'):
+            self.descriptors_calc(to_calculate_descriptors)
         elif hasattr(self, 'mol_thread') and self.mol_thread.isFinished():
-            self.Rg_calculation(to_calculate_Rg)
+            self.descriptors_calc(to_calculate_descriptors)
         # Projects
         self.projects_list = list(self.database.get_projects_db)
+        # for p in self.projects_list:
+            # if not hasattr(p, 'morgan_fp'):
+                # p.descriptors = pd.DataFrame([])
+                # p.morgan_fp = pd.DataFrame([])
+                # for mol in p.molecules:
+                    # p.add_descriptors(
+                        # mol.descriptors,
+                        # mol.inchi_key
+                    # )
+                    # p.add_morgan_fp(
+                        # mol.morgan_fp,
+                        # mol.inchi_key
+                    # )
         proj_tree_model = ProjectsModel(self.projects_list)
         self.uiProjectsTreeView.setModel(proj_tree_model.create_model())
         self.uiProjectsTreeView.header().setSectionResizeMode(qtw.QHeaderView.ResizeToContents)
         self.uiProjectsTreeView.expandAll()
+        # self.database.commit()
 
     @logger.catch
     def set_selected_mol(self, value):
@@ -91,6 +108,11 @@ class MainWindow(qtw.QMainWindow):
                 self.selected_project = [
                     p for p in self.projects_list if p.name == value.data().strip()
                 ][0]
+                # print(
+                    # self.selected_project.morgan_fp,
+                    # self.selected_project.descriptors,
+                    # sep='\n'
+                # )
         else:
             self.selected_project = None
 
@@ -100,33 +122,52 @@ class MainWindow(qtw.QMainWindow):
             already_in = self.selected_mol in self.selected_project.molecules
             if selected_mol and not already_in:
                 self.selected_project.add_molecule(self.selected_mol)
+                self.selected_project.add_morgan_fp(
+                    self.selected_mol.morgan_fp,
+                    self.selected_mol.inchi_key
+                )
+                self.selected_project.add_descriptors(
+                    self.selected_mol.descriptors,
+                    self.selected_mol.inchi_key
+                )
+                # print(
+                    # self.selected_project.morgan_fp,
+                    # self.selected_project.descriptors,
+                    # sep='\n'
+                # )
                 self.database.commit()
                 self.set_models()
 
     def unselect_mol(self):
         if self.selected_project is not None:
             self.selected_project.remove_molecule()
+            # print(
+                # self.selected_project.morgan_fp,
+                # self.selected_project.descriptors,
+                # sep='\n'
+            # )
             self.database.commit()
             self.set_models()
 
-    @qtc.pyqtSlot(float, str, object)
-    def Rg_workflow(self, Rg, inchi_key, conf):
+    @qtc.pyqtSlot(str, object)
+    def descriptors_workflow(self, inchi_key, conf):
         molecule = self.database.get('molecules', inchi_key)
-        molecule.set_Rg(Rg)
         molecule.set_conformer(conf)
+        molecule.calc_descriptors()
+        molecule.calc_morgan_fp()
         self.database.commit()
-        message = f'Rg value for {molecule.get_name} -> {Rg:.2f}'
+        message = f'Rg value for {molecule.get_name} -> {molecule.descriptors.loc[0, "Rg"]:.2f}'
         self.statusBar().showMessage(message)
         self.set_models()
 
     @logger.catch
-    def Rg_calculation(self, mol_list):
+    def descriptors_calc(self, mol_list):
         self.mol_worker = MolWorker(tuple(mol_list))
         self.mol_thread = qtc.QThread()
         self.mol_worker.moveToThread(self.mol_thread)
         self.mol_thread.started.connect(self.mol_worker.start)
         self.mol_worker.finished.connect(self.mol_thread.quit)
-        self.mol_worker.workflow.connect(self.Rg_workflow)
+        self.mol_worker.workflow.connect(self.descriptors_workflow)
         self.mol_thread.start()
 
     def add_molecule(self):
@@ -387,18 +428,24 @@ class MainWindow(qtw.QMainWindow):
             ]
             self.docking_plotter = RedockingPlotter(projects, self.jobs_list)
 
+    def display_data(self, data):
+        self.display = DisplayData(data)
+        self.display.show()
+
     def projects_right_click(self, position):
         if self.selected_project:
             menu = qtw.QMenu()
-            calculation = qtw.QMenu('Cálculo grupal')
-            results = qtw.QMenu('Visualizar resultados')
+            calculation = qtw.QMenu('Group calculation')
+            visualize = qtw.QMenu('Visualize')
             menu.addMenu(calculation)
-            menu.addMenu(results)
+            menu.addMenu(visualize)
             gauss = calculation.addAction('Gaussian')
             vina = calculation.addAction('Vina')
-            local_react = calculation.addAction('Reactividad local')
-            docking_results = results.addAction('Docking')
-            redocking_results = results.addAction('Redocking')
+            local_react = calculation.addAction('Local reactivity')
+            docking_results = visualize.addAction('Docking results')
+            redocking_results = visualize.addAction('Redocking results')
+            descriptors = visualize.addAction('Descriptors')
+            morgan_fp = visualize.addAction('Morgan FP')
             action = menu.exec_(self.uiProjectsTreeView.mapToGlobal(position))
             if action == gauss and self.selected_project is not None:
                 self.gaussian_setup(group=True)
@@ -410,6 +457,10 @@ class MainWindow(qtw.QMainWindow):
                 self.plot_docking_results('docking')
             elif action == redocking_results:
                 self.plot_docking_results('redocking')
+            elif action == morgan_fp:
+                self.display_data(self.selected_project.morgan_fp)
+            elif action == descriptors:
+                self.display_data(self.selected_project.descriptors)
 
     def molecules_right_click(self, position):
         if self.selected_mol:

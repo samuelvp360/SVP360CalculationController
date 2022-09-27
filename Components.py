@@ -3,11 +3,12 @@
 
 import os
 import re
-import shutil
 import subprocess
 import numpy as np
+import pandas as pd
 from rdkit import Chem
 from rdkit.Chem import AllChem, Draw, Descriptors
+from rdkit.ML.Descriptors import MoleculeDescriptors
 from rdkit.Chem import rdMolAlign
 from rdkit.Geometry import Point3D
 from rdkit import RDLogger
@@ -38,7 +39,7 @@ class Molecule(Persistent):
             self.smiles = Chem.MolToSmiles(self.mol)
             self.MW = Chem.rdMolDescriptors.CalcExactMolWt(self.mol)
             self.formula = Chem.rdMolDescriptors.CalcMolFormula(self.mol)
-            self.Rg = 0.
+            # self.Rg = 0.
             self.__set_mol_picture()
 
     def __from_smiles(self, smiles):
@@ -96,6 +97,40 @@ class Molecule(Persistent):
         self.mol.AddConformer(conf, assignId=0)
         self._p_changed = True
 
+    def calc_descriptors(self):
+        calc = MoleculeDescriptors.MolecularDescriptorCalculator(
+            [x[0] for x in Descriptors._descList]
+        )
+        header = calc.GetDescriptorNames()
+        des = calc.CalcDescriptors(self.mol)
+        self.descriptors = pd.DataFrame([des], columns=header)
+        for c in self.descriptors.columns: # to get rid of the fingerprints
+            if c.startswith('fr_'):
+                self.descriptors.drop(c, inplace=True, axis=1)
+        self.descriptors.loc[0, 'Rg'] = self.get_Rg
+        self._p_changed = True
+
+    def calc_morgan_fp(self):
+        bit_info = {}
+        fp = Chem.rdMolDescriptors.GetMorganFingerprintAsBitVect(
+            self.mol, radius=2, nBits=2048, bitInfo=bit_info
+        )
+        mol = Chem.MolFromSmiles(Chem.MolToSmiles(self.mol))
+        mol = Chem.AddHs(mol)
+        AllChem.EmbedMolecule(mol, randomSeed=0xf00d)
+        path = f'molecules/{self.inchi_key}/morgan_fp/'
+        if not os.path.exists(path):
+            os.makedirs(path)
+        for bit in bit_info.keys():
+            svg_img = Draw.DrawMorganBit(
+                mol, bit, bit_info,
+            )
+            with open(f'molecules/{self.inchi_key}/morgan_fp/{bit}.svg', 'w') as file:
+                file.write(svg_img)
+        fp = np.array(fp)
+        self.morgan_fp = pd.DataFrame([fp], columns=[str(i) for i in range(2048)])
+        self._p_changed = True
+
     def __create_conformers(self):
         new_mol = Chem.AddHs(self.mol)
         AllChem.EmbedMolecule(new_mol, randomSeed=0xf00d)
@@ -109,36 +144,30 @@ class Molecule(Persistent):
         AllChem.EmbedMultipleConfs(new_mol, n_conf)
         return new_mol
 
-    def __minimize(self):
+    def minimize(self):
         new_mol = self.__create_conformers()
         energies = AllChem.MMFFOptimizeMoleculeConfs(
-            new_mol, maxIters=2000, nonBondedThresh=100.
+            new_mol, maxIters=2000, nonBondedThresh=100.,
+            mmffVariant='MMFF94s'
         )
         energies_list = [e[1] for e in energies]
         min_e_index = energies_list.index(min(energies_list))
         conf = new_mol.GetConformer(min_e_index)
         return conf
 
-    def calculate_Rg(self):
-        conf = self.__minimize()
+    @property
+    def get_Rg(self):
+        conf = self.mol.GetConformer(0)
         centroid = Chem.rdMolTransforms.ComputeCentroid(conf)
         centroid_coords = centroid.x, centroid.y, centroid.z
-        new_mol = Chem.AddHs(self.mol)
-        AllChem.EmbedMolecule(new_mol, randomSeed=0xf00d)
-        AllChem.EmbedMultipleConfs(new_mol, 1)
-        new_mol.AddConformer(conf, assignId=0)
         Rg = 0.
         num_atoms = 0
-        for i, atom in enumerate(new_mol.GetAtoms()):
+        for i, atom in enumerate(self.mol.GetAtoms()):
             if not atom.GetAtomicNum() == 1:
                 position = conf.GetAtomPosition(i)
                 Rg += (position.x - centroid[0]) ** 2 + (position.y - centroid[1]) ** 2 + (position.z - centroid[2]) ** 2
                 num_atoms += 1
-        return np.sqrt(Rg / num_atoms), conf
-
-    def set_Rg(self, Rg):
-        self.Rg = Rg
-        self._p_changed = True
+        return np.sqrt(Rg / num_atoms)
 
     def set_name(self, name, init=False):
         if init:
@@ -269,6 +298,8 @@ class Project(Persistent):
         self.molecules = []
         self.calculations = []
         self.job_ids = []
+        self.descriptors = pd.DataFrame([])
+        self.morgan_fp = pd.DataFrame([])
         self.status = 'Pending'
         self.grid_img = f'projects/{self.name}/{self.name}.png'
         self.__create_grid_img()
@@ -295,6 +326,8 @@ class Project(Persistent):
 
     def remove_molecule(self):
         self.molecules.pop()
+        self.morgan_fp.drop(index=self.morgan_fp.index[-1], inplace=True)
+        self.descriptors.drop(index=self.descriptors.index[-1], inplace=True)
         self.__create_grid_img()
         self._p_changed = True
 
@@ -305,6 +338,18 @@ class Project(Persistent):
     def add_job_id(self, job_id):
         self.job_ids.append(job_id)
         self._p_changed = True
+
+    def add_morgan_fp(self, morgan_fp, inchi_key):
+        morgan_fp = morgan_fp.copy()
+        morgan_fp['inchi_key'] = inchi_key
+        morgan_fp.set_index('inchi_key', inplace=True)
+        self.morgan_fp = pd.concat([self.morgan_fp, morgan_fp])
+
+    def add_descriptors(self, descriptors, inchi_key):
+        descriptors = descriptors.copy()
+        descriptors['inchi_key'] = inchi_key
+        descriptors.set_index('inchi_key', inplace=True)
+        self.descriptors = pd.concat([self.descriptors, descriptors])
 
     def remove_calculation(self):
         self.calculations.pop()
