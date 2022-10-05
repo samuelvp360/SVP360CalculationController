@@ -22,95 +22,123 @@ ob.obErrorLog.StopLogging()  # se puede cambiar por SetOutputLevel para logging
 class Molecule(Persistent):
 
     def __init__(self, path=None, file_format=None, smiles=None):
-        RDLogger.DisableLog('rdApp.*')  # evita los mensajes adicionales no cruciales
-        if smiles:
-            if len(smiles.split(' ')) == 2:
-                smiles, name = smiles.split(' ')
-            else:
-                name = 'NN'
-            self.mol = self.__from_smiles(smiles)
-            self.set_name(name)
-        else:
-            self.mol = self.__from_path(path, file_format)
-            self.set_name(path, init=True)
+        RDLogger.DisableLog('rdApp.*')  # avoid non crucial messages
+        self.conf_dict = {}
         self.calculations = []
+        self.mol = self.get_rdkit_mol(path, file_format, smiles)
         if self.mol:
+            input_conf = self.mol.GetConformer()
+            self.set_conformer(input_conf, 'input')
             self.inchi_key = Chem.MolToInchiKey(self.mol)
             self.smiles = Chem.MolToSmiles(self.mol)
             self.MW = Chem.rdMolDescriptors.CalcExactMolWt(self.mol)
             self.formula = Chem.rdMolDescriptors.CalcMolFormula(self.mol)
-            # self.Rg = 0.
             self.__set_mol_picture()
+            self.descriptors = self.get_descriptors
+            self.morgan_fp = self.get_morgan_fp
+
+    def get_rdkit_mol(self, path, file_format, smiles):
+        if smiles:
+            return self.__from_smiles(smiles)
+        elif file_format in ('mol2', 'log'):
+            return self.__from_opt_file(path)
+        elif path:
+            return self.__from_path(path, file_format)
+
+    def __canonize(self, mol):
+        mol_neworder = tuple(zip(*sorted([(j, i) for i, j in enumerate(Chem.CanonicalRankAtoms(mol))])))[1]
+        return Chem.RenumberAtoms(mol, mol_neworder)
 
     def __from_smiles(self, smiles):
+        if len(smiles.split(' ')) == 2:
+            smiles, name = smiles.split(' ')
+        else:
+            name = 'NN'
+        self.set_name(name)
         converter = ob.OBConversion()
         converter.SetInAndOutFormats('smi', 'can')
         mol_ob = ob.OBMol()
         converter.ReadString(mol_ob, smiles)
         new_block = converter.WriteString(mol_ob)
-        return Chem.MolFromSmiles(new_block)
+        mol = Chem.MolFromSmiles(new_block)
+        mol = Chem.AddHs(mol)
+        AllChem.EmbedMolecule(mol, randomSeed=0xf00d)
+        AllChem.EmbedMultipleConfs(mol, 1)
+        mol = self.__canonize(mol)
+        return mol
 
     def __from_path(self, path, file_format):
+        self.set_name(path, init=True)
+        converter = ob.OBConversion()
+        converter.SetInAndOutFormats(file_format, 'can')
+        mol_ob = ob.OBMol()
         with open(path, 'r') as file:
             block = file.read()
-            converter = ob.OBConversion()
-            converter.SetInAndOutFormats(file_format, 'can')
-            mol_ob = ob.OBMol()
             converter.ReadString(mol_ob, block)
-            new_block = converter.WriteString(mol_ob)
-            return Chem.MolFromSmiles(new_block)
+        new_block = converter.WriteString(mol_ob)
+        mol = Chem.MolFromSmiles(new_block)
+        mol = Chem.AddHs(mol)
+        AllChem.EmbedMolecule(mol, randomSeed=0xf00d)
+        AllChem.EmbedMultipleConfs(mol, 1)
+        mol = self.__canonize(mol)
+        return mol
 
     def __set_mol_picture(self):
-        AllChem.Compute2DCoords(self.mol)
         self.mol_pic = f'molecules/{self.inchi_key}/{self.inchi_key}.png'
         if not os.path.exists(f'molecules/{self.inchi_key}/'):
             os.makedirs(f'molecules/{self.inchi_key}/')
-        Draw.MolToFile(self.mol, self.mol_pic, size=(300, 300))
+        Draw.MolToFile(
+            Chem.MolFromSmiles(self.smiles), self.mol_pic, size=(300, 300)
+        )
 
-    def dock_prep(self, center, receptor_name):
+    def ligand_prep(self, center, receptor_name, conformer):
         half = self.mol.GetNumAtoms() // 2
         mol_ref = Chem.MolFromSmiles('C')
         AllChem.EmbedMultipleConfs(mol_ref, 1)
         conf = mol_ref.GetConformer(0)
         conf.SetAtomPosition(0, Point3D(*center))
-        rdMolAlign.AlignMol(self.mol, mol_ref, atomMap=[(half, 0)])
+        rdMolAlign.AlignMol(
+            self.mol, mol_ref, atomMap=[(half, 0)],
+            prbCid=self.conf_dict[conformer]
+        )
         converter = ob.OBConversion()
         mol_ob = ob.OBMol()
         converter.SetInAndOutFormats('pdb', 'mol2')
         file_name = f'molecules/{self.inchi_key}/{self.inchi_key}.mol2'
-        converter.ReadString(mol_ob, Chem.MolToPDBBlock(self.mol, confId=0))
+        converter.ReadString(
+            mol_ob, Chem.MolToPDBBlock(self.mol, confId=conformer)
+        )
         converter.WriteFile(mol_ob, file_name)
-        new_name = f'{file_name.split(".")[0]}_{receptor_name}.pdbqt'
+        output_filename = f'{file_name.split(".")[0]}_{receptor_name}.pdbqt'
         subprocess.run(
-            f'obabel {file_name} -O {new_name} -p 7.4',
-            shell=True,
-            capture_output=True,
-            text=True
+            f'obabel {file_name} -O {output_filename} -p 7.4',
+            shell=True, capture_output=True, text=True
         )
         # os.remove(file_name)
-        return new_name
+        # return output_filename
 
-    def set_conformer(self, conf):
-        self.mol = Chem.AddHs(self.mol)
-        AllChem.EmbedMolecule(self.mol, randomSeed=0xf00d)
-        AllChem.EmbedMultipleConfs(self.mol, 1)
-        self.mol.AddConformer(conf, assignId=0)
+    def set_conformer(self, conf, method):
+        conf_id = self.mol.AddConformer(conf, assignId=True)
+        self.conf_dict[method] = conf_id
         self._p_changed = True
 
-    def calc_descriptors(self):
+    @property
+    def get_descriptors(self):
         calc = MoleculeDescriptors.MolecularDescriptorCalculator(
             [x[0] for x in Descriptors._descList]
         )
         header = calc.GetDescriptorNames()
         des = calc.CalcDescriptors(self.mol)
-        self.descriptors = pd.DataFrame([des], columns=header)
-        for c in self.descriptors.columns: # to get rid of the fingerprints
+        descriptors = pd.DataFrame([des], columns=header)
+        for c in descriptors.columns:  # to get rid of the fingerprints
             if c.startswith('fr_'):
-                self.descriptors.drop(c, inplace=True, axis=1)
-        self.descriptors.loc[0, 'Rg'] = self.get_Rg
-        self._p_changed = True
+                descriptors.drop(c, inplace=True, axis=1)
+        descriptors.loc[0, 'Rg'] = self.get_Rg
+        return descriptors
+        # self._p_changed = True
 
-    def calc_morgan_fp(self):
+    @property
+    def get_morgan_fp(self):
         bit_info = {}
         fp = Chem.rdMolDescriptors.GetMorganFingerprintAsBitVect(
             self.mol, radius=2, nBits=2048, bitInfo=bit_info
@@ -128,8 +156,9 @@ class Molecule(Persistent):
             with open(f'molecules/{self.inchi_key}/morgan_fp/{bit}.svg', 'w') as file:
                 file.write(svg_img)
         fp = np.array(fp)
-        self.morgan_fp = pd.DataFrame([fp], columns=[str(i) for i in range(2048)])
-        self._p_changed = True
+        morgan_fp = pd.DataFrame([fp], columns=[str(i) for i in range(2048)])
+        return morgan_fp
+        # self._p_changed = True
 
     def __create_conformers(self):
         new_mol = Chem.AddHs(self.mol)
@@ -145,27 +174,29 @@ class Molecule(Persistent):
         return new_mol
 
     def minimize(self):
+        method = 'MMFF94s'
         new_mol = self.__create_conformers()
         energies = AllChem.MMFFOptimizeMoleculeConfs(
             new_mol, maxIters=2000, nonBondedThresh=100.,
-            mmffVariant='MMFF94s'
+            mmffVariant=method
         )
         energies_list = [e[1] for e in energies]
         min_e_index = energies_list.index(min(energies_list))
         conf = new_mol.GetConformer(min_e_index)
-        return conf
+        return conf, method
 
     @property
     def get_Rg(self):
-        conf = self.mol.GetConformer(0)
+        conf = self.mol.GetConformer(self.conf_dict['input'])
         centroid = Chem.rdMolTransforms.ComputeCentroid(conf)
-        centroid_coords = centroid.x, centroid.y, centroid.z
         Rg = 0.
         num_atoms = 0
         for i, atom in enumerate(self.mol.GetAtoms()):
             if not atom.GetAtomicNum() == 1:
                 position = conf.GetAtomPosition(i)
-                Rg += (position.x - centroid[0]) ** 2 + (position.y - centroid[1]) ** 2 + (position.z - centroid[2]) ** 2
+                Rg += (position.x - centroid.x) ** 2 + \
+                    (position.y - centroid.y) ** 2 + \
+                    (position.z - centroid.z) ** 2
                 num_atoms += 1
         return np.sqrt(Rg / num_atoms)
 
@@ -175,10 +206,10 @@ class Molecule(Persistent):
         else:
             self.__name = name.strip()
             self._p_changed = True
-        if self.mol:
-            self.mol.SetProp('_Name', self.__name)
-        else:
-            return False
+        # if self.mol:
+            # self.mol.SetProp('_Name', self.__name)
+        # else:
+            # return False
 
     def add_calculation(self, job_id):
         self.calculations.append(job_id)
@@ -192,13 +223,31 @@ class Molecule(Persistent):
     def get_name(self):
         return self.__name
 
+    def __from_opt_file(self, path):
+        cmd = f'obabel {path} -omol2'
+        out = subprocess.run(
+            cmd, shell=True, capture_output=True, text=True
+        )
+        mol = Chem.MolFromMol2Block(
+            out.stdout, removeHs=False
+        )
+        mol = self.__canonize(mol)
+        return mol
+
+    def add_conf_from_opt_file(self, output_file, method):
+        mol = self.__from_opt_file(output_file)
+        if mol:
+            conf = mol.GetConformer()
+            self.set_conformer(conf, method)
+        else:
+            return  # arrojar un error
+
     @property
-    def get_coordinates(self): # arreglar
-        new_mol = self.__minimize()
-        conf = new_mol.GetConformer(0)
-        num_atoms = new_mol.GetNumAtoms()
+    def get_coordinates(self, conf_id=0):  # arreglar usando obabel
+        conf = self.mol.GetConformer(conf_id)
+        num_atoms = self.mol.GetNumAtoms()
         atoms_coords = np.empty((num_atoms, 3))
-        for i, atom in enumerate(new_mol.GetAtoms()):
+        for i, atom in enumerate(self.mol.GetAtoms()):
             position = conf.GetAtomPosition(i)
             atoms_coords[i] = np.array((position.x, position.y, position.z))
         return atoms_coords
@@ -254,7 +303,7 @@ class Optimization(Persistent):
         if status == 'Running':
             self.started = datetime.now()
         elif status == 'Finished':
-            self.opt_coords = self.__get_coordinates()
+            # self.opt_coords = self.__extract_coords()
             self.mulliken_charges = self.__get_mulliken()
             self.homo = self.__get_homo()
             self.lumo = self.__get_lumo()
@@ -262,24 +311,30 @@ class Optimization(Persistent):
             self.elapsed = self.finished - self.started
         else:
             self.finished = datetime.now()
-            self.elapsed = self.finished - self.started
+            if hasattr(self, 'started'):
+                self.elapsed = self.finished - self.started
+            else:
+                self.elapsed = ''
         # self._p_changed = True
 
     @property
     def get_status(self):
         return self.__status
 
-    def __get_coordinates(self):
-        with open(self.output_file, 'r') as file:
-            log = file.read()
-        match_begin = [m for m in re.finditer('Standard orientation:', log)]
-        beginning = match_begin[-1].span()[1]
-        match_end = [m for m in re.finditer('Rotational constants', log)]
-        end = match_end[-1].span()[0]
-        pattern = re.compile('\s+\d+\s+\d+\s+\d\s+(\d|-\d)+\.\d+\s+(\d|-\d)+\.\d+\s+(\d|-\d)+\.\d+')
-        lines = [i.group() for i in pattern.finditer(log, beginning, end)]
-        coords = np.array([line.split() for line in lines])
-        return np.delete(coords, (0, 1, 2), 1)
+    # def __extract_coords(self):
+        # try:
+            # with open(self.output_file, 'r') as file:
+                # log = file.read()
+        # except FileNotFoundError:
+            # return False
+        # match_begin = [m for m in re.finditer('Standard orientation:', log)]
+        # beginning = match_begin[-1].span()[1]
+        # match_end = [m for m in re.finditer('Rotational constants', log)]
+        # end = match_end[-1].span()[0]
+        # pattern = re.compile('\s+\d+\s+\d+\s+\d\s+(\d|-\d)+\.\d+\s+(\d|-\d)+\.\d+\s+(\d|-\d)+\.\d+')
+        # lines = [i.group() for i in pattern.finditer(log, beginning, end)]
+        # coords = np.array([line.split() for line in lines])
+        # return np.delete(coords, (0, 1, 2), 1)
 
     def __get_mulliken(self):
         pass
@@ -300,7 +355,6 @@ class Project(Persistent):
         self.job_ids = []
         self.descriptors = pd.DataFrame([])
         self.morgan_fp = pd.DataFrame([])
-        self.status = 'Pending'
         self.grid_img = f'projects/{self.name}/{self.name}.png'
         self.__create_grid_img()
 
@@ -344,19 +398,18 @@ class Project(Persistent):
         morgan_fp['inchi_key'] = inchi_key
         morgan_fp.set_index('inchi_key', inplace=True)
         self.morgan_fp = pd.concat([self.morgan_fp, morgan_fp])
+        print(self.morgan_fp)
 
     def add_descriptors(self, descriptors, inchi_key):
         descriptors = descriptors.copy()
         descriptors['inchi_key'] = inchi_key
         descriptors.set_index('inchi_key', inplace=True)
         self.descriptors = pd.concat([self.descriptors, descriptors])
+        print(self.descriptors)
 
     def remove_calculation(self):
         self.calculations.pop()
         self._p_changed = True
-
-    def run_protocol(self):
-        pass
 
 
 class Docking(Persistent):
@@ -456,27 +509,6 @@ class Docking(Persistent):
             for k, v in self.config.items():
                 conf += f'{k} = {v}\n'
             file.write(conf)
-        # input_file = []
-        # template = 'molecules/{0}/{0}_{1}_out_{2}.conf'
-        # receptor_name = self.config.get('receptor').split('/')[-1].split('_receptor')[0]
-        # previous = len(
-            # glob(
-                # template.format(
-                    # self.molecule.inchi_key,
-                    # receptor_name,
-                    # '*'
-                # )
-            # )
-        # )
-        # for i in range(previous, previous + self.times):
-            # output_file.append(
-                # template.format(
-                    # self.molecule.inchi_key,
-                    # receptor_name,
-                    # i
-                # )
-            # )
-        # self.config.update({'out': tuple(output_file)})
 
 
 

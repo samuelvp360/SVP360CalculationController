@@ -18,39 +18,39 @@ class Worker(qtc.QObject):
     finished = qtc.pyqtSignal()
     workflow = qtc.pyqtSignal(int, str)
 
-    def __init__(self, queue):
+    def __init__(self, job):
         super().__init__(parent=None)
-        self.master_queue = copy.deepcopy(queue)
-        self.paused = False
+        self.job = copy.deepcopy(job)
+        # self.paused = False
 
     @qtc.pyqtSlot()
     def start_queue(self):
-        for job in self.master_queue:
-            self.job = job
-            try:
-                if self.paused:
-                    break
-                if job.type == 'Docking':
-                    done = self.check_vina()
-                elif job.type in ('Optimization', 'Energy', 'Frequency'):
-                    done = self.check_gauss()
-                if done:
-                    self.workflow.emit(job.id, 'Finished')
-                else:
-                    self.workflow.emit(job.id, 'Running')
-                    if job.type == 'Docking':
-                        self.run_vina()
-                    elif job.type in ('Optimization', 'Energy', 'Frequency'):
-                        self.run_gauss()
-                    self.workflow.emit(job.id, 'Finished')
-            except:
-                self.workflow.emit(job.id, 'Failed')
+        # for job in self.master_queue:
+            # self.job = job
+        try:
+            # if self.paused:
+                # break
+            if self.job.type == 'Docking':
+                done = self.check_vina()
+            elif self.job.type in ('Optimization', 'Energy', 'Frequency'):
+                done = self.check_gauss()
+            if done:
+                self.workflow.emit(self.job.id, 'Finished')
+            else:
+                self.workflow.emit(self.job.id, 'Running')
+                if self.job.type == 'Docking':
+                    self.run_vina()
+                elif self.job.type in ('Optimization', 'Energy', 'Frequency'):
+                    self.run_gauss()
+                self.workflow.emit(self.job.id, 'Finished')
+        except:
+            self.workflow.emit(self.job.id, 'Failed')
         self.finished.emit()
         self.deleteLater()
 
-    @qtc.pyqtSlot()
-    def pause(self):
-        self.paused = True
+    # @qtc.pyqtSlot()
+    # def pause(self):
+        # self.paused = True
 
     def run_gauss(self):
         '''
@@ -71,7 +71,10 @@ class Worker(qtc.QObject):
             return False
             print('no leyó el ejecutable de Gaussian')
         cmd = f'{gauss_exec} < {self.job.input_file} > {self.job.output_file}'
-        subprocess.run(cmd, shell=True)
+        try:
+            subprocess.run(cmd, shell=True)
+        except FileNotFoundError:
+            return False
         return True
 
     def check_gauss(self):
@@ -244,7 +247,7 @@ class IRWorkerThread(qtc.QObject):
 class MolWorker(qtc.QObject):
 
     finished = qtc.pyqtSignal()
-    workflow = qtc.pyqtSignal(str, object)
+    workflow = qtc.pyqtSignal(str, object, str)
 
     def __init__(self, mol_list):
         super().__init__(parent=None)
@@ -253,8 +256,8 @@ class MolWorker(qtc.QObject):
     @qtc.pyqtSlot()
     def start(self):
         for mol in self.mol_list:
-            conf = mol.minimize()
-            self.workflow.emit(mol.inchi_key, conf)
+            conf, method = mol.minimize()
+            self.workflow.emit(mol.inchi_key, conf, method)
         self.finished.emit()
         self.deleteLater()
 

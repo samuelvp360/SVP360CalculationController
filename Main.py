@@ -4,17 +4,16 @@
 import sys
 from Components import Molecule, Optimization, Project, Docking
 from Worker import Worker, MolWorker
-from Models import MoleculesModel, ProjectsModel, JobsModel, PandasModel
+from Models import MoleculesModel, ProjectsModel, JobsModel  # , PandasModel
 from Calculations import Gaussian, MyVina, DockingPlotter, RedockingPlotter, DisplayData
 from PyQt5 import QtCore as qtc
 from PyQt5 import QtWidgets as qtw
-from PyQt5 import QtGui as qtg
+# from PyQt5 import QtGui as qtg
 from PyQt5 import uic
 from DB.molecules_db import MyZODB
-from datetime import datetime
+# from datetime import datetime
 from loguru import logger
 # import pandas as pd
-# import threading
 # from PyQt5.QtCore import pyqtRemoveInputHook
 
 
@@ -29,6 +28,7 @@ class MainWindow(qtw.QMainWindow):
         self.database = MyZODB()
         self.selected_mol = None
         self.selected_project = None
+        self.queue_status = 'Paused'
         self.set_models()
         self.resume_queue()
         calc_items = (
@@ -40,9 +40,6 @@ class MainWindow(qtw.QMainWindow):
     def set_models(self):
         # Jobs
         self.jobs_list = list(self.database.get_jobs_db)
-        self.master_queue = [
-            j for j in self.jobs_list if j.get_status in ('Programmed', 'Running')
-        ]
         jobs_model = JobsModel(self.jobs_list)
         self.uiJobsTableView.setModel(jobs_model)
         self.uiJobsTableView.resizeColumnsToContents()
@@ -53,37 +50,45 @@ class MainWindow(qtw.QMainWindow):
         self.uiMoleculesTree.setModel(mol_tree_model.create_model())
         self.uiMoleculesTree.header().setSectionResizeMode(qtw.QHeaderView.ResizeToContents)
         self.selected_mol = None
-        to_calculate_descriptors = [
-            mol for mol in self.molecules_list if not hasattr(mol, 'descriptors')
-        ]
-        if to_calculate_descriptors and not hasattr(self, 'mol_thread'):
-            self.descriptors_calc(to_calculate_descriptors)
-        elif hasattr(self, 'mol_thread') and self.mol_thread.isFinished():
-            self.descriptors_calc(to_calculate_descriptors)
+        # to_calculate_descriptors = [
+            # mol for mol in self.molecules_list if not hasattr(mol, 'descriptors')
+        # ]
+        # if to_calculate_descriptors and not hasattr(self, 'mol_thread'):
+            # self.descriptors_calc(to_calculate_descriptors)
+        # elif hasattr(self, 'mol_thread') and self.mol_thread.isFinished():
+            # self.descriptors_calc(to_calculate_descriptors)
         # Projects
         self.projects_list = list(self.database.get_projects_db)
-        # for p in self.projects_list:
-            # if not hasattr(p, 'morgan_fp'):
-                # p.descriptors = pd.DataFrame([])
-                # p.morgan_fp = pd.DataFrame([])
-                # for mol in p.molecules:
-                    # p.add_descriptors(
-                        # mol.descriptors,
-                        # mol.inchi_key
-                    # )
-                    # p.add_morgan_fp(
-                        # mol.morgan_fp,
-                        # mol.inchi_key
-                    # )
         proj_tree_model = ProjectsModel(self.projects_list)
         self.uiProjectsTreeView.setModel(proj_tree_model.create_model())
         self.uiProjectsTreeView.header().setSectionResizeMode(qtw.QHeaderView.ResizeToContents)
         self.uiProjectsTreeView.expandAll()
+        # Master queue
+        self.master_queue = [
+            j for j in self.jobs_list if j.get_status in ('Programmed', 'Running')
+        ]
+        if self.master_queue and not hasattr(self, 'queue_thread') \
+           and self.queue_status != 'Paused':
+            self.start_master_queue()
+        elif hasattr(self, 'queue_thread') and self.queue_thread.isFinished() \
+           and self.queue_status != 'Paused':
+            self.start_master_queue()
+        else:
+            self.queue_status = 'Paused'
         # self.database.commit()
 
     @logger.catch
     def set_selected_mol(self, value):
-        if self.molecules_list:
+        indexes = self.uiMoleculesTree.selectedIndexes()
+        if indexes:
+            rows = [
+                j.row() for i, j in enumerate(indexes) if i % 2 \
+                and j.parent().row() == -1
+            ]
+            self.selected_mol = [
+                m for i, m in enumerate(self.molecules_list) if i in rows
+            ]
+        if self.molecules_list and not rows:
             has_parent = value.parent().data()
             while has_parent:
                 value = value.parent()
@@ -91,12 +96,12 @@ class MainWindow(qtw.QMainWindow):
             if value.data():
                 self.selected_mol = [
                     m for m in self.molecules_list if m.get_name == value.data().strip()
-                ][0]
-                self.statusBar().showMessage(
-                    f'Molécula seleccionada: {self.selected_mol.get_name} ({self.selected_mol.inchi_key})'
-                )
-        else:
-            self.selected_mol = None
+                ]
+        if self.selected_mol:
+            mol_names = [m.get_name for m in self.selected_mol]
+            self.statusBar().showMessage(
+                f'Selected Molecules: {", ".join(mol_names)}'
+            )
 
     def set_selected_project(self, value):
         if self.projects_list:
@@ -149,15 +154,15 @@ class MainWindow(qtw.QMainWindow):
             self.database.commit()
             self.set_models()
 
-    @qtc.pyqtSlot(str, object)
-    def descriptors_workflow(self, inchi_key, conf):
+    @qtc.pyqtSlot(str, object, str)
+    def descriptors_workflow(self, inchi_key, conf, method):
         molecule = self.database.get('molecules', inchi_key)
-        molecule.set_conformer(conf)
-        molecule.calc_descriptors()
-        molecule.calc_morgan_fp()
+        molecule.set_conformer(conf=conf, method=method)
+        # molecule.calc_descriptors()
+        # molecule.calc_morgan_fp()
         self.database.commit()
-        message = f'Rg value for {molecule.get_name} -> {molecule.descriptors.loc[0, "Rg"]:.2f}'
-        self.statusBar().showMessage(message)
+        # message = f'Rg value for {molecule.get_name} -> {molecule.descriptors.loc[0, "Rg"]:.2f}'
+        # self.statusBar().showMessage(message)
         self.set_models()
 
     @logger.catch
@@ -174,7 +179,7 @@ class MainWindow(qtw.QMainWindow):
         mol_path, _ = qtw.QFileDialog.getOpenFileNames(
             self, 'Selecciona la molécula a cargar',
             options=qtw.QFileDialog.DontUseNativeDialog,
-            filter='Archivos de moléculas (*.mol *.mol2 *.pdb *.txt *.smi)'
+            filter='Archivos de moléculas (*.mol *.mol2 *.pdb *.txt *.smi *.log)'
         )
         if mol_path:
             for m in mol_path:
@@ -187,7 +192,7 @@ class MainWindow(qtw.QMainWindow):
                             if molecule.mol:
                                 self.store_molecule(molecule)
                             else:
-                                del molecule # a message can be displayed
+                                del molecule  # a message can be displayed
                         self.set_models()
                         return
                 molecule = Molecule(path=m, file_format=file_format)
@@ -276,13 +281,15 @@ class MainWindow(qtw.QMainWindow):
     @qtc.pyqtSlot(dict, str)
     def queue_manager(self, calculation, project_name):
         calculation['id'] = self.database.get_job_id
+        mol = self.database.get('molecules', calculation['molecule_id'])
+        project = self.database.get('projects', project_name)
         if calculation.get('type') == 'Optimization':
             job = Optimization(**calculation)
+            # coords = job.opt_coords
+            # mol.set_conformer(coords=coords, method=job.keywords)
         elif calculation.get('type') == 'Docking':
             job = Docking(**calculation)
             job.create_config()
-        mol = self.database.get('molecules', calculation['molecule_id'])
-        project = self.database.get('projects', project_name)
         mol.add_calculation(job.id)
         project.add_job_id(job.id)
         self.database.set('jobs', job.id, job)
@@ -296,33 +303,35 @@ class MainWindow(qtw.QMainWindow):
         has_calculations = project.calculations
         # already_programmed = project.status == 'Programmed'
         if project is not None and has_calculations:
-            for calc in self.selected_project.calculations:
-                if calc['type'] in ('Optimization', 'Energy', 'Frequency'):
+            for index, calc in enumerate(project.calculations):
+                programmed = calc.get('status') == 'Programmed'
+                if calc['type'] in ('Optimization', 'Energy', 'Frequency')\
+                   and not programmed:
                     # esto sería para hacer en paralelo; invertir el if anterior y
                     # el siguiente for para hacer en serie (según moléculas)
                     for molecule in project.molecules:
                         self.gauss_controller = Gaussian(
                             molecule,
                             keywords=calc['keywords'],
-                            job_type=calc['type']
+                            job_type=calc['type'],
+                            coordinates=calc.get('coordinates'),
+                            project=project,
                         )
                         self.gauss_controller.submitted.connect(self.queue_manager)
                         self.gauss_controller.queue_calculation()
-                elif calc['type'] == 'Docking': # buscar otra forma con menos args
+                elif calc['type'] == 'Docking' and not programmed:  # buscar otra forma con menos args
                     for molecule in project.molecules:
                         self.vina_controller = MyVina(
                             molecule,
-                            config=calc['config'],
                             project=project,
-                            times=calc['times'],
-                            auto_box_size=calc['auto_box_size'],
-                            nat_lig_path=calc['nat_lig_path'],
-                            redocking=calc['redocking']
+                            calc=calc,
                         )
                         self.vina_controller.submitted.connect(self.queue_manager)
                         self.vina_controller.queue_calculation()
-            # project.set_status('Programmed')
+                project.calculations[index]['status'] = 'Programmed'
+                project._p_changed = True
             self.database.commit()
+            self.set_models()
 
     def gaussian_setup(self, group=False):
         """gaussian_setup.
@@ -340,7 +349,8 @@ class MainWindow(qtw.QMainWindow):
             self.gauss_controller.submitted.connect(self.queue_manager)
         else:
             self.gauss_controller = Gaussian(
-                self.selected_project.molecules[0], group=True
+                self.selected_project.molecules[0], group=True,
+                project=self.selected_project
             )
             self.gauss_controller.submitted.connect(self.set_group_calc)
 
@@ -359,7 +369,10 @@ class MainWindow(qtw.QMainWindow):
             self.vina_controller = MyVina(self.selected_mol)
             self.vina_controller.submitted.connect(self.queue_manager)
         else:
-            Rg_pending = [mol for mol in self.selected_project.molecules if mol.Rg == 0]
+            Rg_pending = [
+                mol for mol in self.selected_project.molecules \
+                if mol.descriptors.loc[0, 'Rg'] == 0
+            ]
             if Rg_pending:
                 message = 'Some molecules in this project are pending for the calculation of Rg values. wait for a moment until they are done, then try again'
                 qtw.QMessageBox.critical(self, 'Rg calculation pending', message)
@@ -370,8 +383,8 @@ class MainWindow(qtw.QMainWindow):
             )
             self.vina_controller.submitted.connect(self.set_group_calc)
 
-    @qtc.pyqtSlot(dict)
-    def set_group_calc(self, calculation):
+    @qtc.pyqtSlot(dict, str)
+    def set_group_calc(self, calculation, project_name):
         self.selected_project.add_calculation(calculation)
         self.database.commit()
         self.set_models()
@@ -385,40 +398,58 @@ class MainWindow(qtw.QMainWindow):
             )
             if reply == qtw.QMessageBox.Yes:
                 self.start_master_queue()
+            else:
+                self.queue_status = 'Paused'
 
     def pause_master_queue(self):
-        if hasattr(self, 'worker'):
-            self.worker.pause()
+        # if hasattr(self, 'worker'):
+            # self.worker.pause()
+        self.queue_status = 'Paused'
 
     @qtc.pyqtSlot(int, str)
     def workflow(self, job_id, status):
         job = self.database.get('jobs', job_id)
         job.set_status(status)
+        if status == 'Finished' and job.type == 'Optimization':
+            mol = self.database.get('molecule', job.molecule_id)
+            mol.add_conf_from_opt_file(job.output_file, job.keywords)
         self.database.commit()
         message = f'{job.type}: {job.molecule} -> {status}'
         self.statusBar().showMessage(message)
         self.set_models()
 
     def start_master_queue(self):
+        next_job = self.master_queue[0]
+        if next_job.type == 'Docking':
+            mol = self.database.get('molecule', job.molecule_id)
+            center = (
+                job.config['center_x'],
+                job.config['center_y'],
+                job.config['center_z']
+            )
+            mol.ligand_prep(
+                center, job.receptor_name, job.conformer
+            )
         self.uiStartQueueButton.setEnabled(False)
         self.uiPauseQueueButton.setEnabled(True)
-        self.worker = Worker(tuple(self.master_queue))
-        self.thread = qtc.QThread()
-        self.worker.moveToThread(self.thread)
-        self.thread.started.connect(self.worker.start_queue)
-        self.worker.finished.connect(self.thread.quit)
+        # self.worker = Worker(tuple(self.master_queue))
+        self.worker = Worker(next_job)
+        self.queue_thread = qtc.QThread()
+        self.worker.moveToThread(self.queue_thread)
+        self.queue_thread.started.connect(self.worker.start_queue)
+        self.worker.finished.connect(self.queue_thread.quit)
         self.worker.finished.connect(
             lambda: self.uiStartQueueButton.setEnabled(True)
         )
         self.worker.workflow.connect(self.workflow)
-        self.uiPauseQueueButton.clicked.connect(self.worker.pause)
-        self.thread.start()
+        # self.uiPauseQueueButton.clicked.connect(self.worker.pause)
+        self.queue_thread.start()
+        self.queue_status = 'Running'
 
     def plot_docking_results(self, dock_type):
         if dock_type == 'docking':
             projects = [
                 p for p in self.projects_list if p.calculations \
-               # and not p.calculations[0].get('redocking')
             ]
             self.docking_plotter = DockingPlotter(projects, self.jobs_list)
         elif dock_type == 'redocking':
@@ -485,6 +516,7 @@ class MainWindow(qtw.QMainWindow):
         self.database.close()
         self.closed.emit()
         event.accept()
+
 
 if __name__ == '__main__':
     app = qtw.QApplication(sys.argv)

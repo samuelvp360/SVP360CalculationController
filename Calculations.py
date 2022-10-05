@@ -43,9 +43,12 @@ class PlotCanvas(FigureCanvasQTAgg):
 
 class Gaussian(qtw.QMainWindow):
 
-    submitted = qtc.pyqtSignal(dict)
+    submitted = qtc.pyqtSignal(dict, str)
 
-    def __init__(self, molecule, *, keywords=False, group=False, job_type=False):
+    def __init__(
+        self, molecule, *, keywords=False, group=False,
+        job_type=False, coordinates= False, project=False
+    ):
         super().__init__()
         uic.loadUi('Views/uiCalculationsWindow.ui', self)
         self.uiOptGroupBox.setVisible(False)
@@ -54,6 +57,8 @@ class Gaussian(qtw.QMainWindow):
     # ------------------------------------PROPERTIES-------------------------------------
         self.group = group
         self.job_type = job_type
+        self.coordinates = coordinates
+        self.project = project
         self.memory = virtual_memory().total // 1e9
         self.cpu = multiprocessing.cpu_count()
         self.keywords_line = []
@@ -158,7 +163,9 @@ class Gaussian(qtw.QMainWindow):
         self._molecule = molecule
         self._chk = self._molecule.get_name
         self._oldChk = self._molecule.get_name
-        self.coordinates = self._molecule.get_coordinates
+        if not self.coordinates:
+            coords = str(self._molecule.get_coordinates)
+            self.coordinates = coords.replace('[', '').replace(']', '').replace('\n ', '\n')
         self.uiTitleLineEdit.setText(self._molecule.get_name)
         self.SetCahrgeMult()
         self.SetKeywords(1, self._methodWidgets[1].currentIndex())
@@ -1191,9 +1198,11 @@ class Gaussian(qtw.QMainWindow):
             'input_file': input_file,
             'output_file': output_file,
             'molecule': self._molecule.get_name,
-            'molecule_id': self._molecule.inchi_key
+            'molecule_id': self._molecule.inchi_key,
+            'coordinates': self.coordinates,
+            'status': 'Pending'
         }
-        self.submitted.emit(calculation)
+        self.submitted.emit(calculation, self.project.name)
         self.close()
 
 
@@ -1645,24 +1654,42 @@ class MyVina(qtw.QWidget):
 
     submitted = qtc.pyqtSignal(dict, str)
 
-    def __init__(
-        self, molecule, *,
-        config=False, project=False, times=1,
-        auto_box_size=False, redocking=False,
-        nat_lig_path=''
-    ):
+    def __init__(self, molecule, project=False, calc=False):
         super().__init__()
         uic.loadUi('Views/uiVina.ui', self)
         self.molecule = molecule
         self.project = project
-        self.config = copy.deepcopy(config)
-        self.times = times
-        self.nat_lig_path = nat_lig_path
-        self.redocking = redocking
-        self.uiAutoBoxSize.setChecked(auto_box_size)
+        self.config = {}
+        self.redocking = False
+        self.nat_lig_path = False
+        items = list(molecule.conf_dict.keys())
+        if project and project.calculations:
+            opt = [
+                calc.get('keywords') for calc in project.calculations\
+                   if calc.get('type') == 'Optimization'
+            ]
+            items.extend(opt)
+            self.uiConformerCombo.addItems(items)
+        self.set_conformer()
         self.set_auto_box_size()
-        if not self.config:
+        if calc:
+            self.set_options(calc)
+        else:
             self.show()
+
+    def set_options(self, calc):
+        calc = copy.deepcopy(calc)
+        self.config = calc.get('config')
+        self.times = calc.get('times')
+        self.nat_lig_path = calc.get('nat_lig_path')
+        self.redocking = calc.get('redocking')
+        self.uiAutoBoxSize.setChecked(calc.get('auto_box_size'))
+        self.conformer = calc.get('conformer')
+        self.set_auto_box_size()
+
+    def set_conformer(self):
+        conf = self.uiConformerCombo.currentText()
+        self.conformer = conf if conf else 'input'
 
     def set_auto_box_size(self):
         # according to a Rg to box size ratio of 0.35
@@ -1717,7 +1744,7 @@ class MyVina(qtw.QWidget):
             )
             os.remove(mol2_file)
 
-    def redocking(self):
+    def set_redocking(self):
         self.redocking = self.uiRedockingCheck.isChecked()
 
     def center_from_nat_ligand(self):
@@ -1768,12 +1795,13 @@ class MyVina(qtw.QWidget):
                 shutil.copyfile(src, dst)
             else:
                 self.receptor_prep(receptor, receptor_file)
-            center = (
-                self.uiCenterXDouble.value(),
-                self.uiCenterYDouble.value(),
-                self.uiCenterZDouble.value()
-            )
+            # center = (
+                # self.uiCenterXDouble.value(),
+                # self.uiCenterYDouble.value(),
+                # self.uiCenterZDouble.value()
+            # )
             self.times = self.uiTimesSpin.value()
+            self.conformer = self.uiConformerCombo.currentText()
             self.config = {
                 'receptor': receptor_file,
                 'center_x': self.uiCenterXDouble.value(),
@@ -1786,14 +1814,14 @@ class MyVina(qtw.QWidget):
                 'num_modes': self.uiNumModesSpin.value(),
                 'exhaustiveness': self.uiExhausSpin.value(),
             }
-        center = (
-            self.config['center_x'],
-            self.config['center_y'],
-            self.config['center_z']
-        )
+        # center = (
+            # self.config['center_x'],
+            # self.config['center_y'],
+            # self.config['center_z']
+        # )
         *receptor_name, receptor_format = self.config['receptor'].split('/')[-1].split('.')
         receptor_name = receptor_name[-1]
-        ligand = self.molecule.dock_prep(center, receptor_name)
+        ligand = f'molecules/{self.molecule.inchi_key}/{self.molecule.inchi_key}_{receptor_name}.pdbqt'
         previous = len(glob(ligand.split('.')[0] + '_*.pdbqt'))
         output_file = [
             f'{ligand.split(".")[0]}_{i}.pdbqt' for i in range(previous + 1, previous + self.times + 1)
@@ -1801,9 +1829,9 @@ class MyVina(qtw.QWidget):
         self.config.update(
             {
                 'ligand': ligand,
-                'size_x':self.uiSizeXDouble.value(),
-                'size_y':self.uiSizeYDouble.value(),
-                'size_z':self.uiSizeZDouble.value(),
+                'size_x': self.uiSizeXDouble.value(),
+                'size_y': self.uiSizeYDouble.value(),
+                'size_z': self.uiSizeZDouble.value(),
             }
         )
         keywords = ''
@@ -1826,15 +1854,12 @@ class MyVina(qtw.QWidget):
             'molecule_id': self.molecule.inchi_key,
             'auto_box_size': self.auto_box_size,
             'nat_lig_path': self.nat_lig_path,
-            'redocking': self.redocking
+            'redocking': self.redocking,
+            'conformer': self.conformer if self.conformer else 'input',
+            'status': 'Pending'
         }
         self.submitted.emit(calculation, self.project.name)
         self.close()
-
-
-#TODO:
-    # extraer las coordenadas del ligando natural (cocristalizado) para
-    # determinar la posición central
 
 
 class DisplayData(qtw.QWidget):
@@ -1846,3 +1871,6 @@ class DisplayData(qtw.QWidget):
         self.uiDescriptorsTable.setModel(model)
         self.uiDescriptorsTable.resizeColumnsToContents()
         self.uiDescriptorsTable.resizeRowsToContents()
+
+
+# TODO:

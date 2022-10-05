@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 
 import os
+import re
 import numpy as np
 import pandas as pd
 from rdkit import Chem
@@ -11,18 +12,33 @@ from rdkit.Chem import rdMolAlign, PyMol
 from rdkit.Geometry import Point3D
 from rdkit import RDLogger
 from openbabel import openbabel as ob
+from loguru import logger
 import subprocess
 
 
-smiles = 'CC[C@H](C)[C@H](NC(=O)c1cccc2c1CC[C@@H]2O)C(=O)O'
+smiles = 'CC/C=C\CN1C(=O)CCN1CC(=O)N[C@H](C(=O)OC)[C@@H](C)CC'
 
 class Molecule():
 
     def __init__(self, smiles):
+        self.conf_description = {}
         self.mol = Chem.MolFromSmiles(smiles)
         self.Rg = 0.
-        self.descriptors = self.set_descriptors()
-        self.morgan_fp = self.get_morgan_fp
+        self.output_file = '/home/samuelvip/Documentos/Python_projects/SVP360CalculationManager/molecules/KHMVBZYLCKUTCC-PFOXVCDASA-N/Optimization_1.log'
+        self.__create_conformers()
+        self.__minimize()
+        # self.descriptors = self.set_descriptors()
+        # self.morgan_fp = self.get_morgan_fp
+
+    @logger.catch
+    def __str__(self):
+        for k, v in self.conf_description.items():
+            mol_block = Chem.MolToMolBlock(
+                self.mol, confId=v,
+            )
+            with open(f'a_molecule_{k}.mol', 'w') as file:
+                file.write(mol_block)
+        return 'done'
 
     def set_descriptors(self):
         self.__minimize()
@@ -61,35 +77,36 @@ class Molecule():
         df = pd.DataFrame([fp], columns=[f'{i}' for i in range(2048)])
         return df
 
-    def __set_conformer(self, conf):
-        self.mol = Chem.AddHs(self.mol)
-        AllChem.EmbedMolecule(self.mol, randomSeed=0xf00d)
-        AllChem.EmbedMultipleConfs(self.mol, 1)
-        self.mol.AddConformer(conf, assignId=0)
-        self._p_changed = True
+    def __set_conformer(self, conf, method):
+        conf_id = self.mol.AddConformer(conf, assignId=True)
+        self.conf_description[method] = conf_id
+        print(conf_id)
+        # self._p_changed = True
 
     def __create_conformers(self):
-        new_mol = Chem.AddHs(self.mol)
-        AllChem.EmbedMolecule(new_mol, randomSeed=0xf00d)
-        num_rot_bonds = Chem.rdMolDescriptors.CalcNumRotatableBonds(new_mol)
+        self.mol = Chem.AddHs(self.mol)
+        AllChem.EmbedMolecule(self.mol, randomSeed=0xf00d)
+        num_rot_bonds = Chem.rdMolDescriptors.CalcNumRotatableBonds(self.mol)
         if num_rot_bonds <= 7:
             n_conf = 50
         elif 8 <= num_rot_bonds <= 12:
             n_conf = 200
         else:
             n_conf = 300
-        AllChem.EmbedMultipleConfs(new_mol, n_conf)
-        return new_mol
+        AllChem.EmbedMultipleConfs(self.mol, n_conf)
+        mol_neworder = tuple(zip(*sorted([(j, i) for i, j in enumerate(Chem.CanonicalRankAtoms(self.mol))])))[1]
+        self.mol = Chem.RenumberAtoms(self.mol, mol_neworder)
 
     def __minimize(self):
-        new_mol = self.__create_conformers()
+        method = 'MMFF94s'
         energies = AllChem.MMFFOptimizeMoleculeConfs(
-            new_mol, maxIters=2000, nonBondedThresh=100.
+            self.mol, maxIters=1000, nonBondedThresh=100.,
+            mmffVariant=method
         )
         energies_list = [e[1] for e in energies]
         min_e_index = energies_list.index(min(energies_list))
-        conf = new_mol.GetConformer(min_e_index)
-        self.__set_conformer(conf)
+        conf = self.mol.GetConformer(min_e_index)
+        self.__set_conformer(conf, method)
 
     def calculate_Rg(self):
         conf = self.mol.GetConformer(0)
@@ -124,8 +141,47 @@ class Molecule():
             text=True
         )
 
+    def extract_coords(self):
+        # try:
+        cmd = f'obabel {self.output_file} -omol2'
+        out = subprocess.run(cmd, shell=True, capture_output=True, text=True)
+            # with open(self.output_file, 'r') as file:
+                # log = file.read()
+        # except FileNotFoundError:
+            # return False
+        opt_mol = Chem.MolFromMol2Block(
+            out.stdout, removeHs=False,
+            # sanitize=False,
+        )
+        mol_neworder = tuple(zip(*sorted([(j, i) for i, j in enumerate(Chem.CanonicalRankAtoms(opt_mol))])))[1]
+        opt_mol = Chem.RenumberAtoms(opt_mol, mol_neworder)
+        opt_conf = opt_mol.GetConformer()
+        # match_begin = [m for m in re.finditer('Standard orientation:', log)]
+        # beginning = match_begin[-1].span()[1]
+        # match_end = [m for m in re.finditer('Rotational constants', log)]
+        # end = match_end[-1].span()[0]
+        # pattern = re.compile('\s+\d+\s+\d+\s+\d\s+(\d|-\d)+\.\d+\s+(\d|-\d)+\.\d+\s+(\d|-\d)+\.\d+')
+        # lines = [i.group() for i in pattern.finditer(log, beginning, end)]
+        # coords = np.array([line.split() for line in lines])
+        # coords = np.delete(coords, (0, 1, 2), 1)
+        # coords = coords.astype(float)
+        # conf_id = len(self.conf_description)
+        # if not conf_id:
+            # self.mol = Chem.AddHs(self.mol)
+            # AllChem.EmbedMolecule(self.mol, randomSeed=0xf00d)
+            # AllChem.EmbedMultipleConfs(self.mol, 1)
+        # conf = self.mol.GetConformer(conf_id)
+        # num_atoms = self.mol.GetNumAtoms()
+        # for i, atom in enumerate(self.mol.GetAtoms()):
+            # conf.SetAtomPosition(i, Point3D(*coords[i]))
+        self.__set_conformer(opt_conf, 'PM6')
+        # return True
+
 
 if __name__ == '__main__':
     a_molecule = Molecule(smiles)
-    # a_molecule.set_descriptors()
-    # a_molecule.dock_prep()
+    # cmd = f'obabel {a_molecule.output_file} -o{a_molecule.output_file.replace("log", "mol2")}'
+    # print(a_molecule)
+    a_molecule.extract_coords()
+    print(a_molecule)
+    # # a_molecule.dock_prep()

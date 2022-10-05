@@ -155,7 +155,7 @@ class ProjectsModel(qtg.QStandardItemModel):
                     set_bold=True, color='#236e96'
                 )
                 molecules = StandardItem(
-                    'Moléculas', font_size=10, set_bold=True
+                    'Molecules', font_size=10, set_bold=True
                 )
                 if project.molecules:
                     mol_std_item = StandardItem(img=project.grid_img)
@@ -163,10 +163,14 @@ class ProjectsModel(qtg.QStandardItemModel):
                     mol_std_item = StandardItem(img='')
                 molecules.appendRow(mol_std_item)
                 calculations = StandardItem(
-                    'Cálculos', font_size=10, set_bold=True
+                    'Calculations', font_size=10, set_bold=True
                 )
                 for index, calc in enumerate(project.calculations):
-                    string = f'{index + 1}.\nTipo:\t\t{calc["type"]}\nKeywords:\t\t{calc.get("keywords")}\nMultipl.:\t\t{calc["charge_mult"].split("/")[1]}'
+                    calc_type = f'\nType:\t\t{calc["type"]}'
+                    keywords = f'\nKeywords:\t\t{calc.get("keywords")}'
+                    multipl = f'\nMultipl.:\t\t{calc["charge_mult"].split("/")[1]}'
+                    status = f'\nStatus:\t\t{calc.get("status")}'
+                    string = f'{index + 1}.{calc_type}{keywords}{multipl}{status}'
                     calc_std_item = StandardItem(string, font_size=8)
                     calculations.appendRow(calc_std_item)
                 p_std_item.appendRows([molecules, calculations])

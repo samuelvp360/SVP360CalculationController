@@ -16,9 +16,9 @@
   <widget class="QGroupBox" name="groupBox">
    <property name="geometry">
     <rect>
-     <x>25</x>
+     <x>30</x>
      <y>125</y>
-     <width>474</width>
+     <width>456</width>
      <height>161</height>
     </rect>
    </property>
@@ -177,7 +177,7 @@
    <property name="geometry">
     <rect>
      <x>30</x>
-     <y>330</y>
+     <y>380</y>
      <width>456</width>
      <height>171</height>
     </rect>
@@ -333,7 +333,7 @@
     <rect>
      <x>30</x>
      <y>25</y>
-     <width>466</width>
+     <width>456</width>
      <height>91</height>
     </rect>
    </property>
@@ -385,6 +385,29 @@
      </widget>
     </item>
    </layout>
+  </widget>
+  <widget class="QGroupBox" name="groupBox_3">
+   <property name="geometry">
+    <rect>
+     <x>30</x>
+     <y>300</y>
+     <width>456</width>
+     <height>71</height>
+    </rect>
+   </property>
+   <property name="title">
+    <string>Available conformations:</string>
+   </property>
+   <widget class="QComboBox" name="uiConformerCombo">
+    <property name="geometry">
+     <rect>
+      <x>10</x>
+      <y>35</y>
+      <width>436</width>
+      <height>25</height>
+     </rect>
+    </property>
+   </widget>
   </widget>
  </widget>
  <tabstops>
@@ -489,7 +512,7 @@
    <sender>uiRedockingCheck</sender>
    <signal>stateChanged(int)</signal>
    <receiver>Form</receiver>
-   <slot>redocking()</slot>
+   <slot>set_redocking()</slot>
    <hints>
     <hint type="sourcelabel">
      <x>34</x>
@@ -507,6 +530,6 @@
   <slot>queue_calculation()</slot>
   <slot>center_from_nat_ligand()</slot>
   <slot>set_auto_box_size()</slot>
-  <slot>redocking()</slot>
+  <slot>set_redocking()</slot>
  </slots>
 </ui>
