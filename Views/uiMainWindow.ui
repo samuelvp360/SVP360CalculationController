@@ -13,6 +13,9 @@
   <property name="windowTitle">
    <string>SVP Controller</string>
   </property>
+  <property name="locale">
+   <locale language="English" country="UnitedStates"/>
+  </property>
   <widget class="QWidget" name="centralwidget">
    <widget class="QWidget" name="layoutWidget">
     <property name="geometry">
@@ -20,7 +23,7 @@
       <x>10</x>
       <y>15</y>
       <width>781</width>
-      <height>651</height>
+      <height>641</height>
      </rect>
     </property>
     <layout class="QGridLayout" name="gridLayout">
@@ -88,7 +91,7 @@ QPushButton:hover {
       </widget>
      </item>
      <item row="1" column="0">
-      <widget class="QComboBox" name="uiSearchFieldComboBox">
+      <widget class="QComboBox" name="uiSearchCombo">
        <property name="currentText">
         <string/>
        </property>
@@ -141,7 +144,7 @@ QPushButton:hover {
      </rect>
     </property>
     <property name="title">
-     <string>Lista de Trabajos</string>
+     <string>List of Jobs</string>
     </property>
     <layout class="QGridLayout" name="gridLayout_2">
      <property name="leftMargin">
@@ -498,6 +501,25 @@ QPushButton:hover {
      <bool>true</bool>
     </property>
    </widget>
+   <widget class="QLabel" name="uiTotalMoleculesLabel">
+    <property name="geometry">
+     <rect>
+      <x>15</x>
+      <y>660</y>
+      <width>776</width>
+      <height>17</height>
+     </rect>
+    </property>
+    <property name="font">
+     <font>
+      <weight>75</weight>
+      <bold>true</bold>
+     </font>
+    </property>
+    <property name="text">
+     <string/>
+    </property>
+   </widget>
   </widget>
   <widget class="QMenuBar" name="menubar">
    <property name="geometry">
@@ -669,7 +691,7 @@ QPushButton:hover {
    <sender>uiSelectMolButton</sender>
    <signal>clicked()</signal>
    <receiver>MainWindow</receiver>
-   <slot>select_mol()</slot>
+   <slot>include_mol()</slot>
    <hints>
     <hint type="sourcelabel">
      <x>884</x>
@@ -685,7 +707,7 @@ QPushButton:hover {
    <sender>uiUnselectMolButton</sender>
    <signal>clicked()</signal>
    <receiver>MainWindow</receiver>
-   <slot>unselect_mol()</slot>
+   <slot>drop_mol()</slot>
    <hints>
     <hint type="sourcelabel">
      <x>841</x>
@@ -857,13 +879,61 @@ QPushButton:hover {
     </hint>
    </hints>
   </connection>
+  <connection>
+   <sender>uiSearchLine</sender>
+   <signal>textEdited(QString)</signal>
+   <receiver>MainWindow</receiver>
+   <slot>search_molecule()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>338</x>
+     <y>92</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>328</x>
+     <y>-7</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>uiSearchLine</sender>
+   <signal>returnPressed()</signal>
+   <receiver>MainWindow</receiver>
+   <slot>search_molecule()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>262</x>
+     <y>96</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>54</x>
+     <y>-6</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>uiSearchLine</sender>
+   <signal>textChanged(QString)</signal>
+   <receiver>MainWindow</receiver>
+   <slot>search_molecule()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>390</x>
+     <y>97</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>205</x>
+     <y>-12</y>
+    </hint>
+   </hints>
+  </connection>
  </connections>
  <slots>
   <slot>add_molecule()</slot>
   <slot>remove_molecule()</slot>
   <slot>set_selected_mol()</slot>
-  <slot>select_mol()</slot>
-  <slot>unselect_mol()</slot>
+  <slot>include_mol()</slot>
+  <slot>drop_mol()</slot>
   <slot>molecules_right_click()</slot>
   <slot>start_master_queue()</slot>
   <slot>pause_master_queue()</slot>
@@ -874,5 +944,6 @@ QPushButton:hover {
   <slot>start_project()</slot>
   <slot>projects_right_click()</slot>
   <slot>remove_project()</slot>
+  <slot>search_molecule()</slot>
  </slots>
 </ui>

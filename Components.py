@@ -378,7 +378,7 @@ class Project(Persistent):
         self.__create_grid_img()
         self._p_changed = True
 
-    def remove_molecule(self):
+    def pop_molecule(self):
         self.molecules.pop()
         self.morgan_fp.drop(index=self.morgan_fp.index[-1], inplace=True)
         self.descriptors.drop(index=self.descriptors.index[-1], inplace=True)

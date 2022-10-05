@@ -26,7 +26,7 @@ class MainWindow(qtw.QMainWindow):
         super().__init__()
         uic.loadUi('Views/uiMainWindow.ui', self)
         self.database = MyZODB()
-        self.selected_mol = None
+        self.selected_mol = []
         self.selected_project = None
         self.queue_status = 'Paused'
         self.set_models()
@@ -35,6 +35,10 @@ class MainWindow(qtw.QMainWindow):
             'Gaussian', 'Vina', 'Reactividad local'
         )
         self.uiCalculationsComboBox.addItems(calc_items)
+        search_items = (
+            'Name', 'InchiKey', 'Smiles', 'Molar mass', 'Formula'
+        )
+        self.uiSearchCombo.addItems(search_items)
         # pyqtRemoveInputHook()
 
     def set_models(self):
@@ -45,11 +49,11 @@ class MainWindow(qtw.QMainWindow):
         self.uiJobsTableView.resizeColumnsToContents()
         self.uiJobsTableView.resizeRowsToContents()
         # Molecules
-        self.molecules_list = list(self.database.get_molecules_db)
+        if not self.uiSearchLine.text():
+            self.molecules_list = list(self.database.get_molecules_db)
         mol_tree_model = MoleculesModel(self.molecules_list, self.jobs_list)
         self.uiMoleculesTree.setModel(mol_tree_model.create_model())
         self.uiMoleculesTree.header().setSectionResizeMode(qtw.QHeaderView.ResizeToContents)
-        self.selected_mol = None
         # to_calculate_descriptors = [
             # mol for mol in self.molecules_list if not hasattr(mol, 'descriptors')
         # ]
@@ -75,7 +79,33 @@ class MainWindow(qtw.QMainWindow):
             self.start_master_queue()
         else:
             self.queue_status = 'Paused'
-        # self.database.commit()
+        self.uiTotalMoleculesLabel.setText(
+            f'Total molecules: {len(self.molecules_list)}; Selected: {len(self.selected_mol)}'
+        )
+
+    def search_molecule(self):
+        value = self.uiSearchLine.text().lower()
+        criteriom = self.uiSearchCombo.currentText()
+        self.molecules_list = list(self.database.get_molecules_db)
+        if criteriom == 'Name':
+            self.molecules_list = [
+                m for m in self.molecules_list if value in m.get_name.lower()
+            ]
+        elif criteriom == 'InchiKey':
+            self.molecules_list = [
+                m for m in self.molecules_list if value in m.inchi_key.lower()
+            ]
+        elif criteriom == 'Smiles':
+            self.molecules_list = [
+                m for m in self.molecules_list if value in m.smiles.lower()
+            ]
+        elif criteriom == 'Molar mass':
+            pass
+        elif criteriom == 'Formula':
+            self.molecules_list = [
+                m for m in self.molecules_list if value in m.formula.lower()
+            ]
+        self.set_models()
 
     @logger.catch
     def set_selected_mol(self, value):
@@ -102,6 +132,9 @@ class MainWindow(qtw.QMainWindow):
             self.statusBar().showMessage(
                 f'Selected Molecules: {", ".join(mol_names)}'
             )
+        self.uiTotalMoleculesLabel.setText(
+            f'Total molecules: {len(self.molecules_list)}; Selected: {len(self.selected_mol)}'
+        )
 
     def set_selected_project(self, value):
         if self.projects_list:
@@ -113,44 +146,30 @@ class MainWindow(qtw.QMainWindow):
                 self.selected_project = [
                     p for p in self.projects_list if p.name == value.data().strip()
                 ][0]
-                # print(
-                    # self.selected_project.morgan_fp,
-                    # self.selected_project.descriptors,
-                    # sep='\n'
-                # )
         else:
             self.selected_project = None
 
-    def select_mol(self):
-        selected_mol = self.selected_mol is not None
-        if self.selected_project is not None:
-            already_in = self.selected_mol in self.selected_project.molecules
-            if selected_mol and not already_in:
-                self.selected_project.add_molecule(self.selected_mol)
-                self.selected_project.add_morgan_fp(
-                    self.selected_mol.morgan_fp,
-                    self.selected_mol.inchi_key
-                )
-                self.selected_project.add_descriptors(
-                    self.selected_mol.descriptors,
-                    self.selected_mol.inchi_key
-                )
-                # print(
-                    # self.selected_project.morgan_fp,
-                    # self.selected_project.descriptors,
-                    # sep='\n'
-                # )
-                self.database.commit()
-                self.set_models()
+    def include_mol(self):
+        if self.selected_project is not None and self.selected_mol:
+            already_in = [
+                m for m in self.selected_mol if m \
+                in self.selected_project.molecules
+            ]
+            for m in self.selected_mol:
+                if m not in already_in:
+                    self.selected_project.add_molecule(m)
+                    self.selected_project.add_morgan_fp(
+                        m.morgan_fp, m.inchi_key
+                    )
+                    self.selected_project.add_descriptors(
+                        m.descriptors, m.inchi_key
+                    )
+                    self.database.commit()
+                    self.set_models()
 
-    def unselect_mol(self):
+    def drop_mol(self):
         if self.selected_project is not None:
-            self.selected_project.remove_molecule()
-            # print(
-                # self.selected_project.morgan_fp,
-                # self.selected_project.descriptors,
-                # sep='\n'
-            # )
+            self.selected_project.pop_molecule()
             self.database.commit()
             self.set_models()
 
@@ -241,17 +260,18 @@ class MainWindow(qtw.QMainWindow):
         # hay que colorear de rojo los trabajos de moléculas que ya no estén en
         # la bd. Si están pendientes, no correr tampoco
         if self.selected_mol:
-            to_remove = self.selected_mol.inchi_key
-            for project in self.projects_list:
-                if self.selected_mol in project.molecules:
+            for m in self.selected_mol:
+                in_project = [p for p in self.projects_list if m in p.molecules]
+                if in_project:
+                    names = ', '.join([p.name for p in in_project])
                     qtw.QMessageBox.critical(
-                        self, 'Molécula en proyecto',
-                        f'La molécula {self.selected_mol.get_name} hace parte del proyecto {project.name}. No será borrada.'
+                        self, 'Molecule in project',
+                        f'The molecule {m.get_name} is part of the project(s) {names}. It will not be removed'
                     )
-                    return False
-            self.database.remove('molecules', to_remove)
-            self.database.commit()
-            self.set_models()
+                    continue
+                self.database.remove('molecules', m.inchi_key)
+                self.database.commit()
+                self.set_models()
 
     def remove_group_calc(self):
         if self.selected_project is not None:
@@ -345,7 +365,7 @@ class MainWindow(qtw.QMainWindow):
             for all the others.
         """
         if not group:
-            self.gauss_controller = Gaussian(self.selected_mol)
+            self.gauss_controller = Gaussian(self.selected_mol[0])
             self.gauss_controller.submitted.connect(self.queue_manager)
         else:
             self.gauss_controller = Gaussian(
@@ -366,17 +386,17 @@ class MainWindow(qtw.QMainWindow):
             for all the others.
         """
         if not group:
-            self.vina_controller = MyVina(self.selected_mol)
+            self.vina_controller = MyVina(self.selected_mol[0])
             self.vina_controller.submitted.connect(self.queue_manager)
         else:
-            Rg_pending = [
-                mol for mol in self.selected_project.molecules \
-                if mol.descriptors.loc[0, 'Rg'] == 0
-            ]
-            if Rg_pending:
-                message = 'Some molecules in this project are pending for the calculation of Rg values. wait for a moment until they are done, then try again'
-                qtw.QMessageBox.critical(self, 'Rg calculation pending', message)
-                return
+            # Rg_pending = [
+                # mol for mol in self.selected_project.molecules \
+                # if mol.descriptors.loc[0, 'Rg'] == 0
+            # ]
+            # if Rg_pending:
+                # message = 'Some molecules in this project are pending for the calculation of Rg values. wait for a moment until they are done, then try again'
+                # qtw.QMessageBox.critical(self, 'Rg calculation pending', message)
+                # return
             self.vina_controller = MyVina(
                 self.selected_project.molecules[0],
                 project=self.selected_project
@@ -494,7 +514,7 @@ class MainWindow(qtw.QMainWindow):
                 self.display_data(self.selected_project.descriptors)
 
     def molecules_right_click(self, position):
-        if self.selected_mol:
+        if self.selected_mol[-1]:
             menu = qtw.QMenu()
             gauss = qtw.QMenu('Gaussian')
             vina = qtw.QMenu('Vina')
