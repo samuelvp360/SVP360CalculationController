@@ -135,7 +135,6 @@ class Molecule(Persistent):
                 descriptors.drop(c, inplace=True, axis=1)
         descriptors.loc[0, 'Rg'] = self.get_Rg
         return descriptors
-        # self._p_changed = True
 
     @property
     def get_morgan_fp(self):
@@ -155,10 +154,7 @@ class Molecule(Persistent):
             )
             with open(f'molecules/{self.inchi_key}/morgan_fp/{bit}.svg', 'w') as file:
                 file.write(svg_img)
-        fp = np.array(fp)
-        morgan_fp = pd.DataFrame([fp], columns=[str(i) for i in range(2048)])
-        return morgan_fp
-        # self._p_changed = True
+        return fp
 
     def __create_conformers(self):
         new_mol = Chem.AddHs(self.mol)
@@ -354,7 +350,7 @@ class Project(Persistent):
         self.calculations = []
         self.job_ids = []
         self.descriptors = pd.DataFrame([])
-        self.morgan_fp = pd.DataFrame([])
+        self.morgan_fp = []
         self.grid_img = f'projects/{self.name}/{self.name}.png'
         self.__create_grid_img()
 
@@ -369,10 +365,6 @@ class Project(Persistent):
             )
             img.save(self.grid_img)
 
-    # def set_status(self, status):
-        # self.status = status
-        # self._p_changed = True
-
     def add_molecule(self, molecule):
         self.molecules.append(molecule)
         self.__create_grid_img()
@@ -380,7 +372,7 @@ class Project(Persistent):
 
     def pop_molecule(self):
         self.molecules.pop()
-        self.morgan_fp.drop(index=self.morgan_fp.index[-1], inplace=True)
+        self.morgan_fp.pop()
         self.descriptors.drop(index=self.descriptors.index[-1], inplace=True)
         self.__create_grid_img()
         self._p_changed = True
@@ -393,19 +385,19 @@ class Project(Persistent):
         self.job_ids.append(job_id)
         self._p_changed = True
 
-    def add_morgan_fp(self, morgan_fp, inchi_key):
-        morgan_fp = morgan_fp.copy()
-        morgan_fp['inchi_key'] = inchi_key
-        morgan_fp.set_index('inchi_key', inplace=True)
-        self.morgan_fp = pd.concat([self.morgan_fp, morgan_fp])
-        print(self.morgan_fp)
+    def add_fp(self, fp):
+        self.morgan_fp.append(fp)
+        self._p_changed = True
 
     def add_descriptors(self, descriptors, inchi_key):
         descriptors = descriptors.copy()
         descriptors['inchi_key'] = inchi_key
         descriptors.set_index('inchi_key', inplace=True)
         self.descriptors = pd.concat([self.descriptors, descriptors])
-        print(self.descriptors)
+        self.descriptors.replace(0, np.nan, inplace=True)
+        self.descriptors.dropna(how='all', axis=1, inplace=True)
+        self.descriptors.replace(np.nan, 0, inplace=True)
+        self._p_changed = True
 
     def remove_calculation(self):
         self.calculations.pop()

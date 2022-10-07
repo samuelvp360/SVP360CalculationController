@@ -5,7 +5,8 @@ import sys
 from Components import Molecule, Optimization, Project, Docking
 from Worker import Worker, MolWorker
 from Models import MoleculesModel, ProjectsModel, JobsModel  # , PandasModel
-from Calculations import Gaussian, MyVina, DockingPlotter, RedockingPlotter, DisplayData
+from Calculations import Gaussian, MyVina, DockingPlotter, \
+        RedockingPlotter, DisplayData, SimilarityExplorer
 from PyQt5 import QtCore as qtc
 from PyQt5 import QtWidgets as qtw
 # from PyQt5 import QtGui as qtg
@@ -158,9 +159,7 @@ class MainWindow(qtw.QMainWindow):
             for m in self.selected_mol:
                 if m not in already_in:
                     self.selected_project.add_molecule(m)
-                    self.selected_project.add_morgan_fp(
-                        m.morgan_fp, m.inchi_key
-                    )
+                    self.selected_project.add_fp(m.morgan_fp)
                     self.selected_project.add_descriptors(
                         m.descriptors, m.inchi_key
                     )
@@ -177,11 +176,7 @@ class MainWindow(qtw.QMainWindow):
     def descriptors_workflow(self, inchi_key, conf, method):
         molecule = self.database.get('molecules', inchi_key)
         molecule.set_conformer(conf=conf, method=method)
-        # molecule.calc_descriptors()
-        # molecule.calc_morgan_fp()
         self.database.commit()
-        # message = f'Rg value for {molecule.get_name} -> {molecule.descriptors.loc[0, "Rg"]:.2f}'
-        # self.statusBar().showMessage(message)
         self.set_models()
 
     @logger.catch
@@ -479,8 +474,11 @@ class MainWindow(qtw.QMainWindow):
             ]
             self.docking_plotter = RedockingPlotter(projects, self.jobs_list)
 
-    def display_data(self, data):
-        self.display = DisplayData(data)
+    def display_data(self, kind):
+        if kind in ('morgan_fp', 'descriptors'):
+            self.display = DisplayData(self.selected_project)
+        elif kind == 'similarities':
+            self.display = SimilarityExplorer(self.selected_project)
         self.display.show()
 
     def projects_right_click(self, position):
@@ -497,6 +495,7 @@ class MainWindow(qtw.QMainWindow):
             redocking_results = visualize.addAction('Redocking results')
             descriptors = visualize.addAction('Descriptors')
             morgan_fp = visualize.addAction('Morgan FP')
+            similarities = visualize.addAction('Similarities')
             action = menu.exec_(self.uiProjectsTreeView.mapToGlobal(position))
             if action == gauss and self.selected_project is not None:
                 self.gaussian_setup(group=True)
@@ -509,9 +508,11 @@ class MainWindow(qtw.QMainWindow):
             elif action == redocking_results:
                 self.plot_docking_results('redocking')
             elif action == morgan_fp:
-                self.display_data(self.selected_project.morgan_fp)
+                self.display_data('morgan_fp')
             elif action == descriptors:
-                self.display_data(self.selected_project.descriptors)
+                self.display_data('descriptors')
+            elif action == similarities:
+                self.display_data('similarities')
 
     def molecules_right_click(self, position):
         if self.selected_mol[-1]:

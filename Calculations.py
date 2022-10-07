@@ -16,7 +16,8 @@ from PyQt5 import QtCore as qtc
 from PyQt5 import uic
 from psutil import virtual_memory
 # from vina import Vina
-from Models import PandasModel
+from Models import PandasModel, DisplayMFPModel, SimilarityModel
+from rdkit import DataStructs
 # from openbabel import openbabel as ob
 import matplotlib
 from matplotlib import pyplot as plt
@@ -24,6 +25,7 @@ from matplotlib.figure import Figure
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg, NavigationToolbar2QT as NavigationToolbar
 # from mpldatacursor import datacursor
 from sklearn.metrics import r2_score
+from scipy.cluster.hierarchy import dendrogram, linkage
 # ob.obErrorLog.StopLogging()  # se puede cambiar por SetOutputLevel para logging
 matplotlib.use('Qt5Agg')
 
@@ -1864,13 +1866,78 @@ class MyVina(qtw.QWidget):
 
 class DisplayData(qtw.QWidget):
 
-    def __init__(self, data):
+    def __init__(self, project):
         super().__init__()
         uic.loadUi('Views/uiDisplayData.ui', self)
-        model = PandasModel(data)
+        self.project = project
+        self.df = self.create_df()
+        self.set_model()
+
+    def create_df(self):
+        fp = pd.DataFrame([np.array(p) for p in self.project.morgan_fp])
+        fp.set_axis([str(i) for i in range(2048)], axis=1, inplace=True)
+        fp.set_axis(
+            [m.get_name for m in self.project.molecules], axis=0, inplace=True
+        )
+        fp.replace(0, np.nan, inplace=True)
+        fp.dropna(how='all', axis=1, inplace=True)
+        fp.replace(np.nan, 0, inplace=True)
+        fp = fp.applymap(int)
+        return fp
+
+    def set_model(self):
+        model = DisplayMFPModel(self.df)
         self.uiDescriptorsTable.setModel(model)
         self.uiDescriptorsTable.resizeColumnsToContents()
         self.uiDescriptorsTable.resizeRowsToContents()
+
+
+class SimilarityExplorer(qtw.QWidget):
+
+    def __init__(self, project):
+        super().__init__()
+        uic.loadUi('Views/uiSimilarity.ui', self)
+        self.project = project
+        self.names = [m.get_name for m in project.molecules]
+        self.canvas = PlotCanvas(self)
+        self.toolbar = NavigationToolbar(self.canvas, self)
+        self.uiToolbarLayout.addWidget(self.toolbar)
+        self.uiPlotLayout.addWidget(self.canvas)
+        self.simil_df = self.get_similarity_matrix(
+            self.project.morgan_fp, 'Morgan2', self.names
+        )
+        self.HCL = self.get_HCL(self.simil_df, self.names)
+        self.set_model()
+
+    def set_model(self):
+        simil_model = SimilarityModel(self.simil_df)
+        self.uiSimilarityTable.setModel(simil_model)
+        self.uiSimilarityTable.resizeColumnsToContents()
+        self.uiSimilarityTable.resizeRowsToContents()
+
+    def get_similarity_matrix(self, fps, fp_method, names):
+        df = pd.DataFrame()
+        if fp_method == 'Morgan2':
+            for i_index, i in enumerate(fps):
+                for j_index, j in enumerate(fps):
+                    similarity = DataStructs.FingerprintSimilarity(i, j)
+                    df.loc[i_index, j_index] = round(similarity, 2)
+        df.set_axis(names, axis='columns', inplace=True)
+        df.set_axis(names, axis='index', inplace=True)
+        return df
+
+    def get_HCL(self, simil_df, names):
+        simil_matrix = simil_df.to_numpy()
+        linked = linkage(simil_matrix, 'single')
+        dend = dendrogram(
+            linked, orientation='left', labels=names,
+            distance_sort='descending', show_leaf_counts=True,
+            ax=self.canvas.ax
+        )
+        self.canvas.ax.spines['left'].set_visible(False)
+        self.canvas.ax.spines['top'].set_visible(False)
+        self.canvas.ax.spines['right'].set_visible(False)
+        self.canvas.draw()
 
 
 # TODO:

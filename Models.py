@@ -31,11 +31,18 @@ class PandasModel(qtc.QAbstractTableModel):
         return self.data.shape[1]
 
     def headerData(self, section, orientation, role):
+        headers_v = self.data.index.values.tolist()
+        headers_h = self.data.columns.values.tolist()
         if role == qtc.Qt.DisplayRole:
             if orientation == qtc.Qt.Vertical:
-                return str(section + 1)
-            elif orientation == qtc.Qt.Horizontal:
-                return self.data.columns[section]
+                return str(headers_v[section])
+            if orientation == qtc.Qt.Horizontal:
+                return str(headers_h[section])
+        elif role == qtc.Qt.TextAlignmentRole:
+            if orientation == qtc.Qt.Horizontal:
+                return qtc.Qt.AlignCenter | qtc.Qt.AlignVCenter
+            if orientation == qtc.Qt.Vertical:
+                return qtc.Qt.AlignLeft | qtc.Qt.AlignVCenter
 
     def flags(self, index):
         return qtc.Qt.ItemIsEnabled | qtc.Qt.ItemIsSelectable
@@ -417,6 +424,40 @@ class IRDataModel(qtc.QAbstractTableModel):
 
     def flags(self, index):
         return qtc.Qt.ItemIsEnabled | qtc.Qt.ItemIsSelectable
+
+
+class SimilarityModel(PandasModel):
+
+    def data(self, index, role):
+        value = self.data.iloc[index.row(), index.column()]
+        if role == qtc.Qt.DisplayRole:
+            return str(value)
+        elif role == qtc.Qt.TextAlignmentRole:
+            return qtc.Qt.AlignCenter | qtc.Qt.AlignVCenter
+        # Background
+        if role == qtc.Qt.BackgroundRole:
+            bg_color = qtg.QColor('red')
+            bg_color.setAlphaF(value)
+            return bg_color
+
+
+class DisplayMFPModel(PandasModel):
+
+    def data(self, index, role):
+        value = self.data.iloc[index.row(), index.column()]
+        if role == qtc.Qt.DisplayRole:
+            return str(value)
+        elif role == qtc.Qt.TextAlignmentRole:
+            return qtc.Qt.AlignCenter | qtc.Qt.AlignVCenter
+        # Foreground
+        if role == qtc.Qt.ForegroundRole:
+            return qtg.QColor('white')
+        # Background
+        if role == qtc.Qt.BackgroundRole:
+            if value:
+                return qtg.QColor('green')
+            else:
+                return qtg.QColor('red')
 
 
 # class AvailableSpectraModel(qtc.QAbstractTableModel):
