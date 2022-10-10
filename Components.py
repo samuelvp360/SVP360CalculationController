@@ -7,9 +7,9 @@ import subprocess
 import numpy as np
 import pandas as pd
 from rdkit import Chem
-from rdkit.Chem import AllChem, Draw, Descriptors
+from rdkit.Chem import AllChem, Draw, Descriptors, rdMolAlign
 from rdkit.ML.Descriptors import MoleculeDescriptors
-from rdkit.Chem import rdMolAlign
+# from rdkit.Chem.AtomPairs import Pairs
 from rdkit.Geometry import Point3D
 from rdkit import RDLogger
 from openbabel import openbabel as ob
@@ -35,7 +35,7 @@ class Molecule(Persistent):
             self.formula = Chem.rdMolDescriptors.CalcMolFormula(self.mol)
             self.__set_mol_picture()
             self.descriptors = self.get_descriptors
-            self.morgan_fp = self.get_morgan_fp
+            self.fps_dict = self.get_fps_dict
 
     def get_rdkit_mol(self, path, file_format, smiles):
         if smiles:
@@ -137,24 +137,42 @@ class Molecule(Persistent):
         return descriptors
 
     @property
-    def get_morgan_fp(self):
-        bit_info = {}
-        fp = Chem.rdMolDescriptors.GetMorganFingerprintAsBitVect(
-            self.mol, radius=2, nBits=2048, bitInfo=bit_info
-        )
+    def get_fps_dict(self):
+        fps_dict = {}
         mol = Chem.MolFromSmiles(Chem.MolToSmiles(self.mol))
         mol = Chem.AddHs(mol)
         AllChem.EmbedMolecule(mol, randomSeed=0xf00d)
-        path = f'molecules/{self.inchi_key}/morgan_fp/'
+        path = f'molecules/{self.inchi_key}/fingerprints/'
         if not os.path.exists(path):
             os.makedirs(path)
-        for bit in bit_info.keys():
-            svg_img = Draw.DrawMorganBit(
-                mol, bit, bit_info,
+        for i in range(1,4):
+            morgan_bit_info = {}
+            fps_dict[f'Morgan{i}'] = Chem.rdMolDescriptors.GetMorganFingerprintAsBitVect(
+                mol, radius=i, bitInfo=morgan_bit_info
             )
-            with open(f'molecules/{self.inchi_key}/morgan_fp/{bit}.svg', 'w') as file:
+            for bit in morgan_bit_info.keys():
+                svg_img = Draw.DrawMorganBit(
+                    mol, bit, morgan_bit_info,
+                )
+                with open(f'molecules/{self.inchi_key}/fingerprints/morgan{i}_{bit}.svg', 'w') as file:
+                    file.write(svg_img)
+        for i in ('chiral', 'achiral'):
+            chirality = True if i == 'chiral' else False
+            fps_dict[f'Hashed Atom Pairs ({i})'] = Chem.rdMolDescriptors.GetHashedAtomPairFingerprintAsBitVect(
+                mol, includeChirality=chirality
+            )
+        fps_dict['Layered'] = Chem.rdmolops.LayeredFingerprint(mol)
+        fps_dict['Pattern'] = Chem.rdmolops.PatternFingerprint(mol)
+        fps_dict['Hasehd Topological Torsions'] = Chem.rdMolDescriptors.GetHashedTopologicalTorsionFingerprintAsBitVect(mol)
+        rdkit_bit_info = {}
+        fps_dict['RDKit'] = Chem.RDKFingerprint(mol, maxPath=5, bitInfo=rdkit_bit_info)
+        for bit in rdkit_bit_info.keys():
+            svg_img = Draw.DrawRDKitBit(
+                mol, bit, rdkit_bit_info,
+            )
+            with open(f'molecules/{self.inchi_key}/fingerprints/rdkit_{bit}.svg', 'w') as file:
                 file.write(svg_img)
-        return fp
+        return fps_dict
 
     def __create_conformers(self):
         new_mol = Chem.AddHs(self.mol)
@@ -350,7 +368,7 @@ class Project(Persistent):
         self.calculations = []
         self.job_ids = []
         self.descriptors = pd.DataFrame([])
-        self.morgan_fp = []
+        self.fps = []
         self.grid_img = f'projects/{self.name}/{self.name}.png'
         self.__create_grid_img()
 
@@ -372,7 +390,7 @@ class Project(Persistent):
 
     def pop_molecule(self):
         self.molecules.pop()
-        self.morgan_fp.pop()
+        self.fps.pop()
         self.descriptors.drop(index=self.descriptors.index[-1], inplace=True)
         self.__create_grid_img()
         self._p_changed = True
@@ -385,8 +403,8 @@ class Project(Persistent):
         self.job_ids.append(job_id)
         self._p_changed = True
 
-    def add_fp(self, fp):
-        self.morgan_fp.append(fp)
+    def add_fps(self, fps_dict):
+        self.fps.append(fps_dict)
         self._p_changed = True
 
     def add_descriptors(self, descriptors, inchi_key):

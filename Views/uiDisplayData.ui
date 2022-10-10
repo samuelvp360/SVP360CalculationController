@@ -17,16 +17,59 @@
    <property name="geometry">
     <rect>
      <x>10</x>
-     <y>15</y>
+     <y>70</y>
      <width>1121</width>
-     <height>841</height>
+     <height>786</height>
     </rect>
    </property>
    <property name="alternatingRowColors">
     <bool>true</bool>
    </property>
   </widget>
+  <widget class="QComboBox" name="uiFPTypeCombo">
+   <property name="geometry">
+    <rect>
+     <x>10</x>
+     <y>30</y>
+     <width>246</width>
+     <height>31</height>
+    </rect>
+   </property>
+  </widget>
+  <widget class="QLabel" name="label">
+   <property name="geometry">
+    <rect>
+     <x>10</x>
+     <y>10</y>
+     <width>121</width>
+     <height>17</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>Fingerprint Type</string>
+   </property>
+  </widget>
  </widget>
  <resources/>
- <connections/>
+ <connections>
+  <connection>
+   <sender>uiFPTypeCombo</sender>
+   <signal>currentIndexChanged(QString)</signal>
+   <receiver>Form</receiver>
+   <slot>change_fp_type()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>169</x>
+     <y>50</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>197</x>
+     <y>-11</y>
+    </hint>
+   </hints>
+  </connection>
+ </connections>
+ <slots>
+  <slot>change_fp_type()</slot>
+ </slots>
 </ui>

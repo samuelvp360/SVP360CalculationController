@@ -1870,20 +1870,27 @@ class DisplayData(qtw.QWidget):
         super().__init__()
         uic.loadUi('Views/uiDisplayData.ui', self)
         self.project = project
-        self.df = self.create_df()
-        self.set_model()
+        fp_types = self.project.fps[0].keys()
+        self.uiFPTypeCombo.addItems(fp_types)
+        self.uiFPTypeCombo.setCurrentText('Morgan2')
 
-    def create_df(self):
-        fp = pd.DataFrame([np.array(p) for p in self.project.morgan_fp])
-        fp.set_axis([str(i) for i in range(2048)], axis=1, inplace=True)
-        fp.set_axis(
+    def change_fp_type(self, fp_type):
+        print(fp_type)
+        if fp_type:
+            self.df = self.create_df(fp_type)
+            self.set_model()
+
+    def create_df(self, fp_type):
+        fps = pd.DataFrame([np.array(fp.get(fp_type)) for fp in self.project.fps])
+        fps.set_axis([str(i) for i in range(2048)], axis=1, inplace=True)
+        fps.set_axis(
             [m.get_name for m in self.project.molecules], axis=0, inplace=True
         )
-        fp.replace(0, np.nan, inplace=True)
-        fp.dropna(how='all', axis=1, inplace=True)
-        fp.replace(np.nan, 0, inplace=True)
-        fp = fp.applymap(int)
-        return fp
+        fps.replace(0, np.nan, inplace=True)
+        fps.dropna(how='all', axis=1, inplace=True)
+        fps.replace(np.nan, 0, inplace=True)
+        fps = fps.applymap(int)
+        return fps
 
     def set_model(self):
         model = DisplayMFPModel(self.df)

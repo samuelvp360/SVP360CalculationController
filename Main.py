@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
+import shutil
 import sys
 from Components import Molecule, Optimization, Project, Docking
 from Worker import Worker, MolWorker
@@ -159,7 +160,7 @@ class MainWindow(qtw.QMainWindow):
             for m in self.selected_mol:
                 if m not in already_in:
                     self.selected_project.add_molecule(m)
-                    self.selected_project.add_fp(m.morgan_fp)
+                    self.selected_project.add_fps(m.fps_dict)
                     self.selected_project.add_descriptors(
                         m.descriptors, m.inchi_key
                     )
@@ -201,12 +202,35 @@ class MainWindow(qtw.QMainWindow):
                 if file_format in ('txt', 'smi'):
                     with open(m, 'r') as file:
                         smi_lines = file.readlines()
+                        molecules = []
                         for smi in smi_lines:
                             molecule = Molecule(smiles=smi)
                             if molecule.mol:
                                 self.store_molecule(molecule)
+                                molecules.append(molecule)
                             else:
                                 del molecule  # a message can be displayed
+                        reply = qtw.QMessageBox.question(
+                            self, 'Link to a project',
+                            f'Do you want to link these molecules to a project',
+                            qtw.QMessageBox.Yes | qtw.QMessageBox.No
+                        )
+                        if reply == qtw.QMessageBox.Yes:
+                            project_name, done = qtw.QInputDialog.getText(
+                                self, 'Project name',
+                                'Enter the name of the project:'
+                            )
+                            if done:
+                                exist = self.database.check('projects', project_name)
+                                if not exist:
+                                    self.uiProjectNameLine.setText(project_name)
+                                    self.create_project()
+                                self.selected_mol = molecules
+                                self.selected_project = [
+                                    p for p in self.projects_list \
+                                    if p.name == project_name
+                                ][0]
+                                self.include_mol()
                         self.set_models()
                         return
                 molecule = Molecule(path=m, file_format=file_format)
@@ -266,6 +290,7 @@ class MainWindow(qtw.QMainWindow):
                     continue
                 self.database.remove('molecules', m.inchi_key)
                 self.database.commit()
+                shutil.rmtree(f'molecules/{m.inchi_key}/', ignore_errors=True)
                 self.set_models()
 
     def remove_group_calc(self):
@@ -292,6 +317,10 @@ class MainWindow(qtw.QMainWindow):
                 self.database.remove('projects', self.selected_project.name)
                 self.database.commit()
                 self.set_models()
+                shutil.rmtree(
+                    f'projects/{self.selected_project.name}/',
+                    ignore_errors=True
+                )
 
     @qtc.pyqtSlot(dict, str)
     def queue_manager(self, calculation, project_name):
@@ -475,7 +504,7 @@ class MainWindow(qtw.QMainWindow):
             self.docking_plotter = RedockingPlotter(projects, self.jobs_list)
 
     def display_data(self, kind):
-        if kind in ('morgan_fp', 'descriptors'):
+        if kind in ('fingerprints', 'descriptors'):
             self.display = DisplayData(self.selected_project)
         elif kind == 'similarities':
             self.display = SimilarityExplorer(self.selected_project)
@@ -494,7 +523,7 @@ class MainWindow(qtw.QMainWindow):
             docking_results = visualize.addAction('Docking results')
             redocking_results = visualize.addAction('Redocking results')
             descriptors = visualize.addAction('Descriptors')
-            morgan_fp = visualize.addAction('Morgan FP')
+            fingerprints = visualize.addAction('Fingerprints')
             similarities = visualize.addAction('Similarities')
             action = menu.exec_(self.uiProjectsTreeView.mapToGlobal(position))
             if action == gauss and self.selected_project is not None:
@@ -507,8 +536,8 @@ class MainWindow(qtw.QMainWindow):
                 self.plot_docking_results('docking')
             elif action == redocking_results:
                 self.plot_docking_results('redocking')
-            elif action == morgan_fp:
-                self.display_data('morgan_fp')
+            elif action == fingerprints:
+                self.display_data('fingerprints')
             elif action == descriptors:
                 self.display_data('descriptors')
             elif action == similarities:
