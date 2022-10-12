@@ -7,7 +7,8 @@ from Components import Molecule, Optimization, Project, Docking
 from Worker import Worker, MolWorker
 from Models import MoleculesModel, ProjectsModel, JobsModel  # , PandasModel
 from Calculations import Gaussian, MyVina, DockingPlotter, \
-        RedockingPlotter, DisplayData, SimilarityExplorer
+        RedockingPlotter, FPExplorer, SimilarityExplorer, \
+        DescriptorsExplorer
 from PyQt5 import QtCore as qtc
 from PyQt5 import QtWidgets as qtw
 # from PyQt5 import QtGui as qtg
@@ -192,9 +193,9 @@ class MainWindow(qtw.QMainWindow):
 
     def add_molecule(self):
         mol_path, _ = qtw.QFileDialog.getOpenFileNames(
-            self, 'Selecciona la molécula a cargar',
+            self, 'Select the molecule',
+            filter='*.mol;;*.mol2;; *.pdb;;*.txt;;*.smi;;*.log',
             options=qtw.QFileDialog.DontUseNativeDialog,
-            filter='Archivos de moléculas (*.mol *.mol2 *.pdb *.txt *.smi *.log)'
         )
         if mol_path:
             for m in mol_path:
@@ -504,10 +505,12 @@ class MainWindow(qtw.QMainWindow):
             self.docking_plotter = RedockingPlotter(projects, self.jobs_list)
 
     def display_data(self, kind):
-        if kind in ('fingerprints', 'descriptors'):
-            self.display = DisplayData(self.selected_project)
+        if kind == 'fingerprints':
+            self.display = FPExplorer(self.selected_project)
         elif kind == 'similarities':
             self.display = SimilarityExplorer(self.selected_project)
+        elif kind == 'descriptors':
+            self.display = DescriptorsExplorer(self.selected_project)
         self.display.show()
 
     def projects_right_click(self, position):

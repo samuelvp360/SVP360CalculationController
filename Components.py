@@ -13,6 +13,9 @@ from rdkit.ML.Descriptors import MoleculeDescriptors
 from rdkit.Geometry import Point3D
 from rdkit import RDLogger
 from openbabel import openbabel as ob
+from map4 import MAP4Calculator
+import tmap as tm
+from mhfp.encoder import MHFPEncoder
 from persistent import Persistent
 from vina import Vina
 from datetime import datetime
@@ -147,31 +150,34 @@ class Molecule(Persistent):
             os.makedirs(path)
         for i in range(1,4):
             morgan_bit_info = {}
-            fps_dict[f'Morgan{i}'] = Chem.rdMolDescriptors.GetMorganFingerprintAsBitVect(
+            fps_dict[f'Morgan{i}'] = np.array(Chem.rdMolDescriptors.GetMorganFingerprintAsBitVect(
                 mol, radius=i, bitInfo=morgan_bit_info
-            )
+            ))
             for bit in morgan_bit_info.keys():
                 svg_img = Draw.DrawMorganBit(
-                    mol, bit, morgan_bit_info,
+                    self.mol, bit, morgan_bit_info,
                 )
                 with open(f'molecules/{self.inchi_key}/fingerprints/morgan{i}_{bit}.svg', 'w') as file:
                     file.write(svg_img)
         for i in ('chiral', 'achiral'):
             chirality = True if i == 'chiral' else False
-            fps_dict[f'Hashed Atom Pairs ({i})'] = Chem.rdMolDescriptors.GetHashedAtomPairFingerprintAsBitVect(
+            fps_dict[f'Hashed Atom Pairs ({i})'] = np.array(Chem.rdMolDescriptors.GetHashedAtomPairFingerprintAsBitVect(
                 mol, includeChirality=chirality
-            )
-        fps_dict['Layered'] = Chem.rdmolops.LayeredFingerprint(mol)
-        fps_dict['Pattern'] = Chem.rdmolops.PatternFingerprint(mol)
-        fps_dict['Hasehd Topological Torsions'] = Chem.rdMolDescriptors.GetHashedTopologicalTorsionFingerprintAsBitVect(mol)
+            ))
         rdkit_bit_info = {}
-        fps_dict['RDKit'] = Chem.RDKFingerprint(mol, maxPath=5, bitInfo=rdkit_bit_info)
+        rdkit_fp = Chem.RDKFingerprint(mol, maxPath=5, bitInfo=rdkit_bit_info)
+        fps_dict['RDKit'] = np.array(rdkit_fp)
         for bit in rdkit_bit_info.keys():
             svg_img = Draw.DrawRDKitBit(
                 mol, bit, rdkit_bit_info,
             )
             with open(f'molecules/{self.inchi_key}/fingerprints/rdkit_{bit}.svg', 'w') as file:
                 file.write(svg_img)
+        fps_dict['Layered'] = np.array(Chem.rdmolops.LayeredFingerprint(mol))
+        fps_dict['Pattern'] = np.array(Chem.rdmolops.PatternFingerprint(mol))
+        fps_dict['Hasehd Topological Torsions'] = np.array(Chem.rdMolDescriptors.GetHashedTopologicalTorsionFingerprintAsBitVect(mol))
+        calculator = MAP4Calculator(dimensions=2048, is_folded=True)
+        fps_dict[f'MAP4 (folded)'] = calculator.calculate(mol)
         return fps_dict
 
     def __create_conformers(self):
@@ -522,4 +528,79 @@ class Docking(Persistent):
 
 
 
+class Similarity():
+
+    def __init__(self, fps, names):
+        self.fps = fps
+        self.names = names
+
+    def similarity_matrix(self, fp_type, simil_metric):
+        df = pd.DataFrame()
+        fps = [fp_dict.get(fp_type) for fp_dict in self.fps]
+        if simil_metric == 'Tanimoto':
+            simil_function = self.tanimoto
+        elif simil_metric == 'Dice':
+            simil_function = self.dice
+        elif simil_metric == 'Cosine':
+            simil_function = self.cosine
+        elif simil_metric == 'Sokal':
+            simil_function = self.sokal
+        elif simil_metric == 'Russel':
+            simil_function = self.russel
+        elif simil_metric == 'Hamann':
+            simil_function = self.hamann
+        elif simil_metric == 'Kulczynski':
+            simil_function = self.kulczynski
+        for i_index, i in enumerate(fps):
+            for j_index, j in enumerate(fps):
+                similarity = simil_function(i, j)
+                df.loc[i_index, j_index] = round(similarity, 2)
+        df.set_axis(self.names, axis='columns', inplace=True)
+        df.set_axis(self.names, axis='index', inplace=True)
+        return df
+
+    def tanimoto(self, i, j):
+        a = np.sum(i & j)
+        b = np.sum(i) - a
+        c = np.sum(j) - a
+        d = np.sum((1 - i) & (1 - j))
+        return a / (a + b + c)
+
+    def dice(self, i, j):
+        a = np.sum(i & j)
+        b = np.sum(i) - a
+        c = np.sum(j) - a
+        d = np.sum((1 - i) & (1 - j))
+        return 2 * a / (2 * a + b + c)
+
+    def sokal(self, i, j):
+        a = np.sum(i & j)
+        b = np.sum(i) - a
+        c = np.sum(j) - a
+        d = np.sum((1 - i) & (1 - j))
+        return a / (a + (2 * (b + c)))
+
+    def russel(self, i, j):
+        a = np.sum(i & j)
+        b = np.sum(i) - a
+        c = np.sum(j) - a
+        d = np.sum((1 - i) & (1 - j))
+        return a / (a + b + c + d)
+
+    def hamann(self, i, j):
+        a = np.sum(i & j)
+        b = np.sum(i) - a
+        c = np.sum(j) - a
+        d = np.sum((1 - i) & (1 - j))
+        return (a + d - b - c) / (a + b + c + d)
+
+    def kulczynski(self, i, j):
+        a = np.sum(i & j)
+        b = np.sum(i) - a
+        c = np.sum(j) - a
+        d = np.sum((1 - i) & (1 - j))
+        return (a / 2) * ((1 / (a + b)) + (1 / (a + c)))
+
+    def cosine(self, i, j):
+        return np.dot(i, j) / (np.linalg.norm(i) * np.linalg.norm(j))
 

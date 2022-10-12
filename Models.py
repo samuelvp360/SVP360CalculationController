@@ -437,6 +437,7 @@ class SimilarityModel(PandasModel):
         # Background
         if role == qtc.Qt.BackgroundRole:
             bg_color = qtg.QColor('red')
+            value = value if value > 0 else 0
             bg_color.setAlphaF(value)
             return bg_color
 
@@ -446,7 +447,7 @@ class DisplayMFPModel(PandasModel):
     def data(self, index, role):
         value = self.data.iloc[index.row(), index.column()]
         if role == qtc.Qt.DisplayRole:
-            return str(value)
+            return str(round(value, 3))
         elif role == qtc.Qt.TextAlignmentRole:
             return qtc.Qt.AlignCenter | qtc.Qt.AlignVCenter
         # Foreground
@@ -458,6 +459,7 @@ class DisplayMFPModel(PandasModel):
                 return qtg.QColor('green')
             else:
                 return qtg.QColor('red')
+
 
 
 # class AvailableSpectraModel(qtc.QAbstractTableModel):

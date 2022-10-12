@@ -4,6 +4,7 @@
 import re
 import subprocess
 import os
+import io
 import shutil
 import copy
 from glob import glob
@@ -11,13 +12,19 @@ import multiprocessing
 import numpy as np
 import pandas as pd
 from os import listdir
+from PIL import Image, ImageQt
 from PyQt5 import QtWidgets as qtw
 from PyQt5 import QtCore as qtc
+from PyQt5 import QtGui as qtg
 from PyQt5 import uic
 from psutil import virtual_memory
 # from vina import Vina
 from Models import PandasModel, DisplayMFPModel, SimilarityModel
+from Components import Similarity
 from rdkit import DataStructs
+from rdkit import Chem
+from rdkit.Chem import Draw
+from rdkit.Chem.Draw import SimilarityMaps
 # from openbabel import openbabel as ob
 import matplotlib
 from matplotlib import pyplot as plt
@@ -1864,24 +1871,23 @@ class MyVina(qtw.QWidget):
         self.close()
 
 
-class DisplayData(qtw.QWidget):
+class FPExplorer(qtw.QWidget):
 
     def __init__(self, project):
         super().__init__()
-        uic.loadUi('Views/uiDisplayData.ui', self)
+        uic.loadUi('Views/uiDisplayFP.ui', self)
         self.project = project
         fp_types = self.project.fps[0].keys()
         self.uiFPTypeCombo.addItems(fp_types)
         self.uiFPTypeCombo.setCurrentText('Morgan2')
 
     def change_fp_type(self, fp_type):
-        print(fp_type)
         if fp_type:
             self.df = self.create_df(fp_type)
             self.set_model()
 
     def create_df(self, fp_type):
-        fps = pd.DataFrame([np.array(fp.get(fp_type)) for fp in self.project.fps])
+        fps = pd.DataFrame([fp.get(fp_type) for fp in self.project.fps])
         fps.set_axis([str(i) for i in range(2048)], axis=1, inplace=True)
         fps.set_axis(
             [m.get_name for m in self.project.molecules], axis=0, inplace=True
@@ -1894,6 +1900,21 @@ class DisplayData(qtw.QWidget):
 
     def set_model(self):
         model = DisplayMFPModel(self.df)
+        self.uiFPTable.setModel(model)
+        self.uiFPTable.resizeColumnsToContents()
+        self.uiFPTable.resizeRowsToContents()
+
+class DescriptorsExplorer(qtw.QWidget):
+
+    def __init__(self, project):
+        super().__init__()
+        uic.loadUi('Views/uiDisplayDescriptors.ui', self)
+        self.project = project
+        self.set_model()
+
+    def set_model(self):
+        self.df = self.project.descriptors
+        model = PandasModel(self.df)
         self.uiDescriptorsTable.setModel(model)
         self.uiDescriptorsTable.resizeColumnsToContents()
         self.uiDescriptorsTable.resizeRowsToContents()
@@ -1904,47 +1925,161 @@ class SimilarityExplorer(qtw.QWidget):
     def __init__(self, project):
         super().__init__()
         uic.loadUi('Views/uiSimilarity.ui', self)
-        self.project = project
         self.names = [m.get_name for m in project.molecules]
+        self.molecules = project.molecules
+        self.similarity = Similarity(project.fps, self.names)
+        self.simil_metric = 'Tanimoto'
+        self.fp_type = 'Morgan2'
         self.canvas = PlotCanvas(self)
         self.toolbar = NavigationToolbar(self.canvas, self)
         self.uiToolbarLayout.addWidget(self.toolbar)
         self.uiPlotLayout.addWidget(self.canvas)
-        self.simil_df = self.get_similarity_matrix(
-            self.project.morgan_fp, 'Morgan2', self.names
+        simil_metrics = (
+            'Tanimoto', 'Dice', 'Cosine', 'Sokal',
+            'Russel', 'Kulczynski', 'Hamann'
         )
-        self.HCL = self.get_HCL(self.simil_df, self.names)
-        self.set_model()
+        self.uiSimilMetricCombo.addItems(simil_metrics)
+        self.uiSimilMetricCombo.setCurrentText('Tanimoto')
+        fp_types = project.fps[0].keys()
+        self.uiFPTypeCombo.addItems(fp_types)
+        self.uiFPTypeCombo.setCurrentText('Morgan2')
 
     def set_model(self):
+        self.simil_df = self.similarity.similarity_matrix(
+            self.fp_type, self.simil_metric
+        )
+        self.HCL = self.get_HCL()
         simil_model = SimilarityModel(self.simil_df)
         self.uiSimilarityTable.setModel(simil_model)
         self.uiSimilarityTable.resizeColumnsToContents()
         self.uiSimilarityTable.resizeRowsToContents()
 
-    def get_similarity_matrix(self, fps, fp_method, names):
-        df = pd.DataFrame()
-        if fp_method == 'Morgan2':
-            for i_index, i in enumerate(fps):
-                for j_index, j in enumerate(fps):
-                    similarity = DataStructs.FingerprintSimilarity(i, j)
-                    df.loc[i_index, j_index] = round(similarity, 2)
-        df.set_axis(names, axis='columns', inplace=True)
-        df.set_axis(names, axis='index', inplace=True)
-        return df
+    def set_simil_metric(self, simil_metric):
+        self.simil_metric = simil_metric
+        self.set_model()
 
-    def get_HCL(self, simil_df, names):
-        simil_matrix = simil_df.to_numpy()
+    def set_fp_type(self, fp_type):
+        self.fp_type = fp_type
+        self.set_model()
+
+    def show_heatmap(self):
+        self.heatmap = Heatmap(self.simil_df, self.fp_type, self.simil_metric)
+        self.heatmap.plot()
+        self.heatmap.show()
+
+    def get_HCL(self):
+        self.canvas.ax.clear()
+        simil_matrix = self.simil_df.to_numpy()
         linked = linkage(simil_matrix, 'single')
         dend = dendrogram(
-            linked, orientation='left', labels=names,
+            linked, orientation='left', labels=self.names,
             distance_sort='descending', show_leaf_counts=True,
             ax=self.canvas.ax
+        )
+        self.canvas.ax.set_title(
+            f'Similarity HCL cluster ({self.fp_type}; {self.simil_metric})'
         )
         self.canvas.ax.spines['left'].set_visible(False)
         self.canvas.ax.spines['top'].set_visible(False)
         self.canvas.ax.spines['right'].set_visible(False)
         self.canvas.draw()
 
+    def show_simil_map(self):
+        indexes = self.uiSimilarityTable.selectedIndexes()
+        if not indexes:
+            return
+        # self.simil_maps = []
+        # for index in indexes:
+        ref = self.molecules[indexes[0].row()].mol
+        ref_name = self.molecules[indexes[0].row()].get_name
+        ref = Chem.MolFromSmiles(Chem.MolToSmiles(ref))
+        prob = self.molecules[indexes[0].column()].mol
+        prob_name = self.molecules[indexes[0].column()].get_name
+        prob = Chem.MolFromSmiles(Chem.MolToSmiles(prob))
+        d = Draw.MolDraw2DCairo(550, 550)
+        d.DrawMolecule(ref)
+        _, maxWeight = SimilarityMaps.GetSimilarityMapForFingerprint(
+            ref, prob,
+            lambda m, i: SimilarityMaps.GetMorganFingerprint(m, i, radius=2, fpType='bv'),
+            draw2d=d
+        )
+        d.FinishDrawing()
+        data = d.GetDrawingText()
+        bio = io.BytesIO(data)
+        img = Image.open(bio)
+        if hasattr(self, 'simil_map'):
+            self.simil_map_2 = SimilMap(img, ref_name, prob_name)
+        else:
+            self.simil_map = SimilMap(img, ref_name, prob_name)
+        # self.simil_maps.append(simil_map)
 
-# TODO:
+
+class SimilMap(qtw.QWidget):
+
+    def __init__(self, img, ref_name, prob_name):
+        super().__init__()
+        uic.loadUi('Views/uiSimilMap.ui', self)
+        self.img = img
+        self.uiSimilMapLabel.setPixmap(qtg.QPixmap.fromImage(
+            ImageQt.ImageQt(img)
+        ))
+        self.uiLabel.setText(f'Ref: {ref_name}\nProb: {prob_name}')
+        self.show()
+
+    def save_image(self):
+        filename, extension = qtw.QFileDialog.getSaveFileName(
+            self, 'Save image', 'Image.png', 'PNG (*.png)',
+            options=qtw.QFileDialog.DontUseNativeDialog,
+        )
+        if filename:
+            has_extension = '.' in filename
+            if not has_extension:
+                filename += '.png'
+            self.img.save(filename)
+
+
+class Heatmap(qtw.QWidget):
+
+    def __init__(self, data, fp_type, simil_metric):
+        super().__init__()
+        uic.loadUi('Views/uiHeatmap.ui', self)
+        self.data = data
+        self.fp_type = fp_type
+        self.simil_metric = simil_metric
+        self.canvas = PlotCanvas(self)
+        self.toolbar = NavigationToolbar(self.canvas, self)
+        self.uiToolbarLayout.addWidget(self.toolbar)
+        self.uiPlotLayout.addWidget(self.canvas)
+
+    def plot(self):
+        self.canvas.ax.clear()
+        simil_matrix = self.data.to_numpy()
+        labels = self.data.columns.values.tolist()
+        self.canvas.ax.set_title(
+            f'Similarity Matrix ({self.fp_type}; {self.simil_metric})'
+        )
+        im = self.canvas.ax.imshow(simil_matrix, cmap='magma_r')
+        # Create colorbar
+        cbar = self.canvas.ax.figure.colorbar(im, ax=self.canvas.ax)
+        cbar.ax.set_ylabel('', rotation=-90, va="bottom")
+        # Show all ticks and label them with the respective list entries.
+        self.canvas.ax.set_xticks(
+            np.arange(simil_matrix.shape[1]), labels=labels,
+            rotation=90
+        )
+        self.canvas.ax.set_yticks(np.arange(simil_matrix.shape[0]), labels=labels)
+        # Let the horizontal axes labeling appear on top.
+        self.canvas.ax.tick_params(
+            top=True, bottom=False,
+            labeltop=True, labelbottom=False
+        )
+        self.canvas.ax.tick_params(axis='x', labelsize=8)
+        self.canvas.ax.tick_params(axis='y', labelsize=8)
+        # Turn spines off and create white grid.
+        self.canvas.ax.spines[:].set_visible(False)
+        self.canvas.ax.set_xticks(np.arange(simil_matrix.shape[1] + 1) - .5, minor=True)
+        self.canvas.ax.set_yticks(np.arange(simil_matrix.shape[0] + 1) - .5, minor=True)
+        self.canvas.ax.grid(which="minor", color="w", linestyle='-', linewidth=3)
+        self.canvas.ax.tick_params(which="minor", bottom=False, left=False)
+        self.canvas.draw()
+

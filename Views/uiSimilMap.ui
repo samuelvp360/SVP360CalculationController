@@ -1,0 +1,92 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>Form</class>
+ <widget class="QWidget" name="Form">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>584</width>
+    <height>686</height>
+   </rect>
+  </property>
+  <property name="windowTitle">
+   <string>Similarity Map</string>
+  </property>
+  <widget class="QLabel" name="uiSimilMapLabel">
+   <property name="geometry">
+    <rect>
+     <x>15</x>
+     <y>110</y>
+     <width>550</width>
+     <height>550</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string/>
+   </property>
+  </widget>
+  <widget class="QWidget" name="layoutWidget">
+   <property name="geometry">
+    <rect>
+     <x>30</x>
+     <y>5</y>
+     <width>526</width>
+     <height>80</height>
+    </rect>
+   </property>
+   <layout class="QVBoxLayout" name="verticalLayout">
+    <item>
+     <widget class="QPushButton" name="uiSaveButton">
+      <property name="minimumSize">
+       <size>
+        <width>0</width>
+        <height>40</height>
+       </size>
+      </property>
+      <property name="text">
+       <string>Save Image</string>
+      </property>
+     </widget>
+    </item>
+    <item>
+     <widget class="QLabel" name="uiLabel">
+      <property name="font">
+       <font>
+        <pointsize>12</pointsize>
+       </font>
+      </property>
+      <property name="text">
+       <string/>
+      </property>
+      <property name="alignment">
+       <set>Qt::AlignLeading|Qt::AlignLeft|Qt::AlignVCenter</set>
+      </property>
+     </widget>
+    </item>
+   </layout>
+  </widget>
+ </widget>
+ <resources/>
+ <connections>
+  <connection>
+   <sender>uiSaveButton</sender>
+   <signal>clicked()</signal>
+   <receiver>Form</receiver>
+   <slot>save_image()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>251</x>
+     <y>48</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>249</x>
+     <y>2</y>
+    </hint>
+   </hints>
+  </connection>
+ </connections>
+ <slots>
+  <slot>save_image()</slot>
+ </slots>
+</ui>
