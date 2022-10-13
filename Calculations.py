@@ -1943,6 +1943,9 @@ class SimilarityExplorer(qtw.QWidget):
         fp_types = project.fps[0].keys()
         self.uiFPTypeCombo.addItems(fp_types)
         self.uiFPTypeCombo.setCurrentText('Morgan2')
+        self.uiShowSimilMapButton.clicked.connect(
+            lambda: self.show_simil_map(self.fp_type)
+        )
 
     def set_model(self):
         self.simil_df = self.similarity.similarity_matrix(
@@ -1960,6 +1963,15 @@ class SimilarityExplorer(qtw.QWidget):
 
     def set_fp_type(self, fp_type):
         self.fp_type = fp_type
+        if fp_type in (
+            'Morgan1', 'Morgan2', 'Morgan3',
+            'Hasehd Topological Torsions', 'RDKit',
+            'Hashed Atom Pairs (chiral)',
+            'Hashed Atom Pairs (achiral)'
+        ):
+            self.uiShowSimilMapButton.setEnabled(True)
+        else:
+            self.uiShowSimilMapButton.setEnabled(False)
         self.set_model()
 
     def show_heatmap(self):
@@ -1984,46 +1996,61 @@ class SimilarityExplorer(qtw.QWidget):
         self.canvas.ax.spines['right'].set_visible(False)
         self.canvas.draw()
 
-    def show_simil_map(self):
+    def show_simil_map(self, fp_type):
         indexes = self.uiSimilarityTable.selectedIndexes()
         if not indexes:
             return
-        # self.simil_maps = []
-        # for index in indexes:
-        ref = self.molecules[indexes[0].row()].mol
-        ref_name = self.molecules[indexes[0].row()].get_name
+        i = indexes[0].row()
+        j = indexes[0].column()
+        ref = self.molecules[i].mol
+        ref_name = self.molecules[i].get_name
         ref = Chem.MolFromSmiles(Chem.MolToSmiles(ref))
-        prob = self.molecules[indexes[0].column()].mol
-        prob_name = self.molecules[indexes[0].column()].get_name
+        prob = self.molecules[j].mol
+        prob_name = self.molecules[j].get_name
         prob = Chem.MolFromSmiles(Chem.MolToSmiles(prob))
         d = Draw.MolDraw2DCairo(550, 550)
+        if 'Morgan' in fp_type:
+            radius = int(fp_type[-1])
+            simil_function = lambda m, i: SimilarityMaps.GetMorganFingerprint(
+                m, i, radius=radius, fpType='bv'
+            )
+        elif fp_type == 'Hasehd Topological Torsions':
+            simil_function = lambda m, i: SimilarityMaps.GetTTFingerprint(
+                m, i, fpType='bv'
+            )
+        elif 'Hashed Atom Pairs' in fp_type:
+            simil_function = lambda m, i: SimilarityMaps.GetAPFingerprint(
+                m, i, fpType='bv'
+            )
+        elif fp_type == 'RDKit':
+            simil_function = lambda m, i: SimilarityMaps.GetRDKFingerprint(
+                m, i, fpType='bv'
+            )
         d.DrawMolecule(ref)
         _, maxWeight = SimilarityMaps.GetSimilarityMapForFingerprint(
-            ref, prob,
-            lambda m, i: SimilarityMaps.GetMorganFingerprint(m, i, radius=2, fpType='bv'),
-            draw2d=d
+            ref, prob, simil_function, draw2d=d
         )
         d.FinishDrawing()
         data = d.GetDrawingText()
         bio = io.BytesIO(data)
         img = Image.open(bio)
-        if hasattr(self, 'simil_map'):
-            self.simil_map_2 = SimilMap(img, ref_name, prob_name)
-        else:
-            self.simil_map = SimilMap(img, ref_name, prob_name)
-        # self.simil_maps.append(simil_map)
+        setattr(
+            self, f'simil_map_{fp_type}_{i}_{j}',
+            SimilMap(img, ref_name, prob_name, fp_type)
+        )
 
 
 class SimilMap(qtw.QWidget):
 
-    def __init__(self, img, ref_name, prob_name):
+    def __init__(self, img, ref_name, prob_name, fp_type):
         super().__init__()
         uic.loadUi('Views/uiSimilMap.ui', self)
         self.img = img
         self.uiSimilMapLabel.setPixmap(qtg.QPixmap.fromImage(
             ImageQt.ImageQt(img)
         ))
-        self.uiLabel.setText(f'Ref: {ref_name}\nProb: {prob_name}')
+        self.uiLabel.setText(
+            f'Ref: {ref_name}\tProb: {prob_name}\nFP type: {fp_type}')
         self.show()
 
     def save_image(self):

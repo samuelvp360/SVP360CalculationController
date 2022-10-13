@@ -133,7 +133,10 @@
     <string>Show Heatmap</string>
    </property>
   </widget>
-  <widget class="QPushButton" name="pushButton">
+  <widget class="QPushButton" name="uiShowSimilMapButton">
+   <property name="enabled">
+    <bool>true</bool>
+   </property>
    <property name="geometry">
     <rect>
      <x>665</x>
@@ -153,7 +156,7 @@
   <zorder>label_2</zorder>
   <zorder>uiSimilMetricCombo</zorder>
   <zorder>uiHeatmapButton</zorder>
-  <zorder>pushButton</zorder>
+  <zorder>uiShowSimilMapButton</zorder>
  </widget>
  <resources/>
  <connections>
@@ -202,22 +205,6 @@
     <hint type="destinationlabel">
      <x>517</x>
      <y>-16</y>
-    </hint>
-   </hints>
-  </connection>
-  <connection>
-   <sender>pushButton</sender>
-   <signal>clicked()</signal>
-   <receiver>Form</receiver>
-   <slot>show_simil_map()</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>771</x>
-     <y>31</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>746</x>
-     <y>-13</y>
     </hint>
    </hints>
   </connection>
