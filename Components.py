@@ -375,6 +375,7 @@ class Project(Persistent):
         self.job_ids = []
         self.descriptors = pd.DataFrame([])
         self.fps = []
+        self.clusters = {}
         self.grid_img = f'projects/{self.name}/{self.name}.png'
         self.__create_grid_img()
 
@@ -422,6 +423,28 @@ class Project(Persistent):
         self.descriptors.dropna(how='all', axis=1, inplace=True)
         self.descriptors.replace(np.nan, 0, inplace=True)
         self._p_changed = True
+
+    def set_clusters(
+        self, cluster_type, labels,
+        total, silhouette_avg,
+        threshold
+    ):
+        self.clusters = {
+            'type': cluster_type,
+            'labels': labels,
+            'total': total,
+            'silhouette_avg': silhouette_avg,
+            'threshold': threshold
+        }
+        # self._p_changed = True
+
+    def get_cluster(self, cluster_num):
+        labels = self.clusters.get('labels')
+        mols_in_cluster = [
+            m for l, m in zip(labels, self.molecules) if l == cluster_num
+        ]
+        return mols_in_cluster
+
 
     def remove_calculation(self):
         self.calculations.pop()

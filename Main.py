@@ -5,10 +5,10 @@ import shutil
 import sys
 from Components import Molecule, Optimization, Project, Docking
 from Worker import Worker, MolWorker
-from Models import MoleculesModel, ProjectsModel, JobsModel  # , PandasModel
-from Calculations import Gaussian, MyVina, DockingPlotter, \
-        RedockingPlotter, FPExplorer, SimilarityExplorer, \
-        DescriptorsExplorer
+from Models import MoleculesModel, ProjectsModel, JobsModel
+from Calculations import Gaussian, MyVina
+from Plotters import DockingPlotter, RedockingPlotter
+from Explorers import FPExplorer, SimilarityExplorer, DescriptorsExplorer
 from PyQt5 import QtCore as qtc
 from PyQt5 import QtWidgets as qtw
 # from PyQt5 import QtGui as qtg
@@ -74,6 +74,10 @@ class MainWindow(qtw.QMainWindow):
         self.master_queue = [
             j for j in self.jobs_list if j.get_status in ('Programmed', 'Running')
         ]
+        if self.master_queue:
+            self.uiStartQueueButton.setEnabled(True)
+        else:
+            self.uiStartQueueButton.setEnabled(False)
         if self.master_queue and not hasattr(self, 'queue_thread') \
            and self.queue_status != 'Paused':
             self.start_master_queue()
