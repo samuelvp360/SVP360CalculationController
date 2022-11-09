@@ -6,12 +6,14 @@ import matplotlib
 from PyQt5 import QtWidgets as qtw
 from PyQt5 import QtGui as qtg
 from PyQt5 import uic
+from PIL import Image, ImageQt
 import pandas as pd
 import numpy as np
+from rdkit.Chem import Draw
+from rdkit.Chem.Draw import SimilarityMaps
 from matplotlib import pyplot as plt
 from matplotlib.figure import Figure
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg, NavigationToolbar2QT as NavigationToolbar
-from PIL import Image, ImageQt
 from Models import PandasModel
 from sklearn.metrics import r2_score
 matplotlib.use('Qt5Agg')
@@ -481,14 +483,11 @@ class Heatmap(qtw.QWidget):
 
 class SimilMap(qtw.QWidget):
 
-    def __init__(self, data, ref_name, prob_name, fp_type):
+    def __init__(self, ref, prob, fp_type, ref_name='NN', prob_name='NN'):
         super().__init__()
         uic.loadUi('Views/uiSimilMap.ui', self)
-        bio = io.BytesIO(data)
-        self.img = Image.open(bio)
-        self.uiSimilMapLabel.setPixmap(qtg.QPixmap.fromImage(
-            ImageQt.ImageQt(self.img)
-        ))
+        qimage = self.get_simil_map(ref, prob, fp_type)
+        self.uiSimilMapLabel.setPixmap(qimage)
         self.uiLabel.setText(
             f'Ref: {ref_name}\tProb: {prob_name}\nFP type: {fp_type}')
         self.show()
@@ -503,5 +502,35 @@ class SimilMap(qtw.QWidget):
             if not has_extension:
                 filename += '.png'
             self.img.save(filename)
+
+    def get_simil_map(self, ref, prob, fp_type):
+        d = Draw.MolDraw2DCairo(550, 550)
+        if 'Morgan' in fp_type:
+            radius = int(fp_type[-1])
+            simil_function = lambda m, i: SimilarityMaps.GetMorganFingerprint(
+                m, i, radius=radius, fpType='bv'
+            )
+        elif fp_type == 'Hasehd Topological Torsions':
+            simil_function = lambda m, i: SimilarityMaps.GetTTFingerprint(
+                m, i, fpType='bv'
+            )
+        elif 'Hashed Atom Pairs' in fp_type:
+            simil_function = lambda m, i: SimilarityMaps.GetAPFingerprint(
+                m, i, fpType='bv'
+            )
+        elif fp_type == 'RDKit':
+            simil_function = lambda m, i: SimilarityMaps.GetRDKFingerprint(
+                m, i, fpType='bv'
+            )
+        d.DrawMolecule(ref)
+        _, maxWeight = SimilarityMaps.GetSimilarityMapForFingerprint(
+            ref, prob, simil_function, draw2d=d
+        )
+        d.FinishDrawing()
+        data = d.GetDrawingText()
+        bio = io.BytesIO(data)
+        self.img = Image.open(bio)
+        qimage = qtg.QPixmap.fromImage(ImageQt.ImageQt(self.img))
+        return qimage
 
 

@@ -164,37 +164,58 @@ class IRPlotter(qtw.QMainWindow):
         filename, _ = qtw.QFileDialog.getOpenFileName(
             self, 'Selecciona la molécula a cargar',
             options=qtw.QFileDialog.DontUseNativeDialog,
-            filter='CSV files(*.csv)'
+            filter='CSV files (*.csv);; Bruker files (*.dpt)'
         )
+        print(_)
         if filename:
             *path, name = filename.split('/')
             path = '/'.join(path)
             name = ''.join(name.split('.')[:-1])
+            file_format = filename.split('.')[-1]
             self.cwd = (path)
             self.title = name
             self.bands_df = None
-            with open(filename, 'r') as file:
-                lines = file.readlines()
-                new_lines = []
-                for line in lines:
-                    if line[0].isdigit():
-                        new_lines.append(line)
-
-                csv_str = ''.join(new_lines)
-
-            try:
-                self.df = pd.read_csv(
-                    StringIO(csv_str), dtype=float,
-                    names=('Wavenumber', 'Raw Data')
-                )
-            except ValueError:
-                self.df = pd.read_csv(
-                    StringIO(csv_str), delimiter=';',
-                    decimal=',', dtype=float,
-                    names=('Wavenumber', 'Raw Data')
-                )
+            if file_format == 'csv':
+                self.df = self.from_csv(filename)
+            elif file_format == 'dpt':
+                self.df = self.from_dpt(filename)
             self.set_y_axis()
             self.select_y_axis('%Transmittance')
+
+    def from_csv(self, filename):
+        with open(filename, 'r') as file:
+            lines = file.readlines()
+            new_lines = []
+            for line in lines:
+                if line[0].isdigit():
+                    new_lines.append(line)
+            csv_str = ''.join(new_lines)
+        try:
+            self.df = pd.read_csv(
+                StringIO(csv_str), dtype=float,
+                names=('Wavenumber', 'Raw Data')
+            )
+        except ValueError:
+            df = pd.read_csv(
+                StringIO(csv_str), delimiter=';',
+                decimal=',', dtype=float,
+                names=('Wavenumber', 'Raw Data')
+            )
+            return df
+
+    def from_dpt(self, filename):
+        with open(filename, 'r') as file:
+            lines = file.readlines()
+            wavenumber, raw_data = [], []
+            for line in lines:
+                x, y = line.split('\t')
+                wavenumber.append(float(x))
+                raw_data.append(float(y))
+            df = pd.DataFrame({
+                'Wavenumber': wavenumber,
+                'Raw Data': raw_data
+            }, dtype=float)
+            return df
 
     def plot(self):
         """
@@ -507,7 +528,7 @@ class IRPlotter(qtw.QMainWindow):
                         '%Transmittance(N)': [],
                         'Absorbance(N)': [],
                     })
-                self.bands_df = self.bands_df.append(new_band, ignore_index=True)
+                self.bands_df = pd.concat([self.bands_df, new_band], ignore_index=True)
                 self.bands_df = self.bands_df.round(6)
             except IndexError:
                 pass

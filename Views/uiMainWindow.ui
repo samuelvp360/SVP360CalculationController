@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1808</width>
+    <width>1828</width>
     <height>989</height>
    </rect>
   </property>
@@ -22,14 +22,41 @@
      <rect>
       <x>10</x>
       <y>15</y>
-      <width>781</width>
-      <height>641</height>
+      <width>636</width>
+      <height>656</height>
      </rect>
     </property>
     <layout class="QGridLayout" name="gridLayout">
      <property name="spacing">
       <number>0</number>
      </property>
+     <item row="0" column="1">
+      <widget class="QPushButton" name="uiOpenFileButton">
+       <property name="minimumSize">
+        <size>
+         <width>0</width>
+         <height>50</height>
+        </size>
+       </property>
+       <property name="styleSheet">
+        <string notr="true">QPushButton {
+	background-color: 'white';
+	border: 2px solid 'green';
+	border-radius: 6px;
+}
+QPushButton:hover {
+	background-color: 'green';
+	color: 'white'
+}</string>
+       </property>
+       <property name="text">
+        <string>Open molecule file</string>
+       </property>
+       <property name="autoDefault">
+        <bool>true</bool>
+       </property>
+      </widget>
+     </item>
      <item row="0" column="0">
       <widget class="QPushButton" name="uiRemoveMoleculeButton">
        <property name="minimumSize">
@@ -56,34 +83,7 @@ QPushButton:hover {
 }</string>
        </property>
        <property name="text">
-        <string>Remover</string>
-       </property>
-       <property name="autoDefault">
-        <bool>true</bool>
-       </property>
-      </widget>
-     </item>
-     <item row="0" column="1">
-      <widget class="QPushButton" name="uiAddMoleculeButton">
-       <property name="minimumSize">
-        <size>
-         <width>0</width>
-         <height>50</height>
-        </size>
-       </property>
-       <property name="styleSheet">
-        <string notr="true">QPushButton {
-	background-color: 'white';
-	border: 2px solid 'green';
-	border-radius: 6px;
-}
-QPushButton:hover {
-	background-color: 'green';
-	color: 'white'
-}</string>
-       </property>
-       <property name="text">
-        <string>Agregar Molécula</string>
+        <string>Remove</string>
        </property>
        <property name="autoDefault">
         <bool>true</bool>
@@ -103,7 +103,7 @@ QPushButton:hover {
      <item row="1" column="1">
       <widget class="QLineEdit" name="uiSearchLine">
        <property name="placeholderText">
-        <string>Buscar Molécula</string>
+        <string>Find molecule</string>
        </property>
       </widget>
      </item>
@@ -129,6 +129,77 @@ QPushButton:hover {
        </property>
        <property name="headerHidden">
         <bool>true</bool>
+       </property>
+      </widget>
+     </item>
+     <item row="3" column="0" colspan="2">
+      <layout class="QHBoxLayout" name="horizontalLayout">
+       <item>
+        <widget class="QPushButton" name="uiUnselectMolButton">
+         <property name="minimumSize">
+          <size>
+           <width>0</width>
+           <height>50</height>
+          </size>
+         </property>
+         <property name="styleSheet">
+          <string notr="true">QPushButton {
+	background-color: 'white';
+	border: 2px solid 'red';
+	border-radius: 6px;
+}
+QPushButton:hover {
+	background-color: 'red';
+	color: 'white'
+}</string>
+         </property>
+         <property name="text">
+          <string>&lt;&lt;   Drop last from project   &lt;&lt;</string>
+         </property>
+         <property name="autoDefault">
+          <bool>true</bool>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QPushButton" name="uiSelectMolButton">
+         <property name="minimumSize">
+          <size>
+           <width>0</width>
+           <height>50</height>
+          </size>
+         </property>
+         <property name="styleSheet">
+          <string notr="true">QPushButton {
+	background-color: 'white';
+	border: 2px solid 'green';
+	border-radius: 6px;
+}
+QPushButton:hover {
+	background-color: 'green';
+	color: 'white'
+}</string>
+         </property>
+         <property name="text">
+          <string>&gt;&gt;   Include in project   &gt;&gt;</string>
+         </property>
+         <property name="autoDefault">
+          <bool>true</bool>
+         </property>
+        </widget>
+       </item>
+      </layout>
+     </item>
+     <item row="4" column="0" colspan="2">
+      <widget class="QLabel" name="uiTotalMoleculesLabel">
+       <property name="font">
+        <font>
+         <weight>75</weight>
+         <bold>true</bold>
+        </font>
+       </property>
+       <property name="text">
+        <string/>
        </property>
       </widget>
      </item>
@@ -188,7 +259,7 @@ QPushButton:hover {
 }</string>
        </property>
        <property name="text">
-        <string>Detener</string>
+        <string>Stop</string>
        </property>
        <property name="autoDefault">
         <bool>true</bool>
@@ -215,7 +286,7 @@ QPushButton:hover {
 }</string>
        </property>
        <property name="text">
-        <string>Iniciar</string>
+        <string>Start</string>
        </property>
        <property name="autoDefault">
         <bool>true</bool>
@@ -243,14 +314,14 @@ QPushButton:hover {
    <widget class="QGroupBox" name="groupBox_2">
     <property name="geometry">
      <rect>
-      <x>1010</x>
+      <x>655</x>
       <y>11</y>
-      <width>786</width>
-      <height>656</height>
+      <width>1141</width>
+      <height>661</height>
      </rect>
     </property>
     <property name="title">
-     <string>Lista de proyectos</string>
+     <string>List of projects</string>
     </property>
     <layout class="QGridLayout" name="gridLayout_3">
      <property name="leftMargin">
@@ -288,7 +359,7 @@ QPushButton:hover {
 }</string>
        </property>
        <property name="text">
-        <string>Adicionar cálculo</string>
+        <string>Add calculation</string>
        </property>
       </widget>
      </item>
@@ -312,7 +383,7 @@ QPushButton:hover {
 }</string>
        </property>
        <property name="text">
-        <string>Remover último cálculo</string>
+        <string>Remove last calculation</string>
        </property>
       </widget>
      </item>
@@ -358,7 +429,7 @@ QPushButton:hover {
 }</string>
        </property>
        <property name="text">
-        <string>Remover</string>
+        <string>Remove</string>
        </property>
        <property name="autoDefault">
         <bool>true</bool>
@@ -385,7 +456,7 @@ QPushButton:hover {
 }</string>
        </property>
        <property name="text">
-        <string>Crear</string>
+        <string>Create</string>
        </property>
        <property name="autoDefault">
         <bool>true</bool>
@@ -398,7 +469,7 @@ QPushButton:hover {
      <item row="8" column="0" colspan="3">
       <widget class="QLabel" name="label">
        <property name="text">
-        <string>Cálculos disponibles</string>
+        <string>Available calculations</string>
        </property>
        <property name="alignment">
         <set>Qt::AlignCenter</set>
@@ -414,7 +485,7 @@ QPushButton:hover {
         </font>
        </property>
        <property name="placeholderText">
-        <string>Nombre del proyecto</string>
+        <string>Name of the project</string>
        </property>
        <property name="clearButtonEnabled">
         <bool>true</bool>
@@ -441,84 +512,11 @@ QPushButton:hover {
 }</string>
        </property>
        <property name="text">
-        <string>Iniciar proyecto</string>
+        <string>Start project</string>
        </property>
       </widget>
      </item>
     </layout>
-   </widget>
-   <widget class="QPushButton" name="uiSelectMolButton">
-    <property name="geometry">
-     <rect>
-      <x>795</x>
-      <y>300</y>
-      <width>211</width>
-      <height>41</height>
-     </rect>
-    </property>
-    <property name="styleSheet">
-     <string notr="true">QPushButton {
-	background-color: 'white';
-	border: 2px solid 'green';
-	border-radius: 6px;
-}
-QPushButton:hover {
-	background-color: 'green';
-	color: 'white'
-}</string>
-    </property>
-    <property name="text">
-     <string>&gt;&gt; Seleccionar molécula &gt;&gt;</string>
-    </property>
-    <property name="autoDefault">
-     <bool>true</bool>
-    </property>
-   </widget>
-   <widget class="QPushButton" name="uiUnselectMolButton">
-    <property name="geometry">
-     <rect>
-      <x>795</x>
-      <y>340</y>
-      <width>211</width>
-      <height>41</height>
-     </rect>
-    </property>
-    <property name="styleSheet">
-     <string notr="true">QPushButton {
-	background-color: 'white';
-	border: 2px solid 'red';
-	border-radius: 6px;
-}
-QPushButton:hover {
-	background-color: 'red';
-	color: 'white'
-}</string>
-    </property>
-    <property name="text">
-     <string>&lt;&lt;   Remover molécula   &lt;&lt;</string>
-    </property>
-    <property name="autoDefault">
-     <bool>true</bool>
-    </property>
-   </widget>
-   <widget class="QLabel" name="uiTotalMoleculesLabel">
-    <property name="geometry">
-     <rect>
-      <x>15</x>
-      <y>660</y>
-      <width>776</width>
-      <height>17</height>
-     </rect>
-    </property>
-    <property name="font">
-     <font>
-      <weight>75</weight>
-      <bold>true</bold>
-     </font>
-    </property>
-    <property name="text">
-     <string/>
-    </property>
    </widget>
   </widget>
   <widget class="QMenuBar" name="menubar">
@@ -526,19 +524,19 @@ QPushButton:hover {
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>1808</width>
+     <width>1828</width>
      <height>22</height>
     </rect>
    </property>
    <widget class="QMenu" name="menuArchivo">
     <property name="title">
-     <string>Archivo</string>
+     <string>File</string>
     </property>
     <addaction name="actionDirectorio_de_trabajo"/>
    </widget>
    <widget class="QMenu" name="menuMelecula">
     <property name="title">
-     <string>Molécula</string>
+     <string>Molecule</string>
     </property>
     <addaction name="actionAgregar"/>
     <addaction name="actionEliminar"/>
@@ -552,21 +550,28 @@ QPushButton:hover {
    </widget>
    <widget class="QMenu" name="menuDocking_Vina">
     <property name="title">
-     <string>Docking (Vina)</string>
+     <string>Docking</string>
     </property>
-    <addaction name="actionWizard"/>
+    <addaction name="uiVinaAction"/>
    </widget>
    <widget class="QMenu" name="menuProyecto">
     <property name="title">
-     <string>Proyecto</string>
+     <string>Project</string>
     </property>
     <addaction name="actionNuevo_proyecto"/>
+    <addaction name="actionRemove"/>
    </widget>
    <widget class="QMenu" name="menuProtocolo">
     <property name="title">
-     <string>Protocolo</string>
+     <string>Protocol</string>
     </property>
     <addaction name="actionNuevo_protocolo"/>
+   </widget>
+   <widget class="QMenu" name="menuChEMBL">
+    <property name="title">
+     <string>ChEMBL</string>
+    </property>
+    <addaction name="uiChEMBL_explorer"/>
    </widget>
    <addaction name="menuArchivo"/>
    <addaction name="menuMelecula"/>
@@ -574,6 +579,7 @@ QPushButton:hover {
    <addaction name="menuProtocolo"/>
    <addaction name="menuGaussian"/>
    <addaction name="menuDocking_Vina"/>
+   <addaction name="menuChEMBL"/>
   </widget>
   <widget class="QStatusBar" name="statusbar"/>
   <action name="actionDirectorio_de_trabajo">
@@ -583,12 +589,12 @@ QPushButton:hover {
   </action>
   <action name="actionAgregar">
    <property name="text">
-    <string>Agregar</string>
+    <string>Open molecule file</string>
    </property>
   </action>
   <action name="actionEliminar">
    <property name="text">
-    <string>Eliminar</string>
+    <string>Remove</string>
    </property>
   </action>
   <action name="actionConfigurar">
@@ -616,14 +622,14 @@ QPushButton:hover {
     <string>Reanudar fila</string>
    </property>
   </action>
-  <action name="actionWizard">
+  <action name="uiVinaAction">
    <property name="text">
-    <string>Wizard</string>
+    <string>Vina</string>
    </property>
   </action>
   <action name="actionNuevo_proyecto">
    <property name="text">
-    <string>Nuevo proyecto</string>
+    <string>Create</string>
    </property>
   </action>
   <action name="actionNuevo_protocolo">
@@ -631,19 +637,29 @@ QPushButton:hover {
     <string>Nuevo protocolo</string>
    </property>
   </action>
+  <action name="uiChEMBL_explorer">
+   <property name="text">
+    <string>Open explorer</string>
+   </property>
+  </action>
+  <action name="actionRemove">
+   <property name="text">
+    <string>Remove</string>
+   </property>
+  </action>
  </widget>
  <tabstops>
   <tabstop>uiRemoveMoleculeButton</tabstop>
-  <tabstop>uiAddMoleculeButton</tabstop>
+  <tabstop>uiOpenFileButton</tabstop>
   <tabstop>uiMoleculesTree</tabstop>
  </tabstops>
  <resources/>
  <connections>
   <connection>
-   <sender>uiAddMoleculeButton</sender>
+   <sender>uiOpenFileButton</sender>
    <signal>clicked()</signal>
    <receiver>MainWindow</receiver>
-   <slot>add_molecule()</slot>
+   <slot>open_file()</slot>
    <hints>
     <hint type="sourcelabel">
      <x>455</x>
@@ -927,9 +943,41 @@ QPushButton:hover {
     </hint>
    </hints>
   </connection>
+  <connection>
+   <sender>uiChEMBL_explorer</sender>
+   <signal>triggered()</signal>
+   <receiver>MainWindow</receiver>
+   <slot>ChEMBL_explorer()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>-1</x>
+     <y>-1</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>903</x>
+     <y>494</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>uiVinaAction</sender>
+   <signal>triggered()</signal>
+   <receiver>MainWindow</receiver>
+   <slot>vina_setup()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>-1</x>
+     <y>-1</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>903</x>
+     <y>494</y>
+    </hint>
+   </hints>
+  </connection>
  </connections>
  <slots>
-  <slot>add_molecule()</slot>
+  <slot>open_file()</slot>
   <slot>remove_molecule()</slot>
   <slot>set_selected_mol()</slot>
   <slot>include_mol()</slot>
@@ -945,5 +993,7 @@ QPushButton:hover {
   <slot>projects_right_click()</slot>
   <slot>remove_project()</slot>
   <slot>search_molecule()</slot>
+  <slot>ChEMBL_explorer()</slot>
+  <slot>vina_setup()</slot>
  </slots>
 </ui>

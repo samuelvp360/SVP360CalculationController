@@ -4,19 +4,19 @@
 import shutil
 import sys
 from Components import Molecule, Optimization, Project, Docking
-from Worker import Worker, MolWorker
+from Worker import Worker, MolWorker, GenericWorker
 from Models import MoleculesModel, ProjectsModel, JobsModel
 from Calculations import Gaussian, MyVina
 from Plotters import DockingPlotter, RedockingPlotter
-from Explorers import FPExplorer, SimilarityExplorer, DescriptorsExplorer
+from Explorers import FPExplorer, SimilarityExplorer, \
+        DescriptorsExplorer, ChEMBLExplorer
 from PyQt5 import QtCore as qtc
 from PyQt5 import QtWidgets as qtw
-# from PyQt5 import QtGui as qtg
 from PyQt5 import uic
 from DB.molecules_db import MyZODB
-# from datetime import datetime
 from loguru import logger
-# import pandas as pd
+import pandas as pd
+# import numpy as np
 # from PyQt5.QtCore import pyqtRemoveInputHook
 
 
@@ -57,13 +57,6 @@ class MainWindow(qtw.QMainWindow):
         mol_tree_model = MoleculesModel(self.molecules_list, self.jobs_list)
         self.uiMoleculesTree.setModel(mol_tree_model.create_model())
         self.uiMoleculesTree.header().setSectionResizeMode(qtw.QHeaderView.ResizeToContents)
-        # to_calculate_descriptors = [
-            # mol for mol in self.molecules_list if not hasattr(mol, 'descriptors')
-        # ]
-        # if to_calculate_descriptors and not hasattr(self, 'mol_thread'):
-            # self.descriptors_calc(to_calculate_descriptors)
-        # elif hasattr(self, 'mol_thread') and self.mol_thread.isFinished():
-            # self.descriptors_calc(to_calculate_descriptors)
         # Projects
         self.projects_list = list(self.database.get_projects_db)
         proj_tree_model = ProjectsModel(self.projects_list)
@@ -178,79 +171,73 @@ class MainWindow(qtw.QMainWindow):
             self.database.commit()
             self.set_models()
 
-    @qtc.pyqtSlot(str, object, str)
-    def descriptors_workflow(self, inchi_key, conf, method):
-        molecule = self.database.get('molecules', inchi_key)
-        molecule.set_conformer(conf=conf, method=method)
-        self.database.commit()
-        self.set_models()
+    # @logger.catch
+    # def descriptors_calc(self, mol_list):
+        # self.mol_worker = MolWorker(tuple(mol_list))
+        # self.mol_thread = qtc.QThread()
+        # self.mol_worker.moveToThread(self.mol_thread)
+        # self.mol_thread.started.connect(self.mol_worker.start)
+        # self.mol_worker.finished.connect(self.mol_thread.quit)
+        # self.mol_worker.workflow.connect(self.descriptors_workflow)
+        # self.mol_thread.start()
 
-    @logger.catch
-    def descriptors_calc(self, mol_list):
-        self.mol_worker = MolWorker(tuple(mol_list))
-        self.mol_thread = qtc.QThread()
-        self.mol_worker.moveToThread(self.mol_thread)
-        self.mol_thread.started.connect(self.mol_worker.start)
-        self.mol_worker.finished.connect(self.mol_thread.quit)
-        self.mol_worker.workflow.connect(self.descriptors_workflow)
-        self.mol_thread.start()
-
-    def add_molecule(self):
+    def open_file(self):
         mol_path, _ = qtw.QFileDialog.getOpenFileNames(
             self, 'Select the molecule',
-            filter='*.mol;;*.mol2;; *.pdb;;*.txt;;*.smi;;*.log',
+            filter='*.mol;;*.mol2;;*.pdb;;*.txt;;*.smi;;*.log;;*.csv',
             options=qtw.QFileDialog.DontUseNativeDialog,
         )
         if mol_path:
-            for m in mol_path:
-                file_format = m.split('.')[-1]
-                if file_format in ('txt', 'smi'):
-                    with open(m, 'r') as file:
-                        smi_lines = file.readlines()
-                        molecules = []
-                        for smi in smi_lines:
-                            molecule = Molecule(smiles=smi)
-                            if molecule.mol:
-                                self.store_molecule(molecule)
-                                molecules.append(molecule)
-                            else:
-                                del molecule  # a message can be displayed
-                        reply = qtw.QMessageBox.question(
-                            self, 'Link to a project',
-                            f'Do you want to link these molecules to a project',
-                            qtw.QMessageBox.Yes | qtw.QMessageBox.No
-                        )
-                        if reply == qtw.QMessageBox.Yes:
-                            project_name, done = qtw.QInputDialog.getText(
-                                self, 'Project name',
-                                'Enter the name of the project:'
+            for path in mol_path:
+                file_format = path.split('.')[-1]
+                if file_format in ('txt', 'smi', 'csv'):
+                    if file_format == 'csv':
+                        df = pd.read_csv(path, sep=';')
+                        columns = [c.lower() for c in df.columns.values.tolist()]
+                        df.dropna(subset=['Smiles'], inplace=True)
+                        smi_lines = [
+                            f'{smiles} {name}' for smiles, name in \
+                            zip(
+                                df['Smiles'].values.tolist(),
+                                df['ChEMBL ID'].values.tolist()
                             )
-                            if done:
-                                exist = self.database.check('projects', project_name)
-                                if not exist:
-                                    self.uiProjectNameLine.setText(project_name)
-                                    self.create_project()
-                                self.selected_mol = molecules
-                                self.selected_project = [
-                                    p for p in self.projects_list \
-                                    if p.name == project_name
-                                ][0]
-                                self.include_mol()
-                        self.set_models()
-                        return
-                molecule = Molecule(path=m, file_format=file_format)
-                if molecule.mol:
-                    self.store_molecule(molecule)
-                    self.set_models()
+                        ]
+                    else:
+                        with open(path, 'r') as file:
+                            smi_lines = file.readlines()
+                    self.send_to_worker(
+                        Molecule, sequence=smi_lines,
+                        workflow=self.mol_workflow, mapping=True,
+                    )
                 else:
-                    del molecule
+                    molecule = Molecule(path, file_format)
+                    if molecule.mol:
+                        self.store_molecule(molecule)
+                        self.set_models()
+                    else:
+                        del molecule
+
+    def send_to_worker(
+        self, function, sequence, workflow, *,
+        kwargs={}, mapping=False
+    ):
+        self.worker = GenericWorker(
+            function, sequence=sequence,
+            mapping=mapping, **kwargs
+        )
+        self.thread = qtc.QThread()
+        self.worker.moveToThread(self.thread)
+        self.thread.started.connect(self.worker.run)
+        self.worker.finished.connect(self.thread.quit)
+        self.worker.workflow.connect(workflow)
+        self.thread.start()
 
     def create_project(self):
         name = self.uiProjectNameLine.text()
         exists = self.database.check('projects', name)
         if exists:
             qtw.QMessageBox.critical(
-                self, 'Proyecto existente', f'El proyecto con nombre: {name} ya existe en la base de datos. No será creado.'
+                self, 'Existing project', f'The project with name: {name} already exists in the database. It shall not be added.'
             )
         else:
             if name:
@@ -344,6 +331,41 @@ class MainWindow(qtw.QMainWindow):
         self.database.set('jobs', job.id, job)
         self.set_models()
 
+    @qtc.pyqtSlot(object, float)
+    def mol_workflow(self, results, progess):
+        for molecule in results:
+            exists = self.database.check('molecules', molecule.inchi_key)
+            if not exists:
+                self.database.set('molecules', molecule.inchi_key, molecule)
+            else:
+                qtw.QMessageBox.critical(
+                    self, 'Existing molecule', f'The molecule with inchi_key: {molecule.inchi_key} already exists in the database. It shall not be added.'
+                )
+        # por aquí
+        reply = qtw.QMessageBox.question(
+            self, 'Link to a project',
+            f'Do you want to link these molecules to a project',
+            qtw.QMessageBox.Yes | qtw.QMessageBox.No
+        )
+        if reply == qtw.QMessageBox.Yes:
+            project_name, done = qtw.QInputDialog.getText(
+                self, 'Project name',
+                'Enter the name of the project:'
+            )
+            if done:
+                project_name = project_name.strip()
+                exist = self.database.check('projects', project_name)
+                if not exist:
+                    self.uiProjectNameLine.setText(project_name)
+                    self.create_project()
+                self.selected_mol = results
+                self.selected_project = [
+                    p for p in self.projects_list \
+                    if p.name == project_name
+                ][0]
+                self.include_mol()
+        self.set_models()
+
     @logger.catch
     def start_project(self, log):
         # print(log)
@@ -414,18 +436,10 @@ class MainWindow(qtw.QMainWindow):
             bool, if True, the parameters for the first molecule will be used
             for all the others.
         """
-        if not group:
+        if not group and self.selected_mol:
             self.vina_controller = MyVina(self.selected_mol[0])
             self.vina_controller.submitted.connect(self.queue_manager)
-        else:
-            # Rg_pending = [
-                # mol for mol in self.selected_project.molecules \
-                # if mol.descriptors.loc[0, 'Rg'] == 0
-            # ]
-            # if Rg_pending:
-                # message = 'Some molecules in this project are pending for the calculation of Rg values. wait for a moment until they are done, then try again'
-                # qtw.QMessageBox.critical(self, 'Rg calculation pending', message)
-                # return
+        elif group and self.selected_project:
             self.vina_controller = MyVina(
                 self.selected_project.molecules[0],
                 project=self.selected_project
@@ -451,8 +465,6 @@ class MainWindow(qtw.QMainWindow):
                 self.queue_status = 'Paused'
 
     def pause_master_queue(self):
-        # if hasattr(self, 'worker'):
-            # self.worker.pause()
         self.queue_status = 'Paused'
 
     @qtc.pyqtSlot(int, str)
@@ -481,7 +493,6 @@ class MainWindow(qtw.QMainWindow):
             )
         self.uiStartQueueButton.setEnabled(False)
         self.uiPauseQueueButton.setEnabled(True)
-        # self.worker = Worker(tuple(self.master_queue))
         self.worker = Worker(next_job)
         self.queue_thread = qtc.QThread()
         self.worker.moveToThread(self.queue_thread)
@@ -491,7 +502,6 @@ class MainWindow(qtw.QMainWindow):
             lambda: self.uiStartQueueButton.setEnabled(True)
         )
         self.worker.workflow.connect(self.workflow)
-        # self.uiPauseQueueButton.clicked.connect(self.worker.pause)
         self.queue_thread.start()
         self.queue_status = 'Running'
 
@@ -507,6 +517,10 @@ class MainWindow(qtw.QMainWindow):
                 and p.calculations[0].get('redocking')
             ]
             self.docking_plotter = RedockingPlotter(projects, self.jobs_list)
+
+    def ChEMBL_explorer(self):
+        self.chembl_explorer = ChEMBLExplorer(self)
+        self.chembl_explorer.show()
 
     def display_data(self, kind):
         if kind == 'fingerprints':

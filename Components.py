@@ -6,6 +6,7 @@ import re
 import subprocess
 import numpy as np
 import pandas as pd
+# import dask.dataframe as dd
 from rdkit import Chem
 from rdkit.Chem import AllChem, Draw, Descriptors, rdMolAlign
 from rdkit.ML.Descriptors import MoleculeDescriptors
@@ -14,39 +15,51 @@ from rdkit.Geometry import Point3D
 from rdkit import RDLogger
 from openbabel import openbabel as ob
 from map4 import MAP4Calculator
-import tmap as tm
-from mhfp.encoder import MHFPEncoder
+# import tmap as tm
+# from mhfp.encoder import MHFPEncoder
 from persistent import Persistent
 from vina import Vina
 from datetime import datetime
+from requests.exceptions import ConnectionError
+try:
+    from chembl_webresource_client.new_client import new_client
+    conected = True
+except ConnectionError:
+    conected = False
 ob.obErrorLog.StopLogging()  # se puede cambiar por SetOutputLevel para logging
 
 
 class Molecule(Persistent):
 
-    def __init__(self, path=None, file_format=None, smiles=None):
+    def __init__(self, mol_input, file_format='smiles'):
         RDLogger.DisableLog('rdApp.*')  # avoid non crucial messages
         self.conf_dict = {}
         self.calculations = []
-        self.mol = self.get_rdkit_mol(path, file_format, smiles)
+        self.mol = self.get_rdkit_mol(mol_input, file_format)
         if self.mol:
             input_conf = self.mol.GetConformer()
             self.set_conformer(input_conf, 'input')
             self.inchi_key = Chem.MolToInchiKey(self.mol)
-            self.smiles = Chem.MolToSmiles(self.mol)
+            self.smiles = Chem.MolToSmiles(Chem.RemoveHs(self.mol))
             self.MW = Chem.rdMolDescriptors.CalcExactMolWt(self.mol)
             self.formula = Chem.rdMolDescriptors.CalcMolFormula(self.mol)
             self.__set_mol_picture()
             self.descriptors = self.get_descriptors
             self.fps_dict = self.get_fps_dict
 
-    def get_rdkit_mol(self, path, file_format, smiles):
-        if smiles:
-            return self.__from_smiles(smiles)
+    def __eq__(self, other):
+        if isinstance(other, Molecule):
+            return self.inchi_key == other.inchi_key or \
+                    self.smiles == other.smiles
+        return False
+
+    def get_rdkit_mol(self, mol_input, file_format):
+        if file_format == 'smiles':
+            return self.__from_smiles(mol_input)
         elif file_format in ('mol2', 'log'):
-            return self.__from_opt_file(path)
-        elif path:
-            return self.__from_path(path, file_format)
+            return self.__from_opt_file(mol_input)
+        else:
+            return self.__from_path(mol_input, file_format)
 
     def __canonize(self, mol):
         mol_neworder = tuple(zip(*sorted([(j, i) for i, j in enumerate(Chem.CanonicalRankAtoms(mol))])))[1]
@@ -71,7 +84,7 @@ class Molecule(Persistent):
         return mol
 
     def __from_path(self, path, file_format):
-        self.set_name(path, init=True)
+        self.set_name(path.split('/')[-1], init=True)
         converter = ob.OBConversion()
         converter.SetInAndOutFormats(file_format, 'can')
         mol_ob = ob.OBMol()
@@ -90,6 +103,8 @@ class Molecule(Persistent):
         self.mol_pic = f'molecules/{self.inchi_key}/{self.inchi_key}.png'
         if not os.path.exists(f'molecules/{self.inchi_key}/'):
             os.makedirs(f'molecules/{self.inchi_key}/')
+        else:
+            return  # to avoid redo the process for existing molecules
         Draw.MolToFile(
             Chem.MolFromSmiles(self.smiles), self.mol_pic, size=(300, 300)
         )
@@ -125,6 +140,7 @@ class Molecule(Persistent):
         self.conf_dict[method] = conf_id
         self._p_changed = True
 
+# GETTERS -------------------------------------------------------
     @property
     def get_descriptors(self):
         calc = MoleculeDescriptors.MolecularDescriptorCalculator(
@@ -142,43 +158,54 @@ class Molecule(Persistent):
     @property
     def get_fps_dict(self):
         fps_dict = {}
-        mol = Chem.MolFromSmiles(Chem.MolToSmiles(self.mol))
-        mol = Chem.AddHs(mol)
-        AllChem.EmbedMolecule(mol, randomSeed=0xf00d)
-        path = f'molecules/{self.inchi_key}/fingerprints/'
-        if not os.path.exists(path):
-            os.makedirs(path)
+        # mol = Chem.MolFromSmiles(Chem.MolToSmiles(self.mol))
+        # mol = Chem.AddHs(mol)
+        # AllChem.EmbedMolecule(mol, randomSeed=0xf00d)
+        mol = self.get_2d_mol
+        Chem.Kekulize(mol, clearAromaticFlags=True)
+        # path = f'molecules/{self.inchi_key}/fingerprints/'
+        # if not os.path.exists(path):
+            # os.makedirs(path)
+        # else:
+            # return  # to avoid redo the process for existing molecules
         for i in range(1,4):
-            morgan_bit_info = {}
+            # morgan_bit_info = {}
             fps_dict[f'Morgan{i}'] = np.array(Chem.rdMolDescriptors.GetMorganFingerprintAsBitVect(
-                mol, radius=i, bitInfo=morgan_bit_info
+                mol, radius=i  #, bitInfo=morgan_bit_info
             ))
-            for bit in morgan_bit_info.keys():
-                svg_img = Draw.DrawMorganBit(
-                    self.mol, bit, morgan_bit_info,
-                )
-                with open(f'molecules/{self.inchi_key}/fingerprints/morgan{i}_{bit}.svg', 'w') as file:
-                    file.write(svg_img)
+            # for bit in morgan_bit_info.keys():
+                # svg_img = Draw.DrawMorganBit(
+                    # mol, bit, morgan_bit_info,
+                # )
+                # with open(f'molecules/{self.inchi_key}/fingerprints/morgan{i}_{bit}.svg', 'w') as file:
+                    # file.write(svg_img)
         for i in ('chiral', 'achiral'):
             chirality = True if i == 'chiral' else False
             fps_dict[f'Hashed Atom Pairs ({i})'] = np.array(Chem.rdMolDescriptors.GetHashedAtomPairFingerprintAsBitVect(
                 mol, includeChirality=chirality
             ))
-        rdkit_bit_info = {}
-        rdkit_fp = Chem.RDKFingerprint(mol, maxPath=5, bitInfo=rdkit_bit_info)
+        # rdkit_bit_info = {}
+        rdkit_fp = Chem.RDKFingerprint(mol, maxPath=5)  #, bitInfo=rdkit_bit_info)
         fps_dict['RDKit'] = np.array(rdkit_fp)
-        for bit in rdkit_bit_info.keys():
-            svg_img = Draw.DrawRDKitBit(
-                mol, bit, rdkit_bit_info,
-            )
-            with open(f'molecules/{self.inchi_key}/fingerprints/rdkit_{bit}.svg', 'w') as file:
-                file.write(svg_img)
+        # for bit in rdkit_bit_info.keys():
+            # try:
+                # svg_img = Draw.DrawRDKitBit(
+                    # mol, bit, rdkit_bit_info,
+                # )
+            # except RuntimeError:
+                # continue
+            # with open(f'molecules/{self.inchi_key}/fingerprints/rdkit_{bit}.svg', 'w') as file:
+                # file.write(svg_img)
         fps_dict['Layered'] = np.array(Chem.rdmolops.LayeredFingerprint(mol))
         fps_dict['Pattern'] = np.array(Chem.rdmolops.PatternFingerprint(mol))
         fps_dict['Hasehd Topological Torsions'] = np.array(Chem.rdMolDescriptors.GetHashedTopologicalTorsionFingerprintAsBitVect(mol))
         calculator = MAP4Calculator(dimensions=2048, is_folded=True)
-        fps_dict[f'MAP4 (folded)'] = calculator.calculate(mol)
+        fps_dict['MAP4 (folded)'] = calculator.calculate(mol)
         return fps_dict
+
+    @property
+    def get_2d_mol(self):
+        return Chem.MolFromSmiles(self.smiles)
 
     def __create_conformers(self):
         new_mol = Chem.AddHs(self.mol)
@@ -379,13 +406,18 @@ class Project(Persistent):
         self.grid_img = f'projects/{self.name}/{self.name}.png'
         self.__create_grid_img()
 
+    def __eq__(self, other):
+        if isinstance(other, Project):
+            return self.name == other.name
+        return False
+
     def __create_grid_img(self):
         if not os.path.exists(f'projects/{self.name}/'):
             os.makedirs(f'projects/{self.name}/')
         if self.molecules:
             img = Draw.MolsToGridImage(
                 [Chem.MolFromSmiles(m.smiles) for m in self.molecules],
-                molsPerRow=3,
+                molsPerRow=5,
                 legends=[m.get_name for m in self.molecules]
             )
             img.save(self.grid_img)
@@ -550,7 +582,6 @@ class Docking(Persistent):
             file.write(conf)
 
 
-
 class Similarity():
 
     def __init__(self, fps, names):
@@ -582,6 +613,7 @@ class Similarity():
         df.set_axis(self.names, axis='index', inplace=True)
         return df
 
+    @classmethod
     def tanimoto(self, i, j):
         a = np.sum(i & j)
         b = np.sum(i) - a
@@ -627,3 +659,68 @@ class Similarity():
     def cosine(self, i, j):
         return np.dot(i, j) / (np.linalg.norm(i) * np.linalg.norm(j))
 
+
+class MyChembl():
+
+    def __init__(self):
+        self.target = new_client.target if conected else None
+        self.activity = new_client.activity if conected else None
+        self.molecule = new_client.molecule if conected else None
+
+    def get_target_id(self, target_name):
+        target_id = self.target.filter(pref_name__icontains=target_name).only(
+            ['organism', 'pref_name', 'target_chembl_id']
+        )
+        return pd.DataFrame(target_id) if target_id else pd.DataFrame()
+
+    def get_activities_for_a_target(self, target_id):
+        columns = [
+            'molecule_chembl_id', 'standard_type', 'standard_relation',
+            'standard_units', 'value'
+        ]
+        query = self.activity.filter(target_chembl_id=target_id).only(columns).order_by('type')
+        return query
+
+    def get_query_df(self, page):
+        df = pd.DataFrame.from_records(page)
+        df.dropna(inplace=True, subset=[
+            'standard_type', 'standard_units',
+            'standard_relation', 'value'
+        ])
+        df.drop(columns=['relation', 'type', 'units'], inplace=True)
+        return df
+
+    def get_similarities(self, chembl_id, fp_method, mol_ref):
+        structures = self.molecule.get(chembl_id).get('molecule_structures')
+        if structures:
+            smiles = structures.get('canonical_smiles')
+            mol_prob = Chem.MolFromSmiles(smiles)
+            if 'Morgan' in fp_method:
+                radius = int(fp_method[-1])
+                mol_prob_fp = np.array(
+                    Chem.rdMolDescriptors.GetMorganFingerprintAsBitVect(
+                        mol_prob, radius=radius
+                ))
+                mol_ref_fp = np.array(
+                    Chem.rdMolDescriptors.GetMorganFingerprintAsBitVect(
+                        mol_ref, radius=radius
+                ))
+            elif 'Hashed Atom Pairs' in fp_method:
+                chirality = True if 'chiral' in fp_method else False
+                mol_prob_fp = np.array(
+                    Chem.rdMolDescriptors.GetHashedAtomPairFingerprintAsBitVect(
+                        mol_prob, includeChirality=chirality
+                    ))
+                mol_ref_fp = np.array(
+                    Chem.rdMolDescriptors.GetHashedAtomPairFingerprintAsBitVect(
+                        mol_ref, includeChirality=chirality
+                    ))
+            elif fp_method == 'RDKit':
+                mol_prob_fp = np.array(Chem.RDKFingerprint(mol_prob, maxPath=5))
+                mol_ref_fp = np.array(Chem.RDKFingerprint(mol_ref, maxPath=5))
+            similarity = Similarity.tanimoto(mol_ref_fp, mol_prob_fp)
+            result = {
+                'similarity': round(similarity, 3),
+                'smiles': smiles,
+            }
+        return result

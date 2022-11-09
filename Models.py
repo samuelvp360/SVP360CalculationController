@@ -10,9 +10,14 @@ from loguru import logger
 class PandasModel(qtc.QAbstractTableModel):
     '''Generic model to populate a pandas containing model'''
 
-    def __init__(self, data):
+    def __init__(self, data, chunk=1):
         super().__init__()
-        self.data = data
+        if chunk == 1:
+            self.data = data if data.shape[0] <= 101 else data[:100]
+        else:
+            self.data = data[(chunk - 1) * 101:] \
+                    if data.shape[0] <= (chunk * 100) + 1 \
+                    else data[(chunk - 1) * 101:chunk * 101]
 
     def data(self, index, role):
         value = self.data.iloc[index.row(), index.column()]
@@ -81,7 +86,7 @@ class MoleculesModel(qtg.QStandardItemModel):
             for mol in molecules_list:
                 m_std_item_2 = StandardItem(img=mol.mol_pic)
                 m_std_item_1 = StandardItem(
-                    f'{mol.get_name:60}', font_size=14,
+                    f'{mol.get_name:30}', font_size=14,
                     set_bold=True, color='#236e96'
                 )
                 summary = StandardItem(

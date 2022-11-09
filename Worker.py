@@ -3,7 +3,7 @@
 
 import os
 import subprocess
-import multiprocessing
+from concurrent.futures import ProcessPoolExecutor, ThreadPoolExecutor
 from PyQt5 import QtCore as qtc
 from vina import Vina
 from loguru import logger
@@ -25,11 +25,7 @@ class Worker(qtc.QObject):
 
     @qtc.pyqtSlot()
     def start_queue(self):
-        # for job in self.master_queue:
-            # self.job = job
         try:
-            # if self.paused:
-                # break
             if self.job.type == 'Docking':
                 done = self.check_vina()
             elif self.job.type in ('Optimization', 'Energy', 'Frequency'):
@@ -261,4 +257,39 @@ class MolWorker(qtc.QObject):
         self.finished.emit()
         self.deleteLater()
 
+
+class GenericWorker(qtc.QObject):
+
+    finished = qtc.pyqtSignal()
+    workflow = qtc.pyqtSignal(object, float)
+
+    def __init__(self, function, sequence=[], mapping=False, **kwargs):
+        super().__init__(parent=None)
+        self.function = function
+        self.kwargs = copy.deepcopy(kwargs)
+        self.sequence = copy.deepcopy(sequence)
+        self.stopped = False
+        self.mapping = mapping
+
+    @qtc.pyqtSlot()
+    def run(self):
+        if self.mapping:
+            with ProcessPoolExecutor() as executor:
+                results = [r for r in executor.map(self.function, self.sequence)]
+            self.workflow.emit(results, 100)
+        else:
+            for i, item in enumerate(self.sequence):
+                if self.paused:
+                    break
+                try:
+                    result = self.function(item, **self.kwargs)
+                    process = (i + 1) / len(self.sequence) * 100
+                    self.workflow.emit(result, process)
+                except:
+                    self.workflow.emit(False, False)
+        self.finished.emit()
+
+    @qtc.pyqtSlot()
+    def pause(self):
+        self.paused = True
 
