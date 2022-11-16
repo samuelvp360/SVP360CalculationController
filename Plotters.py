@@ -16,6 +16,7 @@ from matplotlib.figure import Figure
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg, NavigationToolbar2QT as NavigationToolbar
 from Models import PandasModel
 from sklearn.metrics import r2_score
+from loguru import logger
 matplotlib.use('Qt5Agg')
 
 
@@ -486,10 +487,12 @@ class SimilMap(qtw.QWidget):
     def __init__(self, ref, prob, fp_type, ref_name='NN', prob_name='NN'):
         super().__init__()
         uic.loadUi('Views/uiSimilMap.ui', self)
-        qimage = self.get_simil_map(ref, prob, fp_type)
+        self.img = self.get_simil_map(ref, prob, fp_type)
+        qimage = qtg.QPixmap.fromImage(ImageQt.ImageQt(self.img))
         self.uiSimilMapLabel.setPixmap(qimage)
         self.uiLabel.setText(
-            f'Ref: {ref_name}\tProb: {prob_name}\nFP type: {fp_type}')
+            f'Ref: {ref_name}\tProb: {prob_name}\nFP type: {fp_type}'
+        )
         self.show()
 
     def save_image(self):
@@ -503,8 +506,9 @@ class SimilMap(qtw.QWidget):
                 filename += '.png'
             self.img.save(filename)
 
-    def get_simil_map(self, ref, prob, fp_type):
-        d = Draw.MolDraw2DCairo(550, 550)
+    @classmethod
+    def get_simil_map(self, ref, prob, fp_type, size=(550, 550)):
+        d = Draw.MolDraw2DCairo(*size)
         if 'Morgan' in fp_type:
             radius = int(fp_type[-1])
             simil_function = lambda m, i: SimilarityMaps.GetMorganFingerprint(
@@ -529,8 +533,6 @@ class SimilMap(qtw.QWidget):
         d.FinishDrawing()
         data = d.GetDrawingText()
         bio = io.BytesIO(data)
-        self.img = Image.open(bio)
-        qimage = qtg.QPixmap.fromImage(ImageQt.ImageQt(self.img))
-        return qimage
+        return Image.open(bio)
 
 

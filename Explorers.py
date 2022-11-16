@@ -77,7 +77,9 @@ class FPExplorer(qtw.QWidget):
     def depict_fp(self, index):
         has_bit = self.df.iloc[index.row(), index.column()]
         if not has_bit or not self.fp_type.startswith('Morgan'):
-            self.uiFPLabel.setPixmap(qtg.QPixmap())
+            self.uiFPLabel.setPixmap(qtg.QPixmap(
+                self.project.molecules[index.row()].mol_img
+            ))
             return
         all_bits = self.df.columns.values.tolist()
         bit_id = int(all_bits[index.column()])
@@ -87,7 +89,13 @@ class FPExplorer(qtw.QWidget):
         fp = Chem.rdMolDescriptors.GetMorganFingerprintAsBitVect(
             molecule, fp_radius, 2048, bitInfo=info
         )
-        atom_id, radius = info[bit_id][0]
+        this_bit = info.get(bit_id)
+        if not this_bit:
+            self.uiFPLabel.setPixmap(qtg.QPixmap(
+                self.project.molecules[index.row()].mol_img
+            ))
+            return
+        atom_id, radius = this_bit[0]
         if radius > 0:
             env = Chem.FindAtomEnvironmentOfRadiusN(molecule, radius , atom_id)
             atoms_to_use = []
@@ -180,6 +188,8 @@ class SimilarityExplorer(qtw.QWidget):
         self.heatmap.show()
 
     def get_HCL(self, clus_num=0):
+        if self.simil_df.shape[0] < 4:
+            return
         simil_matrix = self.simil_df.to_numpy()
         linked = linkage(simil_matrix, 'single')
         n_cluster_to_test = range(2, 11)
@@ -305,6 +315,10 @@ class ChEMBLExplorer(qtw.QWidget):
             self.uiProgressBar.setValue(process)
             self.pending = 100 - process
             if not self.pending:
+                self.activities.loc[:, 'value'] = pd.to_numeric(
+                    self.activities['value'], downcast='float'
+                )
+                self.homogenize_units()
                 self.uiProgressBar.setVisible(False)
             self.display_available_types()
         else:
@@ -380,7 +394,7 @@ class ChEMBLExplorer(qtw.QWidget):
         self.thread.started.connect(self.worker.run)
         self.worker.finished.connect(self.thread.quit)
         self.worker.workflow.connect(workflow)
-        self.uiCancelProcessButton.clicked.connect(self.worker.stop)
+        self.uiCancelProcessButton.clicked.connect(self.worker.pause)
         self.thread.start()
 
     def display_available_types(self):
@@ -400,7 +414,18 @@ class ChEMBLExplorer(qtw.QWidget):
     def cancel_process(self):
         self.pending = 0
         self.uiProgressBar.setVisible(False)
-        # self.search_target()
+
+    def homogenize_units(self):
+        mask = self.activities['standard_units'] == 'nM'
+        nM_to_uM = self.activities[mask].copy()
+        nM_to_uM.loc[:, 'value'] = nM_to_uM.loc[:, 'value'] / 1000
+        nM_to_uM.loc[:, 'standard_units'] = 'uM'
+        self.activities.update(nM_to_uM)
+        mask = self.activities['standard_units'] == 'mM'
+        mM_to_uM = self.activities[mask].copy()
+        mM_to_uM.loc[:, 'value'] = mM_to_uM.loc[:, 'value'] * 1000
+        mM_to_uM.loc[:, 'standard_units'] = 'uM'
+        self.activities.update(mM_to_uM)
 
     def filter_by_type(self):
         indexes = self.uiStdTypeTable.selectedIndexes()
@@ -410,7 +435,7 @@ class ChEMBLExplorer(qtw.QWidget):
                 self.activities['standard_type'] == i for i in selected_items
             ]
             self.type_filter = reduce(lambda x, y: x + y, filters)
-            self.filtered = self.activities.loc[self.type_filter]
+            self.filtered = self.activities.loc[self.type_filter].copy()
             self.filtered.reset_index(inplace=True, drop=True)
             self.available_units = pd.unique(self.filtered['standard_units'])
             items = pd.Series({
@@ -436,7 +461,7 @@ class ChEMBLExplorer(qtw.QWidget):
             self.type_unit_filter = reduce(
                 lambda x, y: x * y, [self.type_filter, self.unit_filter]
             )
-            self.filtered = self.activities.loc[self.type_unit_filter]
+            self.filtered = self.activities.loc[self.type_unit_filter].copy()
             self.filtered.reset_index(inplace=True, drop=True)
             self.available_relations = pd.unique(self.filtered['standard_relation'])
             items = pd.Series({
@@ -464,7 +489,7 @@ class ChEMBLExplorer(qtw.QWidget):
                     self.type_filter, self.unit_filter, self.relation_filter
                 ]
             )
-            self.filtered = self.activities.loc[self.type_unit_relation_filter]
+            self.filtered = self.activities.loc[self.type_unit_relation_filter].copy()
             self.filtered.reset_index(inplace=True, drop=True)
             self.current_chunk = 1
             self.display_chunk()
@@ -498,27 +523,39 @@ class ChEMBLExplorer(qtw.QWidget):
         self.uiPageLabel.setText(f'Page: {self.current_chunk}/{self.chunks}')
         filtered_model = PandasModel(self.filtered, chunk=self.current_chunk)
         self.uiFilteredTable.setModel(filtered_model)
-        self.uiFilteredTable.resizeColumnsToContents()
         self.uiFilteredTable.resizeRowsToContents()
+        self.uiFilteredTable.resizeColumnsToContents()
 
-    def display_simil_map(self, index):
-        if index and 'smiles' in self.filtered.columns.values.tolist():
-            if hasattr(self, 'simil_map'):
-                self.simil_map.close()
-            prob_idx = index.row()
-            smiles = self.filtered.loc[prob_idx, 'smiles']
+    def display_selected_mol(self, index):
+        has_smiles = 'smiles' in self.filtered.columns.values.tolist()
+        if index and has_smiles:
+            smiles = self.filtered.loc[index.row(), 'smiles']
             mol_prob = Chem.MolFromSmiles(smiles)
             mol_ref = self.mol_ref.get_2d_mol
-            self.simil_map = SimilMap(
-                mol_ref, mol_prob, self.fp_method
+            self.img = SimilMap.get_simil_map(
+                mol_ref, mol_prob, self.fp_method, size=(350, 350)
             )
+            qimage = qtg.QPixmap.fromImage(ImageQt.ImageQt(self.img))
+            self.uiSelectedMoleculeLabel.setPixmap(qimage)
+            self.uiSaveImageButton.setEnabled(True)
+        else:
+            self.uiSaveImageButton.setEnabled(False)
+
+    def save_img(self):
+        filename, extension = qtw.QFileDialog.getSaveFileName(
+            self, 'Save image', 'Image.png', 'PNG (*.png)',
+            options=qtw.QFileDialog.DontUseNativeDialog,
+        )
+        if filename:
+            has_extension = '.' in filename
+            if not has_extension:
+                filename += '.png'
+            self.img.save(filename)
 
     def next_chunk(self):
         self.current_chunk += 1
         self.uiPrevChunkButton.setEnabled(True)
         self.uiPageLabel.setText(f'Page: {self.current_chunk}/{self.chunks}')
-        # if self.current_chunk == self.chunks:
-            # self.uiNextChunkButton.setEnabled(False)
         self.display_chunk()
 
     def prev_chunk(self):
@@ -537,7 +574,7 @@ class ChEMBLExplorer(qtw.QWidget):
         )
         if mol_path:
             file_format = mol_path.split('.')[-1]
-            mol = Molecule(path=mol_path, file_format=file_format)
+            mol = Molecule(mol_path, file_format=file_format)
             self.mol_ref_in_db = self.parent.database.check('molecules', mol.inchi_key)
             if self.mol_ref_in_db:
                 self.mol_ref = self.parent.database.get(
@@ -545,8 +582,9 @@ class ChEMBLExplorer(qtw.QWidget):
                 )
             else:
                 self.mol_ref = mol
+            self.uiMoleculeLabel.setEnabled(True)
             self.uiMoleculeLabel.setPixmap(
-                qtg.QPixmap(self.mol_ref.mol_pic)
+                qtg.QPixmap(self.mol_ref.mol_img)
             )
             self.uiThresSpin.setEnabled(True)
             self.uiFPMethodCombo.setEnabled(True)
@@ -555,15 +593,18 @@ class ChEMBLExplorer(qtw.QWidget):
 
     def remove_filter_molecule(self):
         self.mol_ref = None
-        self.uiMoleculeLabel.setPixmap(qtg.QPixmap(
-            self.mol_ref.mol_pic
-        ))
+        self.uiMoleculeLabel.setEnabled(False)
         self.uiRemoveMoleculeButton.setEnabled(False)
         self.uiThresSpin.setEnabled(False)
         self.uiFPMethodCombo.setEnabled(False)
+        self.uiFilterByMoleculeButton.setEnabled(False)
 
     def drop_molecule(self):
-        pass
+        index = self.uiFilteredTable.currentIndex()
+        if index:
+            self.filtered.drop(index=index.row(), inplace=True)
+            self.filtered.reset_index(inplace=True, drop=True)
+            self.display_chunk()
 
     def set_fp_method(self, value):
         self.fp_method = value
@@ -572,9 +613,11 @@ class ChEMBLExplorer(qtw.QWidget):
         else:
             self.uiFilterByMoleculeButton.setEnabled(False)
 
+    def send_molecules(self):
+        pass
+
 
 # TODO
 # 1. preguntar si quiero conservar la molécula de referencia creada,
 # siempre y cuando no estuviera previamente en la BD
-# 2. Implementar mapa de similaridad
 # 3. 

@@ -107,30 +107,13 @@
    <widget class="QWidget" name="layoutWidget">
     <property name="geometry">
      <rect>
-      <x>923</x>
-      <y>38</y>
-      <width>316</width>
-      <height>411</height>
+      <x>875</x>
+      <y>30</y>
+      <width>352</width>
+      <height>421</height>
      </rect>
     </property>
     <layout class="QGridLayout" name="gridLayout">
-     <item row="3" column="0" rowspan="2" colspan="4">
-      <widget class="QLabel" name="uiMoleculeLabel">
-       <property name="text">
-        <string/>
-       </property>
-      </widget>
-     </item>
-     <item row="1" column="0" colspan="4">
-      <widget class="QPushButton" name="uiUploadMoleculeButton">
-       <property name="enabled">
-        <bool>false</bool>
-       </property>
-       <property name="text">
-        <string>Upload molecule</string>
-       </property>
-      </widget>
-     </item>
      <item row="0" column="2" colspan="2">
       <widget class="QSpinBox" name="uiThresSpin">
        <property name="enabled">
@@ -146,37 +129,34 @@
         <number>1</number>
        </property>
        <property name="value">
-        <number>70</number>
+        <number>50</number>
        </property>
       </widget>
      </item>
      <item row="2" column="0" colspan="4">
-      <widget class="QComboBox" name="uiFPMethodCombo">
-       <property name="enabled">
-        <bool>false</bool>
-       </property>
-      </widget>
-     </item>
-     <item row="0" column="0">
-      <widget class="QLabel" name="label_5">
-       <property name="maximumSize">
-        <size>
-         <width>16777215</width>
-         <height>30</height>
-        </size>
-       </property>
+      <widget class="QLabel" name="uiMoleculeLabel">
        <property name="text">
-        <string>By similarity</string>
+        <string/>
        </property>
       </widget>
      </item>
-     <item row="6" column="0" colspan="4">
+     <item row="3" column="0">
       <widget class="QPushButton" name="uiRemoveMoleculeButton">
        <property name="enabled">
         <bool>false</bool>
        </property>
        <property name="text">
         <string>Remove molecule</string>
+       </property>
+      </widget>
+     </item>
+     <item row="3" column="1" colspan="3">
+      <widget class="QPushButton" name="uiFilterByMoleculeButton">
+       <property name="enabled">
+        <bool>false</bool>
+       </property>
+       <property name="text">
+        <string>Start filtering</string>
        </property>
       </widget>
      </item>
@@ -193,13 +173,33 @@
        </property>
       </widget>
      </item>
-     <item row="5" column="0" colspan="4">
-      <widget class="QPushButton" name="uiFilterByMoleculeButton">
+     <item row="0" column="0">
+      <widget class="QLabel" name="label_5">
+       <property name="maximumSize">
+        <size>
+         <width>16777215</width>
+         <height>30</height>
+        </size>
+       </property>
+       <property name="text">
+        <string>By similarity</string>
+       </property>
+      </widget>
+     </item>
+     <item row="1" column="1" colspan="3">
+      <widget class="QComboBox" name="uiFPMethodCombo">
+       <property name="enabled">
+        <bool>false</bool>
+       </property>
+      </widget>
+     </item>
+     <item row="1" column="0">
+      <widget class="QPushButton" name="uiUploadMoleculeButton">
        <property name="enabled">
         <bool>false</bool>
        </property>
        <property name="text">
-        <string>Start filtering</string>
+        <string>Upload molecule</string>
        </property>
       </widget>
      </item>
@@ -209,9 +209,9 @@
     <property name="geometry">
      <rect>
       <x>10</x>
-      <y>35</y>
-      <width>901</width>
-      <height>416</height>
+      <y>30</y>
+      <width>856</width>
+      <height>421</height>
      </rect>
     </property>
     <layout class="QVBoxLayout" name="verticalLayout_6">
@@ -329,9 +329,12 @@
      <rect>
       <x>10</x>
       <y>55</y>
-      <width>1031</width>
+      <width>776</width>
       <height>401</height>
      </rect>
+    </property>
+    <property name="sizeAdjustPolicy">
+     <enum>QAbstractScrollArea::AdjustToContents</enum>
     </property>
     <property name="selectionMode">
      <enum>QAbstractItemView::SingleSelection</enum>
@@ -340,10 +343,10 @@
    <widget class="QPushButton" name="uiDropMoleculeButton">
     <property name="geometry">
      <rect>
-      <x>1715</x>
+      <x>10</x>
       <y>25</y>
-      <width>151</width>
-      <height>36</height>
+      <width>201</width>
+      <height>25</height>
      </rect>
     </property>
     <property name="minimumSize">
@@ -359,7 +362,7 @@
    <widget class="QWidget" name="layoutWidget">
     <property name="geometry">
      <rect>
-      <x>695</x>
+      <x>440</x>
       <y>25</y>
       <width>344</width>
       <height>29</height>
@@ -456,9 +459,9 @@
    <widget class="QWidget" name="layoutWidget">
     <property name="geometry">
      <rect>
-      <x>1050</x>
+      <x>1165</x>
       <y>25</y>
-      <width>656</width>
+      <width>541</width>
       <height>431</height>
      </rect>
     </property>
@@ -491,9 +494,9 @@
    <widget class="QPushButton" name="uiCancelProcessButton">
     <property name="geometry">
      <rect>
-      <x>1533</x>
+      <x>1535</x>
       <y>460</y>
-      <width>171</width>
+      <width>159</width>
       <height>25</height>
      </rect>
     </property>
@@ -501,6 +504,79 @@
      <string>Cancel</string>
     </property>
    </widget>
+   <widget class="QPushButton" name="uiSendMoleculesButton">
+    <property name="geometry">
+     <rect>
+      <x>1715</x>
+      <y>450</y>
+      <width>159</width>
+      <height>40</height>
+     </rect>
+    </property>
+    <property name="minimumSize">
+     <size>
+      <width>0</width>
+      <height>25</height>
+     </size>
+    </property>
+    <property name="text">
+     <string>Send molecules &gt;&gt;</string>
+    </property>
+   </widget>
+   <widget class="QFrame" name="frame">
+    <property name="geometry">
+     <rect>
+      <x>795</x>
+      <y>95</y>
+      <width>360</width>
+      <height>360</height>
+     </rect>
+    </property>
+    <property name="frameShape">
+     <enum>QFrame::StyledPanel</enum>
+    </property>
+    <property name="frameShadow">
+     <enum>QFrame::Raised</enum>
+    </property>
+    <widget class="QLabel" name="uiSelectedMoleculeLabel">
+     <property name="geometry">
+      <rect>
+       <x>5</x>
+       <y>5</y>
+       <width>350</width>
+       <height>350</height>
+      </rect>
+     </property>
+     <property name="text">
+      <string/>
+     </property>
+    </widget>
+   </widget>
+   <widget class="QPushButton" name="uiSaveImageButton">
+    <property name="enabled">
+     <bool>false</bool>
+    </property>
+    <property name="geometry">
+     <rect>
+      <x>795</x>
+      <y>29</y>
+      <width>361</width>
+      <height>56</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>Save image</string>
+    </property>
+   </widget>
+   <zorder>frame</zorder>
+   <zorder>uiFilteredTable</zorder>
+   <zorder>layoutWidget</zorder>
+   <zorder>layoutWidget</zorder>
+   <zorder>uiProgressBar</zorder>
+   <zorder>uiDropMoleculeButton</zorder>
+   <zorder>uiCancelProcessButton</zorder>
+   <zorder>uiSendMoleculesButton</zorder>
+   <zorder>uiSaveImageButton</zorder>
   </widget>
   <widget class="QWidget" name="layoutWidget">
    <property name="geometry">
@@ -523,8 +599,8 @@
    <slot>select_target()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>424</x>
-     <y>407</y>
+     <x>425</x>
+     <y>438</y>
     </hint>
     <hint type="destinationlabel">
      <x>410</x>
@@ -603,7 +679,7 @@
    <slot>prev_chunk()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>920</x>
+     <x>665</x>
      <y>522</y>
     </hint>
     <hint type="destinationlabel">
@@ -619,7 +695,7 @@
    <slot>next_chunk()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>1061</x>
+     <x>806</x>
      <y>522</y>
     </hint>
     <hint type="destinationlabel">
@@ -667,8 +743,8 @@
    <slot>upload_filter_molecule()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>1574</x>
-     <y>120</y>
+     <x>1527</x>
+     <y>112</y>
     </hint>
     <hint type="destinationlabel">
      <x>1913</x>
@@ -699,8 +775,8 @@
    <slot>set_fp_method()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>1574</x>
-     <y>151</y>
+     <x>1662</x>
+     <y>112</y>
     </hint>
     <hint type="destinationlabel">
      <x>1684</x>
@@ -715,28 +791,12 @@
    <slot>filter_by_molecule()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>1779</x>
-     <y>387</y>
+     <x>1867</x>
+     <y>474</y>
     </hint>
     <hint type="destinationlabel">
      <x>1835</x>
      <y>-4</y>
-    </hint>
-   </hints>
-  </connection>
-  <connection>
-   <sender>uiFilteredTable</sender>
-   <signal>doubleClicked(QModelIndex)</signal>
-   <receiver>Form</receiver>
-   <slot>display_simil_map()</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>616</x>
-     <y>576</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>558</x>
-     <y>-15</y>
     </hint>
    </hints>
   </connection>
@@ -753,6 +813,54 @@
     <hint type="destinationlabel">
      <x>1793</x>
      <y>-10</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>groupBox_2</sender>
+   <signal>clicked()</signal>
+   <receiver>Form</receiver>
+   <slot>send_molecules()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>1794</x>
+     <y>564</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>1903</x>
+     <y>137</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>uiFilteredTable</sender>
+   <signal>clicked(QModelIndex)</signal>
+   <receiver>Form</receiver>
+   <slot>display_selected_mol()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>340</x>
+     <y>670</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>645</x>
+     <y>127</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>uiSaveImageButton</sender>
+   <signal>clicked()</signal>
+   <receiver>Form</receiver>
+   <slot>save_img()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>996</x>
+     <y>931</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>930</x>
+     <y>1005</y>
     </hint>
    </hints>
   </connection>
@@ -773,5 +881,8 @@
   <slot>set_fp_method()</slot>
   <slot>display_simil_map()</slot>
   <slot>plot_histogram()</slot>
+  <slot>send_molecules()</slot>
+  <slot>display_selected_mol()</slot>
+  <slot>save_img()</slot>
  </slots>
 </ui>

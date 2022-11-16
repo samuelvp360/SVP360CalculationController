@@ -5,6 +5,7 @@ from PyQt5 import QtGui as qtg
 from Views import resources
 from rdkit.Chem import Draw
 from loguru import logger
+# from PIL import Image, ImageQt
 
 
 class PandasModel(qtc.QAbstractTableModel):
@@ -13,11 +14,11 @@ class PandasModel(qtc.QAbstractTableModel):
     def __init__(self, data, chunk=1):
         super().__init__()
         if chunk == 1:
-            self.data = data if data.shape[0] <= 101 else data[:100]
+            self.data = data if data.shape[0] <= 100 else data[:100]
         else:
-            self.data = data[(chunk - 1) * 101:] \
-                    if data.shape[0] <= (chunk * 100) + 1 \
-                    else data[(chunk - 1) * 101:chunk * 101]
+            self.data = data[(chunk - 1) * 100:] \
+                    if data.shape[0] <= (chunk * 100) \
+                    else data[(chunk - 1) * 100:chunk * 100]
 
     def data(self, index, role):
         value = self.data.iloc[index.row(), index.column()]
@@ -56,8 +57,8 @@ class PandasModel(qtc.QAbstractTableModel):
 class StandardItem(qtg.QStandardItem):
 
     def __init__(
-        self, txt='', img='', font_size=12, set_bold=False,
-        color='black'
+        self, txt='', img='', font_size=12,
+        set_bold=False, color='black'
     ):
         super().__init__()
 
@@ -84,13 +85,13 @@ class MoleculesModel(qtg.QStandardItemModel):
         if molecules_list:
             std_item_list = []
             for mol in molecules_list:
-                m_std_item_2 = StandardItem(img=mol.mol_pic)
+                m_std_item_2 = StandardItem(img=mol.mol_img)
                 m_std_item_1 = StandardItem(
-                    f'{mol.get_name:30}', font_size=14,
+                    f'{mol.get_name:25}', font_size=14,
                     set_bold=True, color='#236e96'
                 )
                 summary = StandardItem(
-                    'Propiedades', font_size=12, set_bold=True
+                    'Descriptors', font_size=12, set_bold=True
                 )
                 formula_1 = StandardItem('Formula', font_size=10)
                 formula_2 = StandardItem(
@@ -111,11 +112,11 @@ class MoleculesModel(qtg.QStandardItemModel):
                 summary.appendRow([smiles_1, smiles_2])
                 summary.appendRow([Rg_1, Rg_2])
                 calculations = StandardItem(
-                    'Cálculos disponibles', font_size=12, set_bold=True
+                    'Available calculations', font_size=12, set_bold=True
                 )
                 id_calc = StandardItem('ID', font_size=10, set_bold=True)
                 calc_type = StandardItem(
-                    'Tipo de cálculo', font_size=10, set_bold=True
+                    'Calc. type', font_size=10, set_bold=True
                 )
                 calculations.appendRow([id_calc, calc_type])
                 for c in mol.calculations:

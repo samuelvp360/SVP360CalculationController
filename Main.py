@@ -195,31 +195,20 @@ class MainWindow(qtw.QMainWindow):
                         df = pd.read_csv(path, sep=';')
                         columns = [c.lower() for c in df.columns.values.tolist()]
                         df.dropna(subset=['Smiles'], inplace=True)
-                        smi_lines = [
-                            f'{smiles} {name}' for smiles, name in \
-                            zip(
-                                df['Smiles'].values.tolist(),
-                                df['ChEMBL ID'].values.tolist()
-                            )
-                        ]
+                        self.create_molecule(
+                            df['Smiles'].values.tolist(),
+                            df['ChEMBL ID'].values.tolist()
+                        )
                     else:
                         with open(path, 'r') as file:
                             smi_lines = file.readlines()
-                    self.send_to_worker(
-                        Molecule, sequence=smi_lines,
-                        workflow=self.mol_workflow, mapping=True,
-                    )
+                            self.create_molecule(smi_lines)
                 else:
-                    molecule = Molecule(path, file_format)
-                    if molecule.mol:
-                        self.store_molecule(molecule)
-                        self.set_models()
-                    else:
-                        del molecule
+                    self.create_molecule(path=path)
 
     def send_to_worker(
         self, function, sequence, workflow, *,
-        kwargs={}, mapping=False
+        mapping=False, kwargs={}
     ):
         self.worker = GenericWorker(
             function, sequence=sequence,
@@ -231,6 +220,28 @@ class MainWindow(qtw.QMainWindow):
         self.worker.finished.connect(self.thread.quit)
         self.worker.workflow.connect(workflow)
         self.thread.start()
+
+    def create_molecule(self, smiles=[], names=[], path=False):
+        kwargs = {}
+        mapping = True
+        smi_lines = smiles
+        if path:
+            smi_lines = [path]
+            kwargs = {'file_format': path.split('.')[-1]}
+            mapping = False
+        elif names:
+            smi_lines = [
+                f'{smiles} {name}' for smiles, name in \
+                zip(
+                    df['Smiles'].values.tolist(),
+                    df['ChEMBL ID'].values.tolist()
+                )
+            ]
+        self.send_to_worker(
+            Molecule, sequence=smi_lines,
+            workflow=self.mol_workflow,
+            mapping=mapping, kwargs=kwargs
+        )
 
     def create_project(self):
         name = self.uiProjectNameLine.text()
@@ -333,15 +344,16 @@ class MainWindow(qtw.QMainWindow):
 
     @qtc.pyqtSlot(object, float)
     def mol_workflow(self, results, progess):
+        if not isinstance(results, list):
+            results = [results]
         for molecule in results:
             exists = self.database.check('molecules', molecule.inchi_key)
-            if not exists:
+            if not exists and molecule.mol:
                 self.database.set('molecules', molecule.inchi_key, molecule)
             else:
                 qtw.QMessageBox.critical(
                     self, 'Existing molecule', f'The molecule with inchi_key: {molecule.inchi_key} already exists in the database. It shall not be added.'
                 )
-        # por aquí
         reply = qtw.QMessageBox.question(
             self, 'Link to a project',
             f'Do you want to link these molecules to a project',

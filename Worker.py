@@ -268,7 +268,7 @@ class GenericWorker(qtc.QObject):
         self.function = function
         self.kwargs = copy.deepcopy(kwargs)
         self.sequence = copy.deepcopy(sequence)
-        self.stopped = False
+        self.paused = False
         self.mapping = mapping
 
     @qtc.pyqtSlot()

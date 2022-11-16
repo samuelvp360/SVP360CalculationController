@@ -1,11 +1,13 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
+import io
 import os
 import re
 import subprocess
 import numpy as np
 import pandas as pd
+from PIL import Image, ImageQt
 # import dask.dataframe as dd
 from rdkit import Chem
 from rdkit.Chem import AllChem, Draw, Descriptors, rdMolAlign
@@ -43,7 +45,7 @@ class Molecule(Persistent):
             self.smiles = Chem.MolToSmiles(Chem.RemoveHs(self.mol))
             self.MW = Chem.rdMolDescriptors.CalcExactMolWt(self.mol)
             self.formula = Chem.rdMolDescriptors.CalcMolFormula(self.mol)
-            self.__set_mol_picture()
+            self.__set_mol_img()
             self.descriptors = self.get_descriptors
             self.fps_dict = self.get_fps_dict
 
@@ -99,14 +101,24 @@ class Molecule(Persistent):
         mol = self.__canonize(mol)
         return mol
 
-    def __set_mol_picture(self):
-        self.mol_pic = f'molecules/{self.inchi_key}/{self.inchi_key}.png'
+    @classmethod
+    def get_mol_img(self, mol):
+        drawer = Draw.MolDraw2DCairo(350, 350)
+        drawer.DrawMolecule(mol)
+        drawer.FinishDrawing()
+        data = drawer.GetDrawingText()
+        bio = io.BytesIO(data)
+        img = Image.open(bio)
+        return img
+
+    def __set_mol_img(self):
+        self.mol_img = f'molecules/{self.inchi_key}/{self.inchi_key}.png'
         if not os.path.exists(f'molecules/{self.inchi_key}/'):
             os.makedirs(f'molecules/{self.inchi_key}/')
         else:
             return  # to avoid redo the process for existing molecules
         Draw.MolToFile(
-            Chem.MolFromSmiles(self.smiles), self.mol_pic, size=(300, 300)
+            Chem.MolFromSmiles(self.smiles), self.mol_img, size=(350, 350)
         )
 
     def ligand_prep(self, center, receptor_name, conformer):
@@ -158,44 +170,19 @@ class Molecule(Persistent):
     @property
     def get_fps_dict(self):
         fps_dict = {}
-        # mol = Chem.MolFromSmiles(Chem.MolToSmiles(self.mol))
-        # mol = Chem.AddHs(mol)
-        # AllChem.EmbedMolecule(mol, randomSeed=0xf00d)
         mol = self.get_2d_mol
-        Chem.Kekulize(mol, clearAromaticFlags=True)
-        # path = f'molecules/{self.inchi_key}/fingerprints/'
-        # if not os.path.exists(path):
-            # os.makedirs(path)
-        # else:
-            # return  # to avoid redo the process for existing molecules
         for i in range(1,4):
-            # morgan_bit_info = {}
+            bit_info = {}
             fps_dict[f'Morgan{i}'] = np.array(Chem.rdMolDescriptors.GetMorganFingerprintAsBitVect(
-                mol, radius=i  #, bitInfo=morgan_bit_info
+                mol, radius=i, bitInfo=bit_info
             ))
-            # for bit in morgan_bit_info.keys():
-                # svg_img = Draw.DrawMorganBit(
-                    # mol, bit, morgan_bit_info,
-                # )
-                # with open(f'molecules/{self.inchi_key}/fingerprints/morgan{i}_{bit}.svg', 'w') as file:
-                    # file.write(svg_img)
         for i in ('chiral', 'achiral'):
             chirality = True if i == 'chiral' else False
             fps_dict[f'Hashed Atom Pairs ({i})'] = np.array(Chem.rdMolDescriptors.GetHashedAtomPairFingerprintAsBitVect(
                 mol, includeChirality=chirality
             ))
-        # rdkit_bit_info = {}
         rdkit_fp = Chem.RDKFingerprint(mol, maxPath=5)  #, bitInfo=rdkit_bit_info)
         fps_dict['RDKit'] = np.array(rdkit_fp)
-        # for bit in rdkit_bit_info.keys():
-            # try:
-                # svg_img = Draw.DrawRDKitBit(
-                    # mol, bit, rdkit_bit_info,
-                # )
-            # except RuntimeError:
-                # continue
-            # with open(f'molecules/{self.inchi_key}/fingerprints/rdkit_{bit}.svg', 'w') as file:
-                # file.write(svg_img)
         fps_dict['Layered'] = np.array(Chem.rdmolops.LayeredFingerprint(mol))
         fps_dict['Pattern'] = np.array(Chem.rdmolops.PatternFingerprint(mol))
         fps_dict['Hasehd Topological Torsions'] = np.array(Chem.rdMolDescriptors.GetHashedTopologicalTorsionFingerprintAsBitVect(mol))
@@ -479,8 +466,9 @@ class Project(Persistent):
 
 
     def remove_calculation(self):
-        self.calculations.pop()
-        self._p_changed = True
+        if self.calculations:
+            self.calculations.pop()
+            self._p_changed = True
 
 
 class Docking(Persistent):
