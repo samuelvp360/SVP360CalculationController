@@ -46,8 +46,8 @@ class Molecule(Persistent):
             self.MW = Chem.rdMolDescriptors.CalcExactMolWt(self.mol)
             self.formula = Chem.rdMolDescriptors.CalcMolFormula(self.mol)
             self.__set_mol_img()
-            self.descriptors = self.get_descriptors
-            self.fps_dict = self.get_fps_dict
+            # self.descriptors = self.get_descriptors
+            # self.fps_dict = self.get_fps_dict
 
     def __eq__(self, other):
         if isinstance(other, Molecule):
@@ -65,7 +65,7 @@ class Molecule(Persistent):
 
     def __canonize(self, mol):
         mol_neworder = tuple(zip(*sorted([(j, i) for i, j in enumerate(Chem.CanonicalRankAtoms(mol))])))[1]
-        return Chem.RenumberAtoms(mol, mol_neworder)
+        return Chem.RenumberAtoms(mol, mol_neworder) if mol else False
 
     def __from_smiles(self, smiles):
         if len(smiles.split(' ')) == 2:
@@ -98,6 +98,21 @@ class Molecule(Persistent):
         mol = Chem.AddHs(mol)
         AllChem.EmbedMolecule(mol, randomSeed=0xf00d)
         AllChem.EmbedMultipleConfs(mol, 1)
+        mol = self.__canonize(mol)
+        return mol
+
+    def __from_opt_file(self, path, set_name=True):
+        if set_name:
+            self.set_name(path.split('/')[-1], init=True)
+        cmd = f'obabel {path} -omol2 -h'
+        out = subprocess.run(
+            cmd, shell=True, capture_output=True, text=True
+        )
+        mol = Chem.MolFromMol2Block(
+            out.stdout, removeHs=False,
+            sanitize=False,
+        )
+        print(mol.GetNumAtoms())
         mol = self.__canonize(mol)
         return mol
 
@@ -159,6 +174,7 @@ class Molecule(Persistent):
             [x[0] for x in Descriptors._descList]
         )
         header = calc.GetDescriptorNames()
+        Chem.SanitizeMol(self.mol)
         des = calc.CalcDescriptors(self.mol)
         descriptors = pd.DataFrame([des], columns=header)
         for c in descriptors.columns:  # to get rid of the fingerprints
@@ -257,34 +273,32 @@ class Molecule(Persistent):
     def get_name(self):
         return self.__name
 
-    def __from_opt_file(self, path):
-        cmd = f'obabel {path} -omol2'
-        out = subprocess.run(
-            cmd, shell=True, capture_output=True, text=True
-        )
-        mol = Chem.MolFromMol2Block(
-            out.stdout, removeHs=False
-        )
-        mol = self.__canonize(mol)
-        return mol
-
     def add_conf_from_opt_file(self, output_file, method):
-        mol = self.__from_opt_file(output_file)
+        # primero hay que checkear si convegió, de lo contrario saltar un aviso
+        # recomendando cambiar el sistema de coordenadas
+        mol = self.__from_opt_file(output_file, set_name=False)
         if mol:
+            init_num_atoms = self.mol.GetNumAtoms()
+            new_num_atoms = mol.GetNumAtoms()
+            if not new_num_atoms == init_num_atoms:
+                print(f'Number of atoms mismatch old: {init_num_atoms} vs new: {new_num_atoms}')
+                return
             conf = mol.GetConformer()
             self.set_conformer(conf, method)
         else:
             return  # arrojar un error
 
     @property
-    def get_coordinates(self, conf_id=0):  # arreglar usando obabel
-        conf = self.mol.GetConformer(conf_id)
-        num_atoms = self.mol.GetNumAtoms()
-        atoms_coords = np.empty((num_atoms, 3))
-        for i, atom in enumerate(self.mol.GetAtoms()):
-            position = conf.GetAtomPosition(i)
-            atoms_coords[i] = np.array((position.x, position.y, position.z))
-        return atoms_coords
+    def get_coordinates(self):  # arreglar usando obabel
+        converter = ob.OBConversion()
+        converter.SetInAndOutFormats('mol', 'xyz')
+        mol_ob = ob.OBMol()
+        mol_str = Chem.MolToMolBlock(self.mol, confId=0)
+        converter.ReadString(mol_ob, mol_str)
+        converter.AddOption('h')  # mantener los H
+        coordinates = converter.WriteString(mol_ob).splitlines()[2:]
+        coordinates = [' ' + c for c in coordinates]
+        return '\n'.join(coordinates)
 
     @property
     def get_zmatrix(self):

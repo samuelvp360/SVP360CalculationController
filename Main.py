@@ -47,6 +47,9 @@ class MainWindow(qtw.QMainWindow):
     def set_models(self):
         # Jobs
         self.jobs_list = list(self.database.get_jobs_db)
+        # for job in self.jobs_list:
+            # self.database.remove('jobs', job.id)
+        # self.database.commit()
         jobs_model = JobsModel(self.jobs_list)
         self.uiJobsTableView.setModel(jobs_model)
         self.uiJobsTableView.resizeColumnsToContents()
@@ -67,7 +70,7 @@ class MainWindow(qtw.QMainWindow):
         self.master_queue = [
             j for j in self.jobs_list if j.get_status in ('Programmed', 'Running')
         ]
-        if self.master_queue:
+        if self.master_queue and self.queue_status != 'Running':
             self.uiStartQueueButton.setEnabled(True)
         else:
             self.uiStartQueueButton.setEnabled(False)
@@ -158,9 +161,9 @@ class MainWindow(qtw.QMainWindow):
             for m in self.selected_mol:
                 if m not in already_in:
                     self.selected_project.add_molecule(m)
-                    self.selected_project.add_fps(m.fps_dict)
+                    self.selected_project.add_fps(m.get_fps_dict)
                     self.selected_project.add_descriptors(
-                        m.descriptors, m.inchi_key
+                        m.get_descriptors, m.inchi_key
                     )
                     self.database.commit()
                     self.set_models()
@@ -325,6 +328,22 @@ class MainWindow(qtw.QMainWindow):
                     ignore_errors=True
                 )
 
+    def remove_job(self):
+        index = self.uiJobsTableView.currentIndex()
+        if not index:
+            return
+        reply = qtw.QMessageBox.question(
+            self, 'Remove a run',
+            'Are you sure you want to remove this run from the queue?',
+            qtw.QMessageBox.Yes | qtw.QMessageBox.No
+        )
+        if reply == qtw.QMessageBox.Yes:
+            new_index = self.uiJobsTableView.model().index(index.row(), 0)
+            job_id = int(new_index.data())
+            self.database.remove('jobs', job_id)
+            self.database.commit()
+            self.set_models()
+
     @qtc.pyqtSlot(dict, str)
     def queue_manager(self, calculation, project_name):
         calculation['id'] = self.database.get_job_id
@@ -347,6 +366,8 @@ class MainWindow(qtw.QMainWindow):
         if not isinstance(results, list):
             results = [results]
         for molecule in results:
+            if not molecule:
+                return  # mensaje de error
             exists = self.database.check('molecules', molecule.inchi_key)
             if not exists and molecule.mol:
                 self.database.set('molecules', molecule.inchi_key, molecule)
@@ -354,6 +375,7 @@ class MainWindow(qtw.QMainWindow):
                 qtw.QMessageBox.critical(
                     self, 'Existing molecule', f'The molecule with inchi_key: {molecule.inchi_key} already exists in the database. It shall not be added.'
                 )
+        self.set_models()
         reply = qtw.QMessageBox.question(
             self, 'Link to a project',
             f'Do you want to link these molecules to a project',
@@ -395,10 +417,11 @@ class MainWindow(qtw.QMainWindow):
                     for molecule in project.molecules:
                         self.gauss_controller = Gaussian(
                             molecule,
-                            keywords=calc['keywords'],
-                            job_type=calc['type'],
-                            coordinates=calc.get('coordinates'),
+                            # keywords=calc['keywords'],
+                            # job_type=calc['type'],
+                            # coordinates=calc.get('coordinates'),
                             project=project,
+                            calc=calc
                         )
                         self.gauss_controller.submitted.connect(self.queue_manager)
                         self.gauss_controller.queue_calculation()
@@ -407,7 +430,7 @@ class MainWindow(qtw.QMainWindow):
                         self.vina_controller = MyVina(
                             molecule,
                             project=project,
-                            calc=calc,
+                            calc=calc
                         )
                         self.vina_controller.submitted.connect(self.queue_manager)
                         self.vina_controller.queue_calculation()
@@ -432,7 +455,7 @@ class MainWindow(qtw.QMainWindow):
             self.gauss_controller.submitted.connect(self.queue_manager)
         else:
             self.gauss_controller = Gaussian(
-                self.selected_project.molecules[0], group=True,
+                self.selected_project.molecules[0],  #group=True,
                 project=self.selected_project
             )
             self.gauss_controller.submitted.connect(self.set_group_calc)
@@ -484,7 +507,7 @@ class MainWindow(qtw.QMainWindow):
         job = self.database.get('jobs', job_id)
         job.set_status(status)
         if status == 'Finished' and job.type == 'Optimization':
-            mol = self.database.get('molecule', job.molecule_id)
+            mol = self.database.get('molecules', job.molecule_id)
             mol.add_conf_from_opt_file(job.output_file, job.keywords)
         self.database.commit()
         message = f'{job.type}: {job.molecule} -> {status}'
@@ -510,9 +533,9 @@ class MainWindow(qtw.QMainWindow):
         self.worker.moveToThread(self.queue_thread)
         self.queue_thread.started.connect(self.worker.start_queue)
         self.worker.finished.connect(self.queue_thread.quit)
-        self.worker.finished.connect(
-            lambda: self.uiStartQueueButton.setEnabled(True)
-        )
+        # self.worker.finished.connect(
+            # lambda: self.uiStartQueueButton.setEnabled(True)
+        # )
         self.worker.workflow.connect(self.workflow)
         self.queue_thread.start()
         self.queue_status = 'Running'
@@ -592,8 +615,8 @@ class MainWindow(qtw.QMainWindow):
                 self.vina_setup()
 
     def closeEvent(self, event):
-        if hasattr(self, 'worker'):
-            self.worker.pause()
+        # if hasattr(self, 'worker'):
+            # self.worker.pause()
         # permite que se termine el último trabajo y luego detiene la lista,
         # para evitar que los demás trabajos queden sin tiempo de ejecución.
         self.database.close()

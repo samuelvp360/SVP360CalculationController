@@ -32,8 +32,9 @@ class Gaussian(qtw.QMainWindow):
     submitted = qtc.pyqtSignal(dict, str)
 
     def __init__(
-        self, molecule, *, keywords=False, group=False,
-        job_type=False, coordinates= False, project=False
+        self, molecule, project=False, calc=False
+        # self, molecule, *, keywords=False, group=False,
+        # job_type=False, coordinates= False, project=False
     ):
         super().__init__()
         uic.loadUi('Views/uiCalculationsWindow.ui', self)
@@ -41,9 +42,9 @@ class Gaussian(qtw.QMainWindow):
         self.uiFreqGroupBox.setVisible(False)
         self.uiIRCGroupBox.setVisible(False)
     # ------------------------------------PROPERTIES-------------------------------------
-        self.group = group
-        self.job_type = job_type
-        self.coordinates = coordinates
+        self.group = False
+        self.job_type = False
+        # self.coordinates = coordinates
         self.project = project
         self.memory = virtual_memory().total // 1e9
         self.cpu = multiprocessing.cpu_count()
@@ -134,24 +135,32 @@ class Gaussian(qtw.QMainWindow):
         self._generalWidgets[11].stateChanged.connect(lambda: self.SetGeneral(11, self._generalWidgets[11].isChecked()))
         self._generalWidgets[12].valueChanged.connect(lambda: self.SetGeneral(12, self._generalWidgets[12].value()))
         self.uiTitleLineEdit.textChanged.connect(self.set_title)
-        # self.uiAddInputCheckBox.stateChanged.connect(self.set_preview)
-        # self.uiQueueCalcButton.clicked.connect(self.queu_calculation)
-
         self.prepare_molecule(molecule)
-        if keywords:
-            self.uiKeywordsLabel.setText(keywords)
+        if calc:
+            self.set_options(calc)
             self.set_preview()
         else:
-            self.set_preview()
             self.show()
+            self.set_preview()
+
+    def set_options(self, calc):
+        self.group = True
+        calc = copy.deepcopy(calc)
+        self.uiKeywordsLabel.setText(calc['keywords'])
+        self.job_type = calc['type']
+        if calc['coord_system'] == 'cartesian':
+            self.coordinates = self._molecule.get_coordinates
+            self.coord_system = 'cartesian'
+        else:
+            self.coordinates = self._molecule.get_zmatrix
+            self.coord_system = 'zmatrix'
 
     def prepare_molecule(self, molecule):
         self._molecule = molecule
         self._chk = self._molecule.get_name
         self._oldChk = self._molecule.get_name
-        if not self.coordinates:
-            coords = str(self._molecule.get_coordinates)
-            self.coordinates = coords.replace('[', '').replace(']', '').replace('\n ', '\n')
+        self.coordinates = self._molecule.get_coordinates
+        self.coord_system = 'cartesian'
         self.uiTitleLineEdit.setText(self._molecule.get_name)
         self.SetCahrgeMult()
         self.SetKeywords(1, self._methodWidgets[1].currentIndex())
@@ -1100,8 +1109,10 @@ class Gaussian(qtw.QMainWindow):
         if widgetNumber == 2:
             if selection:
                 self.coordinates = self._molecule.get_coordinates
+                self.coord_system = 'cartesian'
             else:
                 self.coordinates = self._molecule.get_zmatrix
+                self.coord_system = 'zmatrix'
         if widgetNumber == 7:
             if selection:
                 self.keywords_line[0] = '#P '
@@ -1121,7 +1132,6 @@ class Gaussian(qtw.QMainWindow):
                 self.keywords_line[14] = ''
         if widgetNumber == 12:
             self.keywords_line[14] = f' MAXDISK={str(selection)}GB'
-
         self.uiKeywordsLabel.setText(''.join(self.keywords_line))
         self.set_preview()
 
@@ -1173,7 +1183,7 @@ class Gaussian(qtw.QMainWindow):
         keywords = self.uiKeywordsLabel.text()
         charge_mult = self.uiChargeMultLabel.text().replace(' ', '/')
         # error por solucionar
-        if not self.group:
+        if self.group:
             with open(input_file, 'w') as f:
                 f.write(self.uiPreviewPlainText.toPlainText())
         output_file = input_file.replace('.com', '.log')
@@ -1185,7 +1195,7 @@ class Gaussian(qtw.QMainWindow):
             'output_file': output_file,
             'molecule': self._molecule.get_name,
             'molecule_id': self._molecule.inchi_key,
-            'coordinates': self.coordinates,
+            'coord_system': self.coord_system,
             'status': 'Pending'
         }
         self.submitted.emit(calculation, self.project.name)
@@ -1278,7 +1288,7 @@ class MyVina(qtw.QWidget):
         # according to a Rg to box size ratio of 0.35
         self.auto_box_size = self.uiAutoBoxSize.isChecked()
         if self.auto_box_size:
-            box_size = 2.857 * self.molecule.descriptors.loc[0, 'Rg']
+            box_size = 2.857 * self.molecule.get_descriptors.loc[0, 'Rg']
         else:
             box_size = 30.
         self.uiSizeXDouble.setValue(box_size)

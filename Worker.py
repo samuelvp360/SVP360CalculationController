@@ -281,12 +281,12 @@ class GenericWorker(qtc.QObject):
             for i, item in enumerate(self.sequence):
                 if self.paused:
                     break
-                try:
-                    result = self.function(item, **self.kwargs)
-                    process = (i + 1) / len(self.sequence) * 100
-                    self.workflow.emit(result, process)
-                except:
-                    self.workflow.emit(False, False)
+                # try:
+                result = self.function(item, **self.kwargs)
+                process = (i + 1) / len(self.sequence) * 100
+                self.workflow.emit(result, process)
+                # except:
+                    # self.workflow.emit(False, False)
         self.finished.emit()
 
     @qtc.pyqtSlot()

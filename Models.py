@@ -104,7 +104,7 @@ class MoleculesModel(qtg.QStandardItemModel):
                 smiles_1 = StandardItem('Smiles', font_size=10)
                 smiles_2 = StandardItem(f'{mol.smiles}', font_size=10)
                 Rg_1 = StandardItem('Rg', font_size=10)
-                Rg_2 = StandardItem(f'{mol.descriptors.loc[0, "Rg"]:.2f}', font_size=10)
+                Rg_2 = StandardItem(f'{mol.get_descriptors.loc[0, "Rg"]:.2f}', font_size=10)
                 std_item_list.append((m_std_item_1, m_std_item_2))
                 summary.appendRow([formula_1, formula_2])
                 summary.appendRow([FW_1, FW_2])
