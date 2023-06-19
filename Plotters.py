@@ -97,7 +97,7 @@ class DockingPlotter(qtw.QWidget):
             box_size = []
             project_name = []
             for job in self.jobs:
-                if job.id in project.job_ids:
+                if job.id in project.job_ids and job.type == 'Docking':
                     if len(job.energies) == 0:
                         continue
                     energies.append(job.energies)

@@ -19,7 +19,7 @@ class MyZODB(object):
         self.db.pack()
         self.connection = self.db.open()
         self.dbroot = self.connection.root()
-        elements = ('config', 'molecules', 'projects')
+        elements = ('config', 'molecules', 'projects', 'proteins')
         # elements_2 = ('jobs')
         # for element in elements_2:
         if not self.dbroot.get('jobs'):

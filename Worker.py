@@ -32,6 +32,7 @@ class Worker(qtc.QObject):
                 done = self.check_gauss()
             if done:
                 self.workflow.emit(self.job.id, 'Finished')
+                self.finished.emit()
             else:
                 self.workflow.emit(self.job.id, 'Running')
                 if self.job.type == 'Docking':
@@ -39,10 +40,11 @@ class Worker(qtc.QObject):
                 elif self.job.type in ('Optimization', 'Energy', 'Frequency'):
                     self.run_gauss()
                 self.workflow.emit(self.job.id, 'Finished')
+                self.finished.emit()
         except:
             self.workflow.emit(self.job.id, 'Failed')
-        self.finished.emit()
-        self.deleteLater()
+            self.finished.emit()
+        # self.deleteLater()
 
     # @qtc.pyqtSlot()
     # def pause(self):
@@ -263,7 +265,7 @@ class GenericWorker(qtc.QObject):
     finished = qtc.pyqtSignal()
     workflow = qtc.pyqtSignal(object, float)
 
-    def __init__(self, function, sequence=[], mapping=False, **kwargs):
+    def __init__(self, function, kwargs, sequence=[], mapping=False):
         super().__init__(parent=None)
         self.function = function
         self.kwargs = copy.deepcopy(kwargs)
@@ -282,7 +284,7 @@ class GenericWorker(qtc.QObject):
                 if self.paused:
                     break
                 # try:
-                result = self.function(item, **self.kwargs)
+                result = self.function(item, **self.kwargs[i])
                 process = (i + 1) / len(self.sequence) * 100
                 self.workflow.emit(result, process)
                 # except:

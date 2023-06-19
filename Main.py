@@ -16,6 +16,7 @@ from PyQt5 import uic
 from DB.molecules_db import MyZODB
 from loguru import logger
 import pandas as pd
+import time
 # import numpy as np
 # from PyQt5.QtCore import pyqtRemoveInputHook
 
@@ -42,6 +43,7 @@ class MainWindow(qtw.QMainWindow):
             'Name', 'InchiKey', 'Smiles', 'Molar mass', 'Formula'
         )
         self.uiSearchCombo.addItems(search_items)
+        self.results = []
         # pyqtRemoveInputHook()
 
     def set_models(self):
@@ -74,14 +76,10 @@ class MainWindow(qtw.QMainWindow):
             self.uiStartQueueButton.setEnabled(True)
         else:
             self.uiStartQueueButton.setEnabled(False)
-        if self.master_queue and not hasattr(self, 'queue_thread') \
-           and self.queue_status != 'Paused':
-            self.start_master_queue()
-        elif hasattr(self, 'queue_thread') and self.queue_thread.isFinished() \
-           and self.queue_status != 'Paused':
+        if self.master_queue and self.queue_status == 'Finished':
             self.start_master_queue()
         else:
-            self.queue_status = 'Paused'
+            print('está pausado')
         self.uiTotalMoleculesLabel.setText(
             f'Total molecules: {len(self.molecules_list)}; Selected: {len(self.selected_mol)}'
         )
@@ -206,16 +204,18 @@ class MainWindow(qtw.QMainWindow):
                         with open(path, 'r') as file:
                             smi_lines = file.readlines()
                             self.create_molecule(smi_lines)
-                else:
-                    self.create_molecule(path=path)
+                # else:
+                    # print(path)
+            self.create_molecule(path=mol_path)
+            # print(mol_path)
 
     def send_to_worker(
         self, function, sequence, workflow, *,
-        mapping=False, kwargs={}
+        mapping=False, kwargs=[]
     ):
         self.worker = GenericWorker(
-            function, sequence=sequence,
-            mapping=mapping, **kwargs
+            function, kwargs, sequence=sequence,
+            mapping=mapping
         )
         self.thread = qtc.QThread()
         self.worker.moveToThread(self.thread)
@@ -229,8 +229,8 @@ class MainWindow(qtw.QMainWindow):
         mapping = True
         smi_lines = smiles
         if path:
-            smi_lines = [path]
-            kwargs = {'file_format': path.split('.')[-1]}
+            smi_lines = path
+            kwargs = [{'file_format': i.split('.')[-1]} for i in path]
             mapping = False
         elif names:
             smi_lines = [
@@ -364,9 +364,14 @@ class MainWindow(qtw.QMainWindow):
     @qtc.pyqtSlot(object, float)
     def mol_workflow(self, results, progess):
         if not isinstance(results, list):
-            results = [results]
-        for molecule in results:
+            self.results.append(results)
+        else:
+            self.results = results
+        if not progess == 100:
+            return
+        for molecule in self.results:
             if not molecule:
+                print('Hubo un error con alguna molécula')
                 return  # mensaje de error
             exists = self.database.check('molecules', molecule.inchi_key)
             if not exists and molecule.mol:
@@ -392,7 +397,7 @@ class MainWindow(qtw.QMainWindow):
                 if not exist:
                     self.uiProjectNameLine.setText(project_name)
                     self.create_project()
-                self.selected_mol = results
+                self.selected_mol = self.results
                 self.selected_project = [
                     p for p in self.projects_list \
                     if p.name == project_name
@@ -512,38 +517,46 @@ class MainWindow(qtw.QMainWindow):
         self.database.commit()
         message = f'{job.type}: {job.molecule} -> {status}'
         self.statusBar().showMessage(message)
+        # if status in ('Finished', 'Failed'):
+        self.queue_status = status
         self.set_models()
 
     def start_master_queue(self):
         next_job = self.master_queue[0]
         if next_job.type == 'Docking':
-            mol = self.database.get('molecule', job.molecule_id)
+            mol = self.database.get('molecules', next_job.molecule_id)
             center = (
-                job.config['center_x'],
-                job.config['center_y'],
-                job.config['center_z']
+                next_job.config['center_x'],
+                next_job.config['center_y'],
+                next_job.config['center_z']
             )
             mol.ligand_prep(
-                center, job.receptor_name, job.conformer
+                center, next_job.receptor_name, next_job.conformer
             )
         self.uiStartQueueButton.setEnabled(False)
         self.uiPauseQueueButton.setEnabled(True)
         self.worker = Worker(next_job)
-        self.queue_thread = qtc.QThread()
-        self.worker.moveToThread(self.queue_thread)
-        self.queue_thread.started.connect(self.worker.start_queue)
-        self.worker.finished.connect(self.queue_thread.quit)
-        # self.worker.finished.connect(
-            # lambda: self.uiStartQueueButton.setEnabled(True)
-        # )
         self.worker.workflow.connect(self.workflow)
-        self.queue_thread.start()
+        if hasattr(self, 'queue_thread') and not self.queue_thread.isFinished():
+            self.queue_thread_2 = qtc.QThread()
+            self.worker.moveToThread(self.queue_thread_2)
+            self.queue_thread_2.started.connect(self.worker.start_queue)
+            self.worker.finished.connect(self.queue_thread_2.quit)
+            self.queue_thread_2.start()
+            print('Trabajando con el worker 2')
+        else:
+            self.queue_thread = qtc.QThread()
+            self.worker.moveToThread(self.queue_thread)
+            self.queue_thread.started.connect(self.worker.start_queue)
+            self.worker.finished.connect(self.queue_thread.quit)
+            self.queue_thread.start()
+            print('Trabajando con el worker 1')
         self.queue_status = 'Running'
 
     def plot_docking_results(self, dock_type):
         if dock_type == 'docking':
             projects = [
-                p for p in self.projects_list if p.calculations \
+                p for p in self.projects_list if p.calculations
             ]
             self.docking_plotter = DockingPlotter(projects, self.jobs_list)
         elif dock_type == 'redocking':

@@ -8,20 +8,17 @@ import subprocess
 import numpy as np
 import pandas as pd
 from PIL import Image, ImageQt
-# import dask.dataframe as dd
 from rdkit import Chem
 from rdkit.Chem import AllChem, Draw, Descriptors, rdMolAlign
 from rdkit.ML.Descriptors import MoleculeDescriptors
-# from rdkit.Chem.AtomPairs import Pairs
 from rdkit.Geometry import Point3D
 from rdkit import RDLogger
 from openbabel import openbabel as ob
 from map4 import MAP4Calculator
-# import tmap as tm
-# from mhfp.encoder import MHFPEncoder
 from persistent import Persistent
-from vina import Vina
 from datetime import datetime
+import MDAnalysis as mda
+import prolif as plf
 from requests.exceptions import ConnectionError
 try:
     from chembl_webresource_client.new_client import new_client
@@ -58,7 +55,13 @@ class Molecule(Persistent):
     def get_rdkit_mol(self, mol_input, file_format):
         if file_format == 'smiles':
             return self.__from_smiles(mol_input)
-        elif file_format in ('mol2', 'log'):
+        elif file_format in 'mol2':
+            mol = self.__from_path(mol_input, file_format)
+            conf = self.__from_opt_file(mol_input)
+            conf = conf.GetConformer()
+            mol.AddConformer(conf)
+            return mol
+        elif file_format == 'log':
             return self.__from_opt_file(mol_input)
         else:
             return self.__from_path(mol_input, file_format)
@@ -112,8 +115,7 @@ class Molecule(Persistent):
             out.stdout, removeHs=False,
             sanitize=False,
         )
-        print(mol.GetNumAtoms())
-        mol = self.__canonize(mol)
+        # mol = self.__canonize(mol)
         return mol
 
     @classmethod
@@ -151,7 +153,9 @@ class Molecule(Persistent):
         converter.SetInAndOutFormats('pdb', 'mol2')
         file_name = f'molecules/{self.inchi_key}/{self.inchi_key}.mol2'
         converter.ReadString(
-            mol_ob, Chem.MolToPDBBlock(self.mol, confId=conformer)
+            mol_ob, Chem.MolToPDBBlock(
+                self.mol, confId=self.conf_dict[conformer]
+            )
         )
         converter.WriteFile(mol_ob, file_name)
         output_filename = f'{file_name.split(".")[0]}_{receptor_name}.pdbqt'
@@ -163,8 +167,14 @@ class Molecule(Persistent):
         # return output_filename
 
     def set_conformer(self, conf, method):
-        conf_id = self.mol.AddConformer(conf, assignId=True)
-        self.conf_dict[method] = conf_id
+        if method in self.conf_dict:
+            conf_id = self.conf_dict[method]
+            self.mol.RemoveConformer(conf_id)
+            conf_id = self.mol.AddConformer(conf, assignId=True)
+            self.conf_dict.update({method: conf_id})
+        else:
+            conf_id = self.mol.AddConformer(conf, assignId=True)
+            self.conf_dict[method] = conf_id
         self._p_changed = True
 
 # GETTERS -------------------------------------------------------
@@ -211,7 +221,7 @@ class Molecule(Persistent):
         return Chem.MolFromSmiles(self.smiles)
 
     def __create_conformers(self):
-        new_mol = Chem.AddHs(self.mol)
+        new_mol = Chem.AddHs(self.mol, addCoords=True)
         AllChem.EmbedMolecule(new_mol, randomSeed=0xf00d)
         num_rot_bonds = Chem.rdMolDescriptors.CalcNumRotatableBonds(new_mol)
         if num_rot_bonds <= 7:
@@ -289,7 +299,7 @@ class Molecule(Persistent):
             return  # arrojar un error
 
     @property
-    def get_coordinates(self):  # arreglar usando obabel
+    def get_coordinates(self):
         converter = ob.OBConversion()
         converter.SetInAndOutFormats('mol', 'xyz')
         mol_ob = ob.OBMol()
@@ -338,6 +348,50 @@ class Molecule(Persistent):
         )
 
 
+class Protein(Persistent):
+
+    def __init__(self, path):
+        self.prot = self.get_prot(path)
+        print(self.prot.n_residues)
+
+    def get_prot(self, path):
+        file_format = path.split('.')[-1]
+        univ = mda.Universe(path)
+        try:
+            prot = plf.Molecule.from_mda(univ, force=True)
+            return prot
+        except:
+            file_format = path.split('.')[-1]
+            univ = self.fix_kekule(univ)
+            if file_format == 'mol2':
+                prot = self.fix_aromatic(univ, path)
+            else:
+                prot = plf.Molecule.from_mda(univ, force=True)
+            return prot
+
+    def fix_kekule(self, univ):
+        # replace aromatic bonds with single bonds
+        for i, bond_order in enumerate(univ._topology.bonds.order):
+            # you may need to replace double bonds ("2") as well
+            if bond_order == "ar":
+                univ._topology.bonds.order[i] = 1
+        # clear the bond cache, just in case
+        univ._topology.bonds._cache.pop("bd", None)
+        # infer bond orders again
+        return univ
+
+    def fix_aromatic(self, univ, path):
+        mol = Chem.MolFromMol2File(path, removeHs=False)
+        for atom, resname in zip(mol.GetAtoms(), univ.atoms.resnames):
+            resid = plf.ResidueId.from_string(resname)
+            mi = Chem.AtomPDBResidueInfo()
+            mi.SetResidueNumber(resid.number)
+            mi.SetResidueName(resid.name)
+            atom.SetMonomerInfo(mi)
+        prot = plf.Molecule(mol)
+        return prot
+
+
 class Optimization(Persistent):
 
     def __init__(self, **kwargs):
@@ -363,7 +417,7 @@ class Optimization(Persistent):
                 self.elapsed = self.finished - self.started
             else:
                 self.elapsed = ''
-        # self._p_changed = True
+        self._p_changed = True
 
     @property
     def get_status(self):
@@ -477,6 +531,11 @@ class Project(Persistent):
             m for l, m in zip(labels, self.molecules) if l == cluster_num
         ]
         return mols_in_cluster
+
+    def get_docking_poses(self):
+        # primero pasar del pdbqt a pdb y luego asignar los órdenes de enlace
+        # según la plantilla, que es la molécula rdkit
+        newMol = AllChem.AssignBondOrdersFromTemplate(template, docked_pose)
 
 
     def remove_calculation(self):
