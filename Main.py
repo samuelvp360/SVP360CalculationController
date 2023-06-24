@@ -76,10 +76,8 @@ class MainWindow(qtw.QMainWindow):
             self.uiStartQueueButton.setEnabled(True)
         else:
             self.uiStartQueueButton.setEnabled(False)
-        if self.master_queue and self.queue_status == 'Finished':
-            self.start_master_queue()
-        else:
-            print('está pausado')
+        # if self.master_queue and self.queue_status == 'Finished':
+            # self.start_master_queue()
         self.uiTotalMoleculesLabel.setText(
             f'Total molecules: {len(self.molecules_list)}; Selected: {len(self.selected_mol)}'
         )
@@ -189,25 +187,30 @@ class MainWindow(qtw.QMainWindow):
             options=qtw.QFileDialog.DontUseNativeDialog,
         )
         if mol_path:
-            for path in mol_path:
-                file_format = path.split('.')[-1]
-                if file_format in ('txt', 'smi', 'csv'):
-                    if file_format == 'csv':
+            file_format = mol_path[0].split('.')[-1]
+            if file_format in ('txt', 'smi', 'csv'):
+                if file_format == 'csv':
+                    smiles = []
+                    names = []
+                    for path in mol_path:
                         df = pd.read_csv(path, sep=';')
                         columns = [c.lower() for c in df.columns.values.tolist()]
                         df.dropna(subset=['Smiles'], inplace=True)
-                        self.create_molecule(
-                            df['Smiles'].values.tolist(),
-                            df['ChEMBL ID'].values.tolist()
-                        )
-                    else:
+                        smiles.extend(df['Smiles'].values.tolist())
+                        names.extend(df['ChEMBL ID'].values.tolist())
+                        # self.create_molecule(
+                            # df['Smiles'].values.tolist(),
+                            # df['ChEMBL ID'].values.tolist()
+                        # )
+                    self.create_molecule(smiles, names)
+                else:
+                    smi_lines = []
+                    for path in mol_path:
                         with open(path, 'r') as file:
-                            smi_lines = file.readlines()
-                            self.create_molecule(smi_lines)
-                # else:
-                    # print(path)
-            self.create_molecule(path=mol_path)
-            # print(mol_path)
+                            smi_lines.extend(file.readlines())
+                    self.create_molecule(smi_lines)
+            else:
+                self.create_molecule(path=mol_path)
 
     def send_to_worker(
         self, function, sequence, workflow, *,
@@ -225,7 +228,7 @@ class MainWindow(qtw.QMainWindow):
         self.thread.start()
 
     def create_molecule(self, smiles=[], names=[], path=False):
-        kwargs = {}
+        kwargs = [{}]
         mapping = True
         smi_lines = smiles
         if path:
@@ -517,7 +520,8 @@ class MainWindow(qtw.QMainWindow):
         self.database.commit()
         message = f'{job.type}: {job.molecule} -> {status}'
         self.statusBar().showMessage(message)
-        # if status in ('Finished', 'Failed'):
+        if self.master_queue and self.queue_status in ('Finished', 'Failed'):
+            self.start_master_queue()
         self.queue_status = status
         self.set_models()
 

@@ -459,6 +459,7 @@ class Project(Persistent):
         self.fps = []
         self.clusters = {}
         self.grid_img = f'projects/{self.name}/{self.name}.png'
+        self.grid_img_svg = f'projects/{self.name}/{self.name}.svg'
         self.__create_grid_img()
 
     def __eq__(self, other):
@@ -476,6 +477,13 @@ class Project(Persistent):
                 legends=[m.get_name for m in self.molecules]
             )
             img.save(self.grid_img)
+            img_svg = Draw.MolsToGridImage(
+                [Chem.MolFromSmiles(m.smiles) for m in self.molecules],
+                molsPerRow=5, useSVG=True,
+                legends=[m.get_name for m in self.molecules]
+            )
+            with open(self.grid_img_svg, 'w') as file:
+                file.write(img_svg)
 
     def add_molecule(self, molecule):
         self.molecules.append(molecule)

@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 
 import os
+import re
 import subprocess
 from concurrent.futures import ProcessPoolExecutor, ThreadPoolExecutor
 from PyQt5 import QtCore as qtc
@@ -21,7 +22,7 @@ class Worker(qtc.QObject):
     def __init__(self, job):
         super().__init__(parent=None)
         self.job = copy.deepcopy(job)
-        # self.paused = False
+        self.paused = False
 
     @qtc.pyqtSlot()
     def start_queue(self):
@@ -46,10 +47,11 @@ class Worker(qtc.QObject):
             self.finished.emit()
         # self.deleteLater()
 
-    # @qtc.pyqtSlot()
-    # def pause(self):
-        # self.paused = True
+    @qtc.pyqtSlot()
+    def pause(self):
+        self.paused = True
 
+    @logger.catch
     def run_gauss(self):
         '''
         Parameters
@@ -69,8 +71,16 @@ class Worker(qtc.QObject):
             return False
             print('no leyó el ejecutable de Gaussian')
         cmd = f'{gauss_exec} < {self.job.input_file} > {self.job.output_file}'
+        mol2_out = self.job.output_file.replace('log', 'mol2')
+        cmd_2 = f'obabel {self.job.output_file} -O {mol2_out}'
         try:
             subprocess.run(cmd, shell=True)
+            if self.job.type == 'Optimization':
+                done = self.check_gauss()
+            if done:
+                subprocess.run(
+                    cmd_2, shell=True, capture_output=True, text=True
+                )
         except FileNotFoundError:
             return False
         return True
@@ -79,7 +89,7 @@ class Worker(qtc.QObject):
         if not os.path.exists(self.job.output_file):
             return False
         if 'Optimization' in self.job.output_file:
-            with open(output_file, 'r') as f:
+            with open(self.job.output_file, 'r') as f:
                 file = f.read()
                 finished = re.findall('Optimization completed.', file)
                 if finished:
