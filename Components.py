@@ -34,6 +34,7 @@ class Molecule(Persistent):
         RDLogger.DisableLog('rdApp.*')  # avoid non crucial messages
         self.conf_dict = {}
         self.calculations = []
+        self.activities = []
         self.mol = self.get_rdkit_mol(mol_input, file_format)
         if self.mol:
             input_conf = self.mol.GetConformer()
@@ -48,8 +49,8 @@ class Molecule(Persistent):
 
     def __eq__(self, other):
         if isinstance(other, Molecule):
-            return self.inchi_key == other.inchi_key or \
-                    self.smiles == other.smiles
+            return self.smiles == other.smiles or \
+                    self.inchi_key == other.inchi_key
         return False
 
     def get_rdkit_mol(self, mol_input, file_format):
@@ -133,7 +134,9 @@ class Molecule(Persistent):
         if not os.path.exists(f'molecules/{self.inchi_key}/'):
             os.makedirs(f'molecules/{self.inchi_key}/')
         else:
-            return  # to avoid redo the process for existing molecules
+            self.mol_img = f'molecules/{self.inchi_key}_2/{self.inchi_key}.png'
+            os.makedirs(f'molecules/{self.inchi_key}_2/')
+            # return  # to avoid redo the process for existing molecules
         Draw.MolToFile(
             Chem.MolFromSmiles(self.smiles), self.mol_img, size=(350, 350)
         )
@@ -151,7 +154,10 @@ class Molecule(Persistent):
         converter = ob.OBConversion()
         mol_ob = ob.OBMol()
         converter.SetInAndOutFormats('pdb', 'mol2')
-        file_name = f'molecules/{self.inchi_key}/{self.inchi_key}.mol2'
+        try:
+            file_name = f'molecules/{self.inchi_key}/{self.inchi_key}.mol2'
+        except FileNotFoundError:
+            file_name = f'molecules/{self.inchi_key}_2/{self.inchi_key}.mol2'
         converter.ReadString(
             mol_ob, Chem.MolToPDBBlock(
                 self.mol, confId=self.conf_dict[conformer]
@@ -196,7 +202,8 @@ class Molecule(Persistent):
     @property
     def get_fps_dict(self):
         fps_dict = {}
-        mol = self.get_2d_mol
+        mol = Chem.AddHs(self.get_2d_mol, addCoords=True)
+        AllChem.EmbedMolecule(mol, randomSeed=0xf00d)
         for i in range(1,4):
             bit_info = {}
             fps_dict[f'Morgan{i}'] = np.array(Chem.rdMolDescriptors.GetMorganFingerprintAsBitVect(
@@ -273,6 +280,10 @@ class Molecule(Persistent):
 
     def add_calculation(self, job_id):
         self.calculations.append(job_id)
+        self._p_changed = True
+
+    def add_activity_value(self, activity):
+        self.activities.append(activity)
         self._p_changed = True
 
     def remove_calculation(self, job_id):
@@ -793,3 +804,24 @@ class MyChembl():
                 'smiles': smiles,
             }
         return result
+
+
+class Activity(Persistent):
+
+    def __init__(self, act_dict):
+        self.id = act_dict['id']
+        self.name = act_dict['name']
+        self.species = act_dict['species']
+        self.unit = act_dict['unit']
+        self.values = {}
+
+    def check(self, mol_id):
+        return mol_id in self.values
+
+    def add_activity_value(self, mol_id, value, update=False):
+        if not update:
+            self.values[mol_id] = value
+        else:
+            self.values.update({mol_id: value})
+        self._p_changed = True
+

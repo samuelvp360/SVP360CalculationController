@@ -132,8 +132,13 @@ class DockingPlotter(qtw.QWidget):
         self.canvas.ax.set_xlabel('Molecule')
         self.canvas.ax.set_ylabel('Binding Energy (kcal/mol)')
         self.canvas.ax.tick_params(axis='x', labelrotation=90)
-        self.canvas.ax.axhline(-7., linewidth=.5, color='red')
         to_plot_both = self.df.iloc[self.selected_jobs]
+        min_value = min([min(i) for i in to_plot_both['Binding energies']])
+        max_value = max([max(i) for i in to_plot_both['Binding energies']])
+        avg_value = (min_value + max_value) / 2
+        self.canvas.ax.axhline(min_value, linewidth=.5, color='green')
+        self.canvas.ax.axhline(avg_value, linewidth=.5, color='blue', linestyle='--')
+        self.canvas.ax.axhline(max_value, linewidth=.5, color='red')
         receptors = pd.unique(to_plot_both['Receptor'])
         if len(receptors) > 1:
             self.uiCompareReceptorButton.setEnabled(True)

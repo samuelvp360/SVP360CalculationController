@@ -3,10 +3,11 @@
 
 import shutil
 import sys
-from Components import Molecule, Optimization, Project, Docking
-from Worker import Worker, MolWorker, GenericWorker
+from Components import Molecule, Optimization, Project, Docking, Activity
+from Worker import Worker, GenericWorker #, MolWorker
 from Models import MoleculesModel, ProjectsModel, JobsModel
 from Calculations import Gaussian, MyVina
+from Inputs import ActivityInput
 from Plotters import DockingPlotter, RedockingPlotter
 from Explorers import FPExplorer, SimilarityExplorer, \
         DescriptorsExplorer, ChEMBLExplorer
@@ -148,7 +149,7 @@ class MainWindow(qtw.QMainWindow):
         else:
             self.selected_project = None
 
-    def include_mol(self):
+    def include_mol(self): # debe hacerce en el GenericWorker
         if self.selected_project is not None and self.selected_mol:
             already_in = [
                 m for m in self.selected_mol if m \
@@ -166,7 +167,10 @@ class MainWindow(qtw.QMainWindow):
 
     def drop_mol(self):
         if self.selected_project is not None:
-            self.selected_project.pop_molecule()
+            try:
+                self.selected_project.pop_molecule()
+            except IndexError:
+                pass
             self.database.commit()
             self.set_models()
 
@@ -274,14 +278,14 @@ class MainWindow(qtw.QMainWindow):
 
     def store_molecule(self, molecule):
         if molecule.mol:
-            exists = self.database.check('molecules', molecule.inchi_key)
+            exists = self.database.check('molecules', molecule.smiles)
             if not exists:
                 self.database.set(
-                    'molecules', molecule.inchi_key, molecule
+                    'molecules', molecule.smiles, molecule
                 )
             else:
                 qtw.QMessageBox.critical(
-                    self, 'Molécula existente', f'La molécula con Inchy key: {molecule.inchi_key} ya existe en la base de datos. No será agregada.'
+                    self, 'Molécula existente', f'La molécula con Smiles: {molecule.smiles} ya existe en la base de datos. No será agregada.'
                 )
 
     def remove_molecule(self):
@@ -297,9 +301,12 @@ class MainWindow(qtw.QMainWindow):
                         f'The molecule {m.get_name} is part of the project(s) {names}. It will not be removed'
                     )
                     continue
-                self.database.remove('molecules', m.inchi_key)
+                self.database.remove('molecules', m.smiles)
                 self.database.commit()
-                shutil.rmtree(f'molecules/{m.inchi_key}/', ignore_errors=True)
+                if '_2' in m.mol_img:
+                    shutil.rmtree(f'molecules/{m.inchi_key}_2/', ignore_errors=True)
+                else:
+                    shutil.rmtree(f'molecules/{m.inchi_key}/', ignore_errors=True)
                 self.set_models()
 
     def remove_group_calc(self):
@@ -348,6 +355,33 @@ class MainWindow(qtw.QMainWindow):
             self.set_models()
 
     @qtc.pyqtSlot(dict, str)
+    def activity_manager(self, activity_value, smiles):
+        mol = self.database.get('molecules', smiles)
+        exists = self.database.check('activities', activity_value['id'])
+        if exists:
+            activity = self.database.get('activities', activity_value['id'])
+            already_added = activity.check(mol.smiles)
+            if already_added:
+                reply = qtw.QMessageBox.question(
+                    self, 'Existent activity',
+                    f'This value of activity already exists for the molecule {mol.get_name}. Do you want to update it?',
+                    qtw.QMessageBox.Yes | qtw.QMessageBox.No
+                )
+                if reply == qtw.QMessageBox.Yes:
+                    activity.add_activity_value(
+                        mol.smiles, activity_value['value'], update=True
+                    )
+                else:
+                    return
+        else:
+            activity = Activity(activity_value)
+            self.database.set('activities', activity.id, activity)
+        activity.add_activity_value(smiles, activity_value)
+        mol.add_activity_value(activity_value)
+        self.database.commit()
+        self.set_models()
+
+    @qtc.pyqtSlot(dict, str)
     def queue_manager(self, calculation, project_name):
         calculation['id'] = self.database.get_job_id
         mol = self.database.get('molecules', calculation['molecule_id'])
@@ -376,13 +410,14 @@ class MainWindow(qtw.QMainWindow):
             if not molecule:
                 print('Hubo un error con alguna molécula')
                 return  # mensaje de error
-            exists = self.database.check('molecules', molecule.inchi_key)
+            exists = self.database.check('molecules', molecule.smiles)
             if not exists and molecule.mol:
-                self.database.set('molecules', molecule.inchi_key, molecule)
+                self.database.set('molecules', molecule.smiles, molecule)
             else:
                 qtw.QMessageBox.critical(
-                    self, 'Existing molecule', f'The molecule with inchi_key: {molecule.inchi_key} already exists in the database. It shall not be added.'
+                    self, 'Existing molecule', f'The molecule with smiles: {molecule.smiles} already exists in the database. It shall not be added.'
                 )
+        self.results = []
         self.set_models()
         reply = qtw.QMessageBox.question(
             self, 'Link to a project',
@@ -489,6 +524,12 @@ class MainWindow(qtw.QMainWindow):
             )
             self.vina_controller.submitted.connect(self.set_group_calc)
 
+    def activity_setup(self):
+        self.activity_controller = ActivityInput(
+            self.selected_mol[0], self.database.get_activities_db
+        )
+        self.activity_controller.submitted.connect(self.activity_manager)
+
     @qtc.pyqtSlot(dict, str)
     def set_group_calc(self, calculation, project_name):
         self.selected_project.add_calculation(calculation)
@@ -520,10 +561,16 @@ class MainWindow(qtw.QMainWindow):
         self.database.commit()
         message = f'{job.type}: {job.molecule} -> {status}'
         self.statusBar().showMessage(message)
-        if self.master_queue and self.queue_status in ('Finished', 'Failed'):
-            self.start_master_queue()
-        self.queue_status = status
         self.set_models()
+        if self.master_queue and status in ('Finished', 'Failed'):
+            self.start_master_queue()
+            self.queue_status = 'Running'
+        elif status == 'Running':
+            self.queue_status = 'Running'
+            self.set_models()
+        else:
+            self.queue_status = 'Finished'
+            self.set_models()
 
     def start_master_queue(self):
         next_job = self.master_queue[0]
@@ -617,19 +664,24 @@ class MainWindow(qtw.QMainWindow):
                 self.display_data('similarities')
 
     def molecules_right_click(self, position):
-        if self.selected_mol[-1]:
+        if self.selected_mol:
             menu = qtw.QMenu()
             gauss = qtw.QMenu('Gaussian')
             vina = qtw.QMenu('Vina')
+            activity = qtw.QMenu('Activity')
             menu.addMenu(gauss)
             menu.addMenu(vina)
+            menu.addMenu(activity)
             calculate = gauss.addAction('Calcular')
             docking = vina.addAction('Hacer Docking')
+            add_act = activity.addAction('Add activity')
             action = menu.exec_(self.uiMoleculesTree.mapToGlobal(position))
             if action == calculate:
                 self.gaussian_setup()
             elif action == docking:
                 self.vina_setup()
+            elif action == add_act:
+                self.activity_setup()
 
     def closeEvent(self, event):
         # if hasattr(self, 'worker'):

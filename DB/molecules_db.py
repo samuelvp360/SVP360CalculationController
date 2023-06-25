@@ -25,6 +25,9 @@ class MyZODB(object):
         if not self.dbroot.get('jobs'):
             self.dbroot['jobs'] = IOBTree()
             self.commit()
+        if not self.dbroot.get('activities'):
+            self.dbroot['activities'] = IOBTree()
+            self.commit()
         for element in elements:
             if not self.dbroot.get(element):
                 self.dbroot[element] = {}
@@ -68,6 +71,10 @@ class MyZODB(object):
     @property
     def get_jobs_db(self):
         return self.dbroot['jobs'].values()
+
+    @property
+    def get_activities_db(self):
+        return self.dbroot['activities'].values()
 
     @property
     def get_job_id(self):

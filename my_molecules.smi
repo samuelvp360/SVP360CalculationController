@@ -14,12 +14,12 @@ O=C(CN1CCCN1C/C=C\CC)N[C@H](C(=O)OC)[C@@H](C)CC 13{2,1,1,1}
 O=C(OCC)CCN1CCC(=O)N1C/C=C\CC 13{1,1,2,7}
 O=C(CN1CCC(=O)N1CCCCC)N[C@@H](CC(C)C)C(=O)OC 13{1,2,1,2}
 O=C(CN1CCC(=O)N1CCCCC)N[C@H](C(=O)OC)C(C)C 13{1,2,1,3}
-OC(=O)C[C@H]1CCC(=O)[C@H]1C/C=C\CC S,R,Z-JA
-OC(=O)C[C@H]1CCC(=O)[C@@H]1C/C=C\CC R,R,Z-JA
-OC(=O)C[C@@H]1CCC(=O)[C@H]1C/C=C\CC R,S,Z-JA
-OC(=O)C[C@@H]1CCC(=O)[C@@H]1C/C=C\CC S,S,Z-JA
-COC(=O)C[C@H]1CCC(=O)[C@H]1C/C=C\CC S,R,Z-JA
-OC(=O)C[C@H]1CCC(=O)[C@H]1C\C=C\CC S,R,E-JA
+OC(=O)C[C@@H]1CCC(=O)[C@H]1C/C=C\CC 3S,7S,Z-JA
+OC(=O)C[C@@H]1CCC(=O)[C@@H]1C/C=C\CC 3S,7R,Z-JA
+OC(=O)C[C@H]1CCC(=O)[C@H]1C/C=C\CC 3R,7S,Z-JA
+OC(=O)C[C@H]1CCC(=O)[C@@H]1C/C=C\CC 3R,7R,Z-JA
+COC(=O)C[C@@H]1CCC(=O)[C@H]1C/C=C\CC 3S,7R,Z-JA
+OC(=O)C[C@@H]1CCC(=O)[C@@H]1C\C=C\CC 3S,7R,E-JA
 O=C(O)C1=C[C@@H](C[C@@H]2C(=O)CC[C@H]12)CC Coronafacic_acid
 OC(=O)[C@]1(NC(=O)C2=C[C@H](CC)C[C@@H]3C(=O)CC[C@@H]32)C[C@H]1CC COR
 O=C(O)[C@@H](NC(=O)C1=C[C@@H](C[C@@H]2C(=O)CC[C@H]12)CC)[C@@H](C)CC COR-Ile
@@ -57,3 +57,7 @@ O=C(OC)[C@@H](NC(=O)c1cccc2C(=N\NCc3ccccc3)/CCc21)[C@@H](C)CC oxo-Indanoyl-Ile-M
 O=C(O)[C@@H](NC(=O)c1cccc2C(=N\NCc3ccccc3)/CCc21)[C@@H](C)CC oxo-Indanoyl-Ile-hydra
 O=C(OC)[C@@H](NC(=O)c1cc(Br)cc2C(=O)CCc21)[C@@H](C)CC oxo-Indanoyl-Ile-Me-6-Br
 O=C(O)[C@@H](NC(=O)c1cc(Br)cc2C(=O)CCc21)[C@@H](C)CC oxo-Indanoyl-Ile-6-Br
+O=C(OC)[C@@H](NC(=O)C[N@H+]1CCC(=O)N1C/C=C\CC)[C@@H](C)CC 13{1,1,1,1}-NH-R
+O=C(OC)[C@@H](NC(=O)C[N@@H+]1CCC(=O)N1C/C=C\CC)[C@@H](C)CC 13{1,1,1,1}-NH-S
+O=C(O)[C@@H](NC(=O)C[N@H+]1CCC(=O)N1C/C=C\CC)[C@@H](C)CC 13{1,1,1,1}-H-NH-R
+O=C(O)[C@@H](NC(=O)C[N@@H+]1CCC(=O)N1C/C=C\CC)[C@@H](C)CC 13{1,1,1,1}-H-NH-S

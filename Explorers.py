@@ -575,10 +575,12 @@ class ChEMBLExplorer(qtw.QWidget):
         if mol_path:
             file_format = mol_path.split('.')[-1]
             mol = Molecule(mol_path, file_format=file_format)
-            self.mol_ref_in_db = self.parent.database.check('molecules', mol.inchi_key)
+            self.mol_ref_in_db = self.parent.database.check(
+                'molecules', mol.smiles
+            )
             if self.mol_ref_in_db:
                 self.mol_ref = self.parent.database.get(
-                    'molecules', mol.inchi_key
+                    'molecules', mol.smiles
                 )
             else:
                 self.mol_ref = mol

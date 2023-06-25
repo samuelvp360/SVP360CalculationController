@@ -265,7 +265,7 @@ class MolWorker(qtc.QObject):
     def start(self):
         for mol in self.mol_list:
             conf, method = mol.minimize()
-            self.workflow.emit(mol.inchi_key, conf, method)
+            self.workflow.emit(mol.smiles, conf, method)
         self.finished.emit()
         self.deleteLater()
 

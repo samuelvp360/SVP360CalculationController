@@ -130,7 +130,14 @@ class MoleculesModel(qtg.QStandardItemModel):
                     calc_type = StandardItem(calc_type, font_size=10)
                     calc_id = StandardItem(str(c), font_size=10)
                     calculations.appendRow([calc_id, calc_type])
-                m_std_item_1.appendRows([summary, calculations])
+                activities = StandardItem(
+                    'Activities', font_size=12, set_bold=True
+                )
+                for act in mol.activities:
+                    activity_1 = StandardItem(f'{act["value"]}', font_size=10)
+                    activity_2 = StandardItem(f'{act["name"].capitalize()} ({act["species"]})', font_size=10)
+                    activities.appendRow([activity_1, activity_2])
+                m_std_item_1.appendRows([summary, calculations, activities])
             return std_item_list
         else:
             return []
