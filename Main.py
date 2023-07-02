@@ -52,6 +52,7 @@ class MainWindow(qtw.QMainWindow):
         self.jobs_list = list(self.database.get_jobs_db)
         # for job in self.jobs_list:
             # self.database.remove('jobs', job.id)
+        # self.jobs_list[1].set_status('Finished')
         # self.database.commit()
         jobs_model = JobsModel(self.jobs_list)
         self.uiJobsTableView.setModel(jobs_model)
@@ -65,6 +66,7 @@ class MainWindow(qtw.QMainWindow):
         self.uiMoleculesTree.header().setSectionResizeMode(qtw.QHeaderView.ResizeToContents)
         # Projects
         self.projects_list = list(self.database.get_projects_db)
+        # print([i.calculations for i in self.projects_list])
         proj_tree_model = ProjectsModel(self.projects_list)
         self.uiProjectsTreeView.setModel(proj_tree_model.create_model())
         self.uiProjectsTreeView.header().setSectionResizeMode(qtw.QHeaderView.ResizeToContents)
@@ -232,8 +234,8 @@ class MainWindow(qtw.QMainWindow):
         self.thread.start()
 
     def create_molecule(self, smiles=[], names=[], path=False):
-        kwargs = [{}]
-        mapping = True
+        kwargs = []
+        mapping = False
         smi_lines = smiles
         if path:
             smi_lines = path
@@ -303,10 +305,7 @@ class MainWindow(qtw.QMainWindow):
                     continue
                 self.database.remove('molecules', m.smiles)
                 self.database.commit()
-                if '_2' in m.mol_img:
-                    shutil.rmtree(f'molecules/{m.inchi_key}_2/', ignore_errors=True)
-                else:
-                    shutil.rmtree(f'molecules/{m.inchi_key}/', ignore_errors=True)
+                shutil.rmtree(f'{m.mol_directory}', ignore_errors=True)
                 self.set_models()
 
     def remove_group_calc(self):
@@ -399,12 +398,13 @@ class MainWindow(qtw.QMainWindow):
         self.set_models()
 
     @qtc.pyqtSlot(object, float)
-    def mol_workflow(self, results, progess):
+    def mol_workflow(self, results, progress):
+        print(progress)
         if not isinstance(results, list):
             self.results.append(results)
         else:
             self.results = results
-        if not progess == 100:
+        if not progress == 100:
             return
         for molecule in self.results:
             if not molecule:
@@ -445,42 +445,43 @@ class MainWindow(qtw.QMainWindow):
 
     @logger.catch
     def start_project(self, log):
-        # print(log)
         # escogre si ejecutar en serie o en paralelo
         project = self.selected_project
-        has_calculations = project.calculations
         # already_programmed = project.status == 'Programmed'
-        if project is not None and has_calculations:
-            for index, calc in enumerate(project.calculations):
-                programmed = calc.get('status') == 'Programmed'
-                if calc['type'] in ('Optimization', 'Energy', 'Frequency')\
-                   and not programmed:
-                    # esto sería para hacer en paralelo; invertir el if anterior y
-                    # el siguiente for para hacer en serie (según moléculas)
-                    for molecule in project.molecules:
-                        self.gauss_controller = Gaussian(
-                            molecule,
-                            # keywords=calc['keywords'],
-                            # job_type=calc['type'],
-                            # coordinates=calc.get('coordinates'),
-                            project=project,
-                            calc=calc
-                        )
-                        self.gauss_controller.submitted.connect(self.queue_manager)
-                        self.gauss_controller.queue_calculation()
-                elif calc['type'] == 'Docking' and not programmed:  # buscar otra forma con menos args
-                    for molecule in project.molecules:
-                        self.vina_controller = MyVina(
-                            molecule,
-                            project=project,
-                            calc=calc
-                        )
-                        self.vina_controller.submitted.connect(self.queue_manager)
-                        self.vina_controller.queue_calculation()
-                project.calculations[index]['status'] = 'Programmed'
-                project._p_changed = True
-            self.database.commit()
-            self.set_models()
+        if project is None:
+            return
+        if not project.calculations:
+            return
+        for index, calc in enumerate(project.calculations):
+            programmed = calc.get('status') == 'Programmed'
+            if calc['type'] in ('Optimization', 'Energy', 'Frequency')\
+               and not programmed:
+                # esto sería para hacer en paralelo; invertir el if anterior y
+                # el siguiente for para hacer en serie (según moléculas)
+                for molecule in project.molecules:
+                    self.gauss_controller = Gaussian(
+                        molecule,
+                        # keywords=calc['keywords'],
+                        # job_type=calc['type'],
+                        # coordinates=calc.get('coordinates'),
+                        project=project,
+                        calc=calc
+                    )
+                    self.gauss_controller.submitted.connect(self.queue_manager)
+                    self.gauss_controller.queue_calculation()
+            elif calc['type'] == 'Docking' and not programmed:  # buscar otra forma con menos args
+                for molecule in project.molecules:
+                    self.vina_controller = MyVina(
+                        molecule,
+                        project=project,
+                        calc=calc
+                    )
+                    self.vina_controller.submitted.connect(self.queue_manager)
+                    self.vina_controller.queue_calculation()
+            project.calculations[index]['status'] = 'Programmed'
+            project._p_changed = True
+        self.database.commit()
+        self.set_models()
 
     def gaussian_setup(self, group=False):
         """gaussian_setup.
@@ -555,6 +556,7 @@ class MainWindow(qtw.QMainWindow):
     def workflow(self, job_id, status):
         job = self.database.get('jobs', job_id)
         job.set_status(status)
+        print(status)
         if status == 'Finished' and job.type == 'Optimization':
             mol = self.database.get('molecules', job.molecule_id)
             mol.add_conf_from_opt_file(job.output_file, job.keywords)
@@ -613,7 +615,7 @@ class MainWindow(qtw.QMainWindow):
         elif dock_type == 'redocking':
             projects = [
                 p for p in self.projects_list if p.calculations \
-                and p.calculations[0].get('redocking')
+                and any([i.get('redocking') for i in p.calculations])
             ]
             self.docking_plotter = RedockingPlotter(projects, self.jobs_list)
 

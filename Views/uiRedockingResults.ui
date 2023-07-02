@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1615</width>
+    <width>1314</width>
     <height>916</height>
    </rect>
   </property>
@@ -18,7 +18,7 @@
     <rect>
      <x>35</x>
      <y>325</y>
-     <width>1551</width>
+     <width>881</width>
      <height>576</height>
     </rect>
    </property>
@@ -39,7 +39,7 @@
     <rect>
      <x>35</x>
      <y>56</y>
-     <width>1181</width>
+     <width>1261</width>
      <height>266</height>
     </rect>
    </property>
@@ -50,10 +50,10 @@
   <widget class="QGroupBox" name="groupBox">
    <property name="geometry">
     <rect>
-     <x>1220</x>
-     <y>10</y>
+     <x>925</x>
+     <y>330</y>
      <width>366</width>
-     <height>316</height>
+     <height>571</height>
     </rect>
    </property>
    <property name="title">
@@ -83,7 +83,7 @@
          <x>0</x>
          <y>0</y>
          <width>354</width>
-         <height>284</height>
+         <height>539</height>
         </rect>
        </property>
        <widget class="QWidget" name="verticalLayoutWidget">
@@ -92,7 +92,7 @@
           <x>0</x>
           <y>0</y>
           <width>351</width>
-          <height>281</height>
+          <height>536</height>
          </rect>
         </property>
         <layout class="QVBoxLayout" name="uiProjectsLayout">

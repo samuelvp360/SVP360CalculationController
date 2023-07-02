@@ -7,6 +7,7 @@ import re
 import subprocess
 import numpy as np
 import pandas as pd
+from os import listdir
 from PIL import Image, ImageQt
 from rdkit import Chem
 from rdkit.Chem import AllChem, Draw, Descriptors, rdMolAlign
@@ -130,13 +131,14 @@ class Molecule(Persistent):
         return img
 
     def __set_mol_img(self):
-        self.mol_img = f'molecules/{self.inchi_key}/{self.inchi_key}.png'
-        if not os.path.exists(f'molecules/{self.inchi_key}/'):
-            os.makedirs(f'molecules/{self.inchi_key}/')
-        else:
-            self.mol_img = f'molecules/{self.inchi_key}_2/{self.inchi_key}.png'
-            os.makedirs(f'molecules/{self.inchi_key}_2/')
-            # return  # to avoid redo the process for existing molecules
+        last = len(
+            [i for i in listdir('molecules/') if f'molecules/{self.inchi_key}' in i]
+        )
+        print(last)
+        self.mol_directory = f'molecules/{self.inchi_key}_{last + 1}/'
+        self.mol_img = f'{self.mol_directory}{self.inchi_key}.png'
+        if not os.path.exists(self.mol_directory):
+            os.makedirs(self.mol_directory)
         Draw.MolToFile(
             Chem.MolFromSmiles(self.smiles), self.mol_img, size=(350, 350)
         )
@@ -154,10 +156,7 @@ class Molecule(Persistent):
         converter = ob.OBConversion()
         mol_ob = ob.OBMol()
         converter.SetInAndOutFormats('pdb', 'mol2')
-        try:
-            file_name = f'molecules/{self.inchi_key}/{self.inchi_key}.mol2'
-        except FileNotFoundError:
-            file_name = f'molecules/{self.inchi_key}_2/{self.inchi_key}.mol2'
+        file_name = f'{self.mol_directory}{self.inchi_key}.mol2'
         converter.ReadString(
             mol_ob, Chem.MolToPDBBlock(
                 self.mol, confId=self.conf_dict[conformer]
@@ -580,8 +579,8 @@ class Docking(Persistent):
             self.energies = self.get_binding_energies(self.output_file)
             if self.redocking:
                 self.rmsd = self.get_rmsd(self.nat_lig_path)
-                print(self.rmsd)
-            print(self.energies)
+                print(f'rmsd: {self.rmsd}')
+                print(f'energies: {self.energies}')
             self.finished = datetime.now()
             self.elapsed = self.finished - self.started
             self._p_changed = True
@@ -599,49 +598,37 @@ class Docking(Persistent):
         rmsd = np.empty(len(self.output_file))
         with open(nat_lig_path, 'r') as file:
             nat_lig_block = file.read()
-        # if lig_format == 'pdb':
-        converter.SetInAndOutFormats(lig_format, 'mol2')
-            # mol_ref = Chem.rdmolfiles.MolFromPDBBlock(nat_lig_block)
-        # elif lig_format == 'pdbqt':
-            # converter.SetInAndOutFormats('pdbqt', 'mol2')
-        mol_ob = ob.OBMol()
-        converter.ReadString(mol_ob, nat_lig_block)
-        # mol_ob.AddHydrogens()
-        new_block = converter.WriteString(mol_ob)
-        # new_name = nat_lig_path.split(".")[0] + '.mol2'
-        # subprocess.run(
-            # f'obabel {nat_lig_path} -O {new_name}',
-            # shell=True,
-            # capture_output=True,
-            # text=True
-        # )
-        # with open(new_name, 'r') as file:
-            # block = file.read()
-        # mol_ref = Chem.MolFromMol2Block(block)
-        # os.remove(new_name)
-        mol_ref = Chem.MolFromMol2Block(new_block)
+        if lig_format == 'pdb':
+            mol_ref = Chem.MolFromPDBBlock(nat_lig_block)
+        else:
+            converter.SetInAndOutFormats(lig_format, 'pdb')
+            mol_ob = ob.OBMol()
+            converter.ReadString(mol_ob, nat_lig_block)
+            new_block = converter.WriteString(mol_ob)
+            mol_ref = Chem.MolFromPDBBlock(
+                new_block
+            )
         mol_ref_neworder = tuple(zip(*sorted([(j, i) for i, j in enumerate(Chem.CanonicalRankAtoms(mol_ref))])))[1]
         mol_ref = Chem.RenumberAtoms(mol_ref, mol_ref_neworder)
-        # print(Chem.MolToMolBlock(mol_ref))
         if mol_ref:
             output_files = self.output_file
             for i, out in enumerate(output_files):
                 with open(out, 'r') as file:
                     block = file.read()
                     mol_ob = ob.OBMol()
-                    converter.SetInAndOutFormats('pdbqt', 'mol2')
+                    converter.SetInAndOutFormats('pdbqt', 'pdb')
                     converter.ReadString(mol_ob, block)
-                    # mol_ob.AddHydrogens()
                     new_block = converter.WriteString(mol_ob)
-                    mol = Chem.MolFromMol2Block(new_block)
+                    mol = Chem.MolFromPDBBlock(
+                        new_block
+                    )
                     mol_neworder = tuple(zip(*sorted([(j, i) for i, j in enumerate(Chem.CanonicalRankAtoms(mol))])))[1]
                     mol = Chem.RenumberAtoms(mol, mol_neworder)
-                    # print(Chem.MolToMolBlock(mol))
                     try:
+                        mol_ref = AllChem.AssignBondOrdersFromTemplate(mol, mol_ref)
                         rmsd[i] = rdMolAlign.GetBestRMS(mol, mol_ref)
                     except RuntimeError:
                         print('An error occurred. Try again.')
-                        return rmsd
             return rmsd
 
     def get_binding_energies(self, outputs):

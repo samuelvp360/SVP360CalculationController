@@ -1173,10 +1173,10 @@ class Gaussian(qtw.QMainWindow):
         """
         if not self.job_type:
             self.job_type = self._jobTypes[self._jobsWidgets[0].currentIndex()]
-        name = f'molecules/{self._molecule.inchi_key}/{self.job_type}'
+        name = f'{self._molecule.mol_directory}{self.job_type}'
         existent_imputs = str(
             len(
-                [i for i in listdir(f'molecules/{self._molecule.inchi_key}/') if re.sub(r'_\d+\.com', '', i) == self.job_type]
+                [i for i in listdir(f'{self._molecule.mol_directory}') if re.sub(r'_\d+\.com', '', i) == self.job_type]
             )
         )
         input_file = f'{name}_{existent_imputs}.com'
@@ -1194,7 +1194,7 @@ class Gaussian(qtw.QMainWindow):
             'input_file': input_file,
             'output_file': output_file,
             'molecule': self._molecule.get_name,
-            'molecule_id': self._molecule.inchi_key,
+            'molecule_id': self._molecule.smiles,
             'coord_system': self.coord_system,
             'status': 'Pending'
         }
@@ -1381,7 +1381,7 @@ class MyVina(qtw.QWidget):
             if self.project:
                 receptor_file = f'projects/{self.project.name}/{receptor_name}_receptor.pdbqt'
             else:
-                receptor_file = f'molecules/{self.molecule.inchi_key}/{receptor_name}_receptor.pdbqt'
+                receptor_file = f'{self.molecule.mol_directory}{receptor_name}_receptor.pdbqt'
             if receptor_format == 'pdbqt':
                 src = receptor
                 dst = receptor_file
@@ -1414,7 +1414,7 @@ class MyVina(qtw.QWidget):
         # )
         *receptor_name, receptor_format = self.config['receptor'].split('/')[-1].split('.')
         receptor_name = receptor_name[-1]
-        ligand = f'molecules/{self.molecule.inchi_key}/{self.molecule.inchi_key}_{receptor_name}.pdbqt'
+        ligand = f'{self.molecule.mol_directory}{self.molecule.inchi_key}_{receptor_name}.pdbqt'
         previous = len(glob(ligand.split('.')[0] + '_*.pdbqt'))
         output_file = [
             f'{ligand.split(".")[0]}_{i}.pdbqt' for i in range(previous + 1, previous + self.times + 1)
@@ -1444,7 +1444,7 @@ class MyVina(qtw.QWidget):
             'input_file': f'{self.config.get("ligand").split(".")[0]}_conf.txt',
             'output_file': output_file,
             'molecule': self.molecule.get_name,
-            'molecule_id': self.molecule.inchi_key,
+            'molecule_id': self.molecule.smiles,
             'auto_box_size': self.auto_box_size,
             'nat_lig_path': self.nat_lig_path,
             'redocking': self.redocking,

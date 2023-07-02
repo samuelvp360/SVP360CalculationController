@@ -294,7 +294,10 @@ class GenericWorker(qtc.QObject):
                 if self.paused:
                     break
                 # try:
-                result = self.function(item, **self.kwargs[i])
+                if self.kwargs:
+                    result = self.function(item, **self.kwargs[i])
+                else:
+                    result = self.function(item)
                 process = (i + 1) / len(self.sequence) * 100
                 self.workflow.emit(result, process)
                 # except:

@@ -129,8 +129,6 @@ class DockingPlotter(qtw.QWidget):
         self.sorted = self.uiSortedCheck.isChecked()
         self.uiSortedCheck.setEnabled(True)
         self.canvas.ax.set_title('Docking')
-        self.canvas.ax.set_xlabel('Molecule')
-        self.canvas.ax.set_ylabel('Binding Energy (kcal/mol)')
         self.canvas.ax.tick_params(axis='x', labelrotation=90)
         to_plot_both = self.df.iloc[self.selected_jobs]
         min_value = min([min(i) for i in to_plot_both['Binding energies']])
@@ -151,19 +149,44 @@ class DockingPlotter(qtw.QWidget):
             self.uiCompareProjectButton.setEnabled(False)
         total = to_plot_both.shape[0]
         if self.sorted:
-            to_plot_both['Medians'] = to_plot_both['Binding energies'].apply(np.median)
+            to_plot_both.loc[:, 'Medians'] = to_plot_both.loc[:, 'Binding energies'].apply(np.median)
             to_plot_both.sort_values(by='Medians', inplace=True)
-        props={'color': 'blue', 'linewidth': 1.0}
+        # props={'color': 'blue', 'linewidth': 1.0}
         positions = np.arange(total)
-        self.canvas.ax.set_xlim(left=-2, right=positions[-1] + 2)
-        self.canvas.ax.boxplot(
+        box_patches = self.canvas.ax.boxplot(
             positions=positions,
             x=to_plot_both['Binding energies'],
             labels=to_plot_both['Molecule'],
-            boxprops=props, medianprops=props,
-            whiskerprops=props, capprops=props,
+            patch_artist=True,
+            notch=True
+            # boxprops=props, medianprops=props,
+            # whiskerprops=props, capprops=props,
         )
+        self.customize_boxes(box_patches, self.canvas.ax, max_value, color='blue')
+        self.canvas.ax.set_xlim(left=-2, right=positions[-1] + 2)
+        self.canvas.ax.set_ylim(bottom=min_value - 2, top=max_value + 2)
+        self.canvas.ax.set_xlabel('Molecule')
+        self.canvas.ax.set_ylabel('Binding Energy (kcal/mol)')
         self.canvas.draw()
+
+    def customize_boxes(self, patches, ax, max_val, color='black'):
+        for box in patches['boxes']:
+            box.set(
+                facecolor=color,
+                edgecolor='red',
+                alpha=0.5,
+                linewidth=1.0,
+            )
+        for median in patches['medians']:
+            (x_l, y), (x_r, _) = median.get_xydata()
+            x_center = (x_r + x_l)/2
+            ax.text(
+                x_center, max_val + 1, f'{y:.2f}',
+                fontsize=10, color=color,
+                verticalalignment='center',
+                horizontalalignment='left',
+                rotation=90
+            )
 
     def compare_project(self):
         self.canvas.ax.clear()
@@ -364,7 +387,7 @@ class RedockingPlotter(qtw.QWidget):
             rmsd = []
             project_name = []
             for job in self.jobs:
-                if job.id in project.job_ids:
+                if job.id in project.job_ids and job.type == 'Docking':
                     if len(job.energies) == 0:
                         continue
                     energies.append(job.energies)
@@ -399,31 +422,64 @@ class RedockingPlotter(qtw.QWidget):
         self.canvas.ax.clear()
         if not self.selected_jobs or not self.df.shape[0]:
             return
-        self.ax2 = self.canvas.ax.twinx()
+        if not hasattr(self, 'ax2'):
+            self.ax2 = self.canvas.ax.twinx()
         self.ax2.clear()
-        self.canvas.ax.set_ylabel('RMSD')
         self.canvas.ax.tick_params(axis='x', labelrotation=90)
+        self.canvas.ax.tick_params(axis='y', colors='red')
+        self.ax2.tick_params(axis='y', colors='blue')
         self.canvas.ax.set_ylim(bottom=0., top=2.5)
-        props={'color': 'blue', 'linewidth': 1.0}
+        self.canvas.ax.set_title(f'Redocking')
         to_plot = self.df.iloc[self.selected_jobs]
-        self.canvas.ax.set_xlabel(to_plot['Molecule'])
+        min_value = min([min(i) for i in to_plot['Binding energies']])
+        max_value = max([max(i) for i in to_plot['Binding energies']])
+        total = to_plot.shape[0]
+        positions = np.arange(total)
+        positions_2 = np.arange(total) * -1
+        positions_2 = positions_2 + -1
+        positions_3 = np.arange(total) * 1
+        positions_3 = positions_3 + 1
         receptor_name = to_plot.loc[0, 'Receptor']
-        self.canvas.ax.set_title(f'Docking on {receptor_name}')
-        self.canvas.ax.boxplot(
-            x=to_plot['RMSD'], positions=[-0.5],
-            # labels=to_plot['Molecule'],
-            boxprops=props, medianprops=props,
-            whiskerprops=props, capprops=props,
+        rmsd_patches = self.canvas.ax.boxplot(
+            to_plot['RMSD'], positions=positions_2,
+            patch_artist=True, # to fill with colors
+            notch=True,
+            labels=[
+                f'{mol} ({proj})' for mol, proj in zip(to_plot['Molecule'], to_plot['Project'])
+            ]
         )
-        self.ax2.set_ylabel('Binding Energy (kcal/mol)')
-        props={'color': 'red', 'linewidth': 1.0}
-        self.ax2.boxplot(
-            x=to_plot['Binding energies'], positions=[0.5],
-            labels=to_plot['Molecule'],
-            boxprops=props, medianprops=props,
-            whiskerprops=props, capprops=props
+        self.customize_boxes(rmsd_patches, self.canvas.ax, color='red')
+        energy_patches = self.ax2.boxplot(
+            x=to_plot['Binding energies'], positions=positions_3,
+            notch=True,
+            patch_artist=True, # to fill with colors
+            labels=[
+                f'{mol} ({proj})' for mol, proj in zip(to_plot['Molecule'], to_plot['Project'])
+            ]
         )
+        self.customize_boxes(energy_patches, self.ax2, color='blue')
+        self.canvas.ax.set_ylabel('RMSD (\u212B)', color='red')
+        self.ax2.set_ylim(bottom=min_value - 0.5, top=max_value + 0.5)
+        self.ax2.set_ylabel('Binding Energy (kcal/mol)', color='blue')
         self.canvas.draw()
+
+    def customize_boxes(self, patches, ax, color='black'):
+        for box in patches['boxes']:
+            box.set(
+                facecolor=color,
+                edgecolor='red',
+                alpha=0.5,
+                linewidth=1.0,
+            )
+        for median in patches['medians']:
+            (x_l, y), (x_r, _) = median.get_xydata()
+            x_center = x_r + (x_r - x_l)/2
+            ax.text(
+                x_center, y, f'{y:.2f}',
+                fontsize=10, color=color,
+                verticalalignment='center',
+                horizontalalignment='left',
+            )
 
     def select_jobs(self):
         indexes = self.uiResultsTableView.selectedIndexes()
