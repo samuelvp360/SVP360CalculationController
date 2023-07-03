@@ -57,11 +57,12 @@ class Molecule(Persistent):
     def get_rdkit_mol(self, mol_input, file_format):
         if file_format == 'smiles':
             return self.__from_smiles(mol_input)
-        elif file_format in 'mol2':
+        elif file_format in ('mol2', 'pdb'):
             mol = self.__from_path(mol_input, file_format)
             conf = self.__from_opt_file(mol_input)
             conf = conf.GetConformer()
             mol.AddConformer(conf)
+            print('la tomó del confórmero')
             return mol
         elif file_format == 'log':
             return self.__from_opt_file(mol_input)
@@ -568,6 +569,7 @@ class Docking(Persistent):
         for k, v in kwargs.items():
             setattr(self, k, v)
         self.energies = []
+        self.idx_best_fit = False
         self.programmed = datetime.now()
         self.__status = 'Programmed'
 
@@ -576,11 +578,21 @@ class Docking(Persistent):
         if status == 'Running':
             self.started = datetime.now()
         elif status in 'Finished':
-            self.energies = self.get_binding_energies(self.output_file)
+            self.energies, self.idx_best_fit = self.get_binding_energies(self.output_file)
             if self.redocking:
                 self.rmsd = self.get_rmsd(self.nat_lig_path)
                 print(f'rmsd: {self.rmsd}')
                 print(f'energies: {self.energies}')
+            if self.preserve_best:
+                new_name = f'{self.output_file[self.idx_best_fit].split(".")[0]}_best.pdbqt'
+                exists = os.path.exists(new_name)
+                if exists:
+                    new_name = new_name.replace('_best', '_best_2')
+                to_preserve = self.output_file.pop(self.idx_best_fit)
+                for out in self.output_file:
+                    os.remove(out)
+                os.rename(to_preserve, new_name)
+                self.output_file = [new_name]
             self.finished = datetime.now()
             self.elapsed = self.finished - self.started
             self._p_changed = True
@@ -633,13 +645,17 @@ class Docking(Persistent):
 
     def get_binding_energies(self, outputs):
         energies = np.zeros(len(outputs))
+        idx_best = 0
         for index, out in enumerate(outputs):
             with open(out, 'r') as file:
                 for line in file.readlines():
                     if line.startswith('REMARK VINA RESULT:'):
                         energies[index] = float(line.split()[3])
                         break
-        return energies
+        for index, energy in enumerate(energies):
+            if index > 0:
+                idx_best = index if energies[index] < energies[idx_best] else idx_best
+        return energies, idx_best
 
     def create_config(self):
         conf = ''

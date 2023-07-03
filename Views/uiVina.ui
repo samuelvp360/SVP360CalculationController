@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>517</width>
-    <height>640</height>
+    <height>690</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -287,8 +287,8 @@
    </property>
    <property name="geometry">
     <rect>
-     <x>198</x>
-     <y>560</y>
+     <x>243</x>
+     <y>615</y>
      <width>231</width>
      <height>50</height>
     </rect>
@@ -309,8 +309,8 @@
   <widget class="QPushButton" name="uiCancelButton">
    <property name="geometry">
     <rect>
-     <x>90</x>
-     <y>560</y>
+     <x>135</x>
+     <y>615</y>
      <width>89</width>
      <height>50</height>
     </rect>
@@ -409,6 +409,31 @@
     </property>
    </widget>
   </widget>
+  <widget class="QCheckBox" name="uiPreserveCheck">
+   <property name="geometry">
+    <rect>
+     <x>40</x>
+     <y>570</y>
+     <width>201</width>
+     <height>23</height>
+    </rect>
+   </property>
+   <property name="toolTip">
+    <string>If this is uncheched, all the *.pdbqt files will be preserved</string>
+   </property>
+   <property name="statusTip">
+    <string/>
+   </property>
+   <property name="whatsThis">
+    <string/>
+   </property>
+   <property name="text">
+    <string>Preserve only the best fit</string>
+   </property>
+   <property name="checked">
+    <bool>true</bool>
+   </property>
+  </widget>
  </widget>
  <tabstops>
   <tabstop>uiOpenReceptorButton</tabstop>
@@ -435,12 +460,12 @@
    <slot>close()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>139</x>
-     <y>586</y>
+     <x>184</x>
+     <y>641</y>
     </hint>
     <hint type="destinationlabel">
      <x>152</x>
-     <y>-4</y>
+     <y>0</y>
     </hint>
    </hints>
   </connection>
@@ -456,7 +481,7 @@
     </hint>
     <hint type="destinationlabel">
      <x>68</x>
-     <y>-11</y>
+     <y>0</y>
     </hint>
    </hints>
   </connection>
@@ -467,8 +492,8 @@
    <slot>queue_calculation()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>263</x>
-     <y>597</y>
+     <x>308</x>
+     <y>652</y>
     </hint>
     <hint type="destinationlabel">
      <x>322</x>
@@ -488,7 +513,7 @@
     </hint>
     <hint type="destinationlabel">
      <x>44</x>
-     <y>-9</y>
+     <y>0</y>
     </hint>
    </hints>
   </connection>
@@ -524,6 +549,22 @@
     </hint>
    </hints>
   </connection>
+  <connection>
+   <sender>uiPreserveCheck</sender>
+   <signal>clicked()</signal>
+   <receiver>Form</receiver>
+   <slot>set_preserve()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>133</x>
+     <y>585</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>269</x>
+     <y>-17</y>
+    </hint>
+   </hints>
+  </connection>
  </connections>
  <slots>
   <slot>open_receptor()</slot>
@@ -531,5 +572,6 @@
   <slot>center_from_nat_ligand()</slot>
   <slot>set_auto_box_size()</slot>
   <slot>set_redocking()</slot>
+  <slot>set_preserve()</slot>
  </slots>
 </ui>

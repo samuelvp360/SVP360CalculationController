@@ -52,7 +52,8 @@ class MainWindow(qtw.QMainWindow):
         self.jobs_list = list(self.database.get_jobs_db)
         # for job in self.jobs_list:
             # self.database.remove('jobs', job.id)
-        # self.jobs_list[1].set_status('Finished')
+        # print([hasattr(i, 'rmsd') for i in self.jobs_list if i.type == 'Docking'])
+        # self.database.remove('jobs', 1)
         # self.database.commit()
         jobs_model = JobsModel(self.jobs_list)
         self.uiJobsTableView.setModel(jobs_model)
@@ -66,7 +67,7 @@ class MainWindow(qtw.QMainWindow):
         self.uiMoleculesTree.header().setSectionResizeMode(qtw.QHeaderView.ResizeToContents)
         # Projects
         self.projects_list = list(self.database.get_projects_db)
-        # print([i.calculations for i in self.projects_list])
+        # print(self.projects_list[1].calculations)
         proj_tree_model = ProjectsModel(self.projects_list)
         self.uiProjectsTreeView.setModel(proj_tree_model.create_model())
         self.uiProjectsTreeView.header().setSectionResizeMode(qtw.QHeaderView.ResizeToContents)
@@ -399,7 +400,6 @@ class MainWindow(qtw.QMainWindow):
 
     @qtc.pyqtSlot(object, float)
     def mol_workflow(self, results, progress):
-        print(progress)
         if not isinstance(results, list):
             self.results.append(results)
         else:
@@ -556,7 +556,6 @@ class MainWindow(qtw.QMainWindow):
     def workflow(self, job_id, status):
         job = self.database.get('jobs', job_id)
         job.set_status(status)
-        print(status)
         if status == 'Finished' and job.type == 'Optimization':
             mol = self.database.get('molecules', job.molecule_id)
             mol.add_conf_from_opt_file(job.output_file, job.keywords)

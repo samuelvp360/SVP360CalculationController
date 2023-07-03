@@ -183,8 +183,8 @@ class DockingPlotter(qtw.QWidget):
             ax.text(
                 x_center, max_val + 1, f'{y:.2f}',
                 fontsize=10, color=color,
-                verticalalignment='center',
-                horizontalalignment='left',
+                verticalalignment='top',
+                horizontalalignment='center',
                 rotation=90
             )
 
@@ -428,17 +428,23 @@ class RedockingPlotter(qtw.QWidget):
         self.canvas.ax.tick_params(axis='x', labelrotation=90)
         self.canvas.ax.tick_params(axis='y', colors='red')
         self.ax2.tick_params(axis='y', colors='blue')
-        self.canvas.ax.set_ylim(bottom=0., top=2.5)
-        self.canvas.ax.set_title(f'Redocking')
+        # self.canvas.ax.set_title(f'Redocking')
         to_plot = self.df.iloc[self.selected_jobs]
-        min_value = min([min(i) for i in to_plot['Binding energies']])
-        max_value = max([max(i) for i in to_plot['Binding energies']])
+        min_value_energy = min([min(i) for i in to_plot['Binding energies']])
+        max_value_energy = max([max(i) for i in to_plot['Binding energies']])
+        avg_value_energy = (min_value_energy + max_value_energy) / 2
+        min_value_rmsd = min([min(i) for i in to_plot['RMSD']])
+        max_value_rmsd = max([max(i) for i in to_plot['RMSD']])
         total = to_plot.shape[0]
         positions = np.arange(total)
         positions_2 = np.arange(total) * -1
         positions_2 = positions_2 + -1
+        positions_2 = positions_2[::-1]
         positions_3 = np.arange(total) * 1
         positions_3 = positions_3 + 1
+        # self.ax2.axhline(min_value_energy, linewidth=.5, color='green')
+        # self.ax2.axhline(avg_value_energy, linewidth=.5, color='blue', linestyle='--')
+        # self.ax2.axhline(max_value_energy, linewidth=.5, color='red')
         receptor_name = to_plot.loc[0, 'Receptor']
         rmsd_patches = self.canvas.ax.boxplot(
             to_plot['RMSD'], positions=positions_2,
@@ -448,7 +454,7 @@ class RedockingPlotter(qtw.QWidget):
                 f'{mol} ({proj})' for mol, proj in zip(to_plot['Molecule'], to_plot['Project'])
             ]
         )
-        self.customize_boxes(rmsd_patches, self.canvas.ax, color='red')
+        self.customize_boxes(rmsd_patches, self.canvas.ax, max_value_rmsd, color='red')
         energy_patches = self.ax2.boxplot(
             x=to_plot['Binding energies'], positions=positions_3,
             notch=True,
@@ -457,13 +463,14 @@ class RedockingPlotter(qtw.QWidget):
                 f'{mol} ({proj})' for mol, proj in zip(to_plot['Molecule'], to_plot['Project'])
             ]
         )
-        self.customize_boxes(energy_patches, self.ax2, color='blue')
+        self.customize_boxes(energy_patches, self.ax2, max_value_energy, color='blue')
         self.canvas.ax.set_ylabel('RMSD (\u212B)', color='red')
-        self.ax2.set_ylim(bottom=min_value - 0.5, top=max_value + 0.5)
+        self.canvas.ax.set_ylim(bottom=0., top=2.5)
+        self.ax2.set_ylim(bottom=min_value_energy - 0.6, top=max_value_energy + 1)
         self.ax2.set_ylabel('Binding Energy (kcal/mol)', color='blue')
         self.canvas.draw()
 
-    def customize_boxes(self, patches, ax, color='black'):
+    def customize_boxes(self, patches, ax, max_val, color='black'):
         for box in patches['boxes']:
             box.set(
                 facecolor=color,
@@ -473,12 +480,13 @@ class RedockingPlotter(qtw.QWidget):
             )
         for median in patches['medians']:
             (x_l, y), (x_r, _) = median.get_xydata()
-            x_center = x_r + (x_r - x_l)/2
+            x_center = (x_r + x_l)/2
             ax.text(
-                x_center, y, f'{y:.2f}',
+                x_center, max_val + 0.3, f'{y:.2f}',
                 fontsize=10, color=color,
-                verticalalignment='center',
-                horizontalalignment='left',
+                verticalalignment='bottom',
+                horizontalalignment='center',
+                rotation=90
             )
 
     def select_jobs(self):

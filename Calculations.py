@@ -1255,6 +1255,7 @@ class MyVina(qtw.QWidget):
         self.config = {}
         self.redocking = False
         self.nat_lig_path = False
+        self.preserve_best = True
         items = list(molecule.conf_dict.keys())
         if project and project.calculations:
             opt = [
@@ -1278,7 +1279,11 @@ class MyVina(qtw.QWidget):
         self.redocking = calc.get('redocking')
         self.uiAutoBoxSize.setChecked(calc.get('auto_box_size'))
         self.conformer = calc.get('conformer')
+        self.preserve_best = calc.get('preserve_best')
         self.set_auto_box_size()
+
+    def set_preserve(self):
+        self.preserve_best = self.uiPreserveCheck.isChecked()
 
     def set_conformer(self):
         conf = self.uiConformerCombo.currentText()
@@ -1449,6 +1454,7 @@ class MyVina(qtw.QWidget):
             'nat_lig_path': self.nat_lig_path,
             'redocking': self.redocking,
             'conformer': self.conformer if self.conformer else 'input',
+            'preserve_best': self.preserve_best,
             'status': 'Pending'
         }
         self.submitted.emit(calculation, self.project.name)
