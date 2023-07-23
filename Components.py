@@ -132,11 +132,12 @@ class Molecule(Persistent):
         return img
 
     def __set_mol_img(self):
-        last = len(
-            [i for i in listdir('molecules/') if f'molecules/{self.inchi_key}' in i]
-        )
-        print(last)
-        self.mol_directory = f'molecules/{self.inchi_key}_{last + 1}/'
+        # last = len(
+            # [i for i in listdir('molecules/') if f'molecules/{self.inchi_key}' in i]
+        # )
+        # print(last)
+        now = str(datetime.now()).split()[-1].replace(':', '_').replace('.', '_')
+        self.mol_directory = f'molecules/{self.inchi_key}_{now}/'
         self.mol_img = f'{self.mol_directory}{self.inchi_key}.png'
         if not os.path.exists(self.mol_directory):
             os.makedirs(self.mol_directory)
@@ -530,26 +531,19 @@ class Project(Persistent):
         self.descriptors.replace(np.nan, 0, inplace=True)
         self._p_changed = True
 
-    def set_clusters(
-        self, cluster_type, labels,
-        total, silhouette_avg,
-        threshold
-    ):
-        self.clusters = {
-            'type': cluster_type,
-            'labels': labels,
-            'total': total,
-            'silhouette_avg': silhouette_avg,
-            'threshold': threshold
-        }
-        # self._p_changed = True
+    def set_clusters(self, clusters):
+        self.clusters = clusters
+        print(clusters.get('sorted_indexes'))
+        self._p_changed = True
 
-    def get_cluster(self, cluster_num):
+    def get_clusters(self):
         labels = self.clusters.get('labels')
-        mols_in_cluster = [
-            m for l, m in zip(labels, self.molecules) if l == cluster_num
-        ]
-        return mols_in_cluster
+        all_clusters = []
+        for t in range(1, self.clusters.get('total') + 1):
+            all_clusters.append(
+                [m.get_name for l, m in zip(labels, self.molecules) if l == t]
+            )
+        return all_clusters
 
     def get_docking_poses(self):
         # primero pasar del pdbqt a pdb y luego asignar los órdenes de enlace

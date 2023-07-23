@@ -47,6 +47,14 @@ class DockingPlotter(qtw.QWidget):
         self.uiPlotLayout.addWidget(self.canvas)
         self.selected_jobs = []
         self.selected_projects = []
+        self.clusters = {}
+        items = [
+            '',
+            'min to max',
+            'max to min',
+            'by clusters'
+        ]
+        self.uiSortedCombo.addItems(items)
         self.create_checks()
         self.create_df()
         self.show()
@@ -62,7 +70,7 @@ class DockingPlotter(qtw.QWidget):
         self.uiProjectsLayout.addItem(spacer)
 
     def set_model(self):
-        model = PandasModel(self.df)
+        model = PandasModel(self.df, chunk=0)
         self.uiResultsTableView.setModel(model)
         self.uiResultsTableView.resizeColumnsToContents()
         self.uiResultsTableView.resizeRowsToContents()
@@ -85,6 +93,7 @@ class DockingPlotter(qtw.QWidget):
 
     def create_df(self):
         dfs = []
+        clusters = {}
         for project in self.selected_projects:
             if not project.job_ids:
                 continue
@@ -116,24 +125,27 @@ class DockingPlotter(qtw.QWidget):
                 'Project': project_name
             }
             dfs.append(pd.DataFrame(values))
+            clusters[project.name] = project.clusters.copy()
         self.df = pd.concat(dfs) if dfs else pd.DataFrame([])
+        self.clusters = clusters
         self.set_model()
 
     def plot(self):
         self.canvas.ax.clear()
         if not self.selected_jobs or not self.df.shape[0]:
-            self.uiSortedCheck.setChecked(False)
             self.uiCompareProjectButton.setEnabled(False)
             self.uiCompareReceptorButton.setEnabled(False)
             return
-        self.sorted = self.uiSortedCheck.isChecked()
-        self.uiSortedCheck.setEnabled(True)
+        self.sorted = self.uiSortedCombo.currentIndex()
         self.canvas.ax.set_title('Docking')
         self.canvas.ax.tick_params(axis='x', labelrotation=90)
         to_plot_both = self.df.iloc[self.selected_jobs]
         min_value = min([min(i) for i in to_plot_both['Binding energies']])
         max_value = max([max(i) for i in to_plot_both['Binding energies']])
         avg_value = (min_value + max_value) / 2
+        self.uiMinValueLabel.setText(f'Min: {min_value:.2f}')
+        self.uiMaxValueLabel.setText(f'Max: {max_value:.2f}')
+        self.uiAvgValueLabel.setText(f'Avg: {avg_value:.2f}')
         self.canvas.ax.axhline(min_value, linewidth=.5, color='green')
         self.canvas.ax.axhline(avg_value, linewidth=.5, color='blue', linestyle='--')
         self.canvas.ax.axhline(max_value, linewidth=.5, color='red')
@@ -148,10 +160,19 @@ class DockingPlotter(qtw.QWidget):
         else:
             self.uiCompareProjectButton.setEnabled(False)
         total = to_plot_both.shape[0]
-        if self.sorted:
+        if self.sorted == 1:
             to_plot_both.loc[:, 'Medians'] = to_plot_both.loc[:, 'Binding energies'].apply(np.median)
             to_plot_both.sort_values(by='Medians', inplace=True)
-        # props={'color': 'blue', 'linewidth': 1.0}
+        elif self.sorted == 2:
+            to_plot_both.loc[:, 'Medians'] = to_plot_both.loc[:, 'Binding energies'].apply(np.median)
+            to_plot_both.sort_values(by='Medians', ascending=False, inplace=True)
+        elif self.sorted == 3:
+            to_plot_both.loc[:, 'Medians'] = to_plot_both.loc[:, 'Binding energies'].apply(np.median)
+            if len(projects) == 1:
+                clusters = self.clusters[projects[0]]
+                sorted_indexes = clusters.get('sorted_indexes')
+                if len(sorted_indexes) == len(to_plot_both):
+                    to_plot_both = to_plot_both.iloc[sorted_indexes]
         positions = np.arange(total)
         box_patches = self.canvas.ax.boxplot(
             positions=positions,
@@ -159,8 +180,6 @@ class DockingPlotter(qtw.QWidget):
             labels=to_plot_both['Molecule'],
             patch_artist=True,
             notch=True
-            # boxprops=props, medianprops=props,
-            # whiskerprops=props, capprops=props,
         )
         self.customize_boxes(box_patches, self.canvas.ax, max_value, color='blue')
         self.canvas.ax.set_xlim(left=-2, right=positions[-1] + 2)
@@ -172,18 +191,18 @@ class DockingPlotter(qtw.QWidget):
     def customize_boxes(self, patches, ax, max_val, color='black'):
         for box in patches['boxes']:
             box.set(
-                facecolor=color,
-                edgecolor='red',
-                alpha=0.5,
+                facecolor='white',
+                edgecolor=color,
+                # alpha=0.5,
                 linewidth=1.0,
             )
         for median in patches['medians']:
             (x_l, y), (x_r, _) = median.get_xydata()
-            x_center = (x_r + x_l)/2
+            x_center = (x_r + x_l) / 2
             ax.text(
                 x_center, max_val + 1, f'{y:.2f}',
                 fontsize=10, color=color,
-                verticalalignment='top',
+                verticalalignment='bottom',
                 horizontalalignment='center',
                 rotation=90
             )
@@ -194,12 +213,11 @@ class DockingPlotter(qtw.QWidget):
         self.canvas.ax.set_xlabel('Molecule')
         self.canvas.ax.set_ylabel('Binding Energy (kcal/mol)')
         self.canvas.ax.tick_params(axis='x', labelrotation=90)
-        self.canvas.ax.axhline(-7., linewidth=.5, color='red')
         colors = ['blue', 'red', 'green', 'magenta', 'orange']
         to_plot_both = self.df.iloc[self.selected_jobs]
         projects = pd.unique(to_plot_both['Project'])
         if len(projects) != 2:
-            return # here a critical warning
+            return  # here a critical warning
         total = to_plot_both.shape[0]
         both_df = []
         for i, project in enumerate(projects):
@@ -209,28 +227,28 @@ class DockingPlotter(qtw.QWidget):
         molecules_p1 = both_df[0]['Molecule'].values.tolist()
         molecules_p2 = both_df[1]['Molecule'].values.tolist()
         if both_df[0].shape[0] != both_df[1].shape[0]:
-            return # avisar que no tienen el mismo número de compuestos
+            return  # avisar que no tienen el mismo número de compuestos
         elif molecules_p1 != molecules_p2:
-            return # avisar que no están en el mismo orden
+            return  # avisar que no están en el mismo orden
         for i, project in enumerate(projects):
-            props = {'color': colors[i], 'linewidth': 1.0}
             total = to_plot.shape[0]
             positions = np.arange(total) * 2 - 0.4 * (-1) ** (i + 1)
             self.canvas.ax.set_xlim(left=-2, right=positions[-1] + 2)
-            self.canvas.ax.plot([], c=colors[i], label=projects[i])
-            self.canvas.ax.boxplot(
+            self.canvas.ax.plot([], label=projects[i])
+            box_patches = self.canvas.ax.boxplot(
                 positions=positions,
                 x=both_df[i].loc[:, 'Binding energies'],
                 labels=molecules_p1,
-                boxprops=props, medianprops=props,
-                whiskerprops=props, capprops=props,
+                patch_artist=True,
+                notch=True
             )
             self.canvas.ax.set_xticks(np.arange(total) * 2)
+            self.customize_boxes(box_patches, self.canvas.ax, color=colors[i])
         self.canvas.ax.legend()
         self.canvas.draw()
         x1 = both_df[0]['Binding energies'].apply(np.median).values.tolist()
         x2 = both_df[1]['Binding energies'].apply(np.median).values.tolist()
-        plt.figure(figsize=(10,10))
+        plt.figure(figsize=(10, 10))
         plt.scatter(x1, x2, alpha=0.3)
         plt.title('Linear correlation between projects')
         plt.xlabel(projects[0])
@@ -255,12 +273,11 @@ class DockingPlotter(qtw.QWidget):
         self.canvas.ax.set_xlabel('Molecule')
         self.canvas.ax.set_ylabel('Binding Energy (kcal/mol)')
         self.canvas.ax.tick_params(axis='x', labelrotation=90)
-        self.canvas.ax.axhline(-7., linewidth=.5, color='red')
         colors = ['blue', 'red', 'green', 'magenta', 'orange']
         to_plot_both = self.df.iloc[self.selected_jobs]
         receptors = pd.unique(to_plot_both['Receptor'])
         if len(receptors) != 2:
-            return # here a critical warning
+            return  # here a critical warning
         total = to_plot_both.shape[0]
         both_df = []
         for i, receptor in enumerate(receptors):
@@ -271,23 +288,37 @@ class DockingPlotter(qtw.QWidget):
         molecules_p1 = both_df[0]['Molecule'].values.tolist()
         molecules_p2 = both_df[1]['Molecule'].values.tolist()
         if both_df[0].shape[0] != both_df[1].shape[0]:
-            return # avisar que no tienen el mismo número de compuestos
+            return  # avisar que no tienen el mismo número de compuestos
         elif molecules_p1 != molecules_p2:
-            return # avisar que no están en el mismo orden
+            return  # avisar que no están en el mismo orden
+        max_values = []
+        min_values = []
+        patches = []
         for i, receptor in enumerate(receptors):
-            props = {'color': colors[i], 'linewidth': 1.0}
             total = both_df[i].shape[0]
             positions = np.arange(total) * 2 - 0.4 * (-1) ** (i + 1)
             self.canvas.ax.set_xlim(left=-2, right=positions[-1] + 2)
-            self.canvas.ax.plot([], c=colors[i], label=receptors[i])
-            self.canvas.ax.boxplot(
+            self.canvas.ax.plot([], label=receptors[i])
+            box_patches = self.canvas.ax.boxplot(
                 positions=positions,
                 x=both_df[i].loc[:, 'Binding energies'],
                 labels=molecules_p1,
-                boxprops=props, medianprops=props,
-                whiskerprops=props, capprops=props,
+                patch_artist=True,
+                notch=True
             )
+            patches.append(box_patches)
             self.canvas.ax.set_xticks(np.arange(total) * 2)
+            max_values.append(max([max(i) for i in both_df[i]['Binding energies']]))
+            min_values.append(min([min(i) for i in both_df[i]['Binding energies']]))
+        min_value = min(min_values)
+        max_value = max(max_values)
+        avg_value = (max_value + min_value) / 2
+        self.uiMinValueLabel.setText(f'Min: {min_value:.2f}')
+        self.uiMaxValueLabel.setText(f'Max: {max_value:.2f}')
+        self.uiAvgValueLabel.setText(f'Avg: {avg_value:.2f}')
+        for i, receptor in enumerate(receptors):
+            self.customize_boxes(patches[i], self.canvas.ax, max_value, color=colors[i])
+        self.canvas.ax.set_ylim(bottom=min_value - 2, top=max_value + 2)
         self.canvas.ax.legend()
         self.canvas.draw()
         # if working with all data is wanted
@@ -297,7 +328,7 @@ class DockingPlotter(qtw.QWidget):
         # if working with the medians of each group of data is wanted
         x1 = both_df[0]['Binding energies'].apply(np.median).values.tolist()
         x2 = both_df[1]['Binding energies'].apply(np.median).values.tolist()
-        plt.figure(figsize=(5,5))
+        plt.figure(figsize=(5, 5))
         plt.scatter(x1, x2, alpha=0.3, label='Medians by molecule')
         plt.title('Linear correlation between receptors')
         plt.xlabel(receptors[0])
@@ -473,14 +504,14 @@ class RedockingPlotter(qtw.QWidget):
     def customize_boxes(self, patches, ax, max_val, color='black'):
         for box in patches['boxes']:
             box.set(
-                facecolor=color,
-                edgecolor='red',
-                alpha=0.5,
+                facecolor='white',
+                edgecolor=color,
+                # alpha=0.5,
                 linewidth=1.0,
             )
         for median in patches['medians']:
             (x_l, y), (x_r, _) = median.get_xydata()
-            x_center = (x_r + x_l)/2
+            x_center = (x_r + x_l) / 2
             ax.text(
                 x_center, max_val + 0.3, f'{y:.2f}',
                 fontsize=10, color=color,
@@ -527,8 +558,12 @@ class Heatmap(qtw.QWidget):
         )
         im = self.canvas.ax.imshow(simil_matrix, cmap='magma_r')
         # Create colorbar
-        cbar = self.canvas.ax.figure.colorbar(im, ax=self.canvas.ax)
-        cbar.ax.set_ylabel('', rotation=-90, va="bottom")
+        cbar = self.canvas.ax.figure.colorbar(
+            im, ax=self.canvas.ax, pad=0.15,
+            aspect=50
+        )
+        # cbar.ax.set_ylabel('Similarity', rotation=-90, va="bottom")
+        cbar.ax.set_ylabel('Similarity', rotation=90, va="center")
         # Show all ticks and label them with the respective list entries.
         self.canvas.ax.set_xticks(
             np.arange(simil_matrix.shape[1]), labels=labels,
@@ -538,16 +573,21 @@ class Heatmap(qtw.QWidget):
         # Let the horizontal axes labeling appear on top.
         self.canvas.ax.tick_params(
             top=True, bottom=False,
-            labeltop=True, labelbottom=False
+            labeltop=True, labelbottom=False,
+            left=False, right=True,
         )
+        self.canvas.ax.yaxis.set_label_position("right")
+        self.canvas.ax.yaxis.tick_right()
         self.canvas.ax.tick_params(axis='x', labelsize=8)
         self.canvas.ax.tick_params(axis='y', labelsize=8)
         # Turn spines off and create white grid.
         self.canvas.ax.spines[:].set_visible(False)
         self.canvas.ax.set_xticks(np.arange(simil_matrix.shape[1] + 1) - .5, minor=True)
         self.canvas.ax.set_yticks(np.arange(simil_matrix.shape[0] + 1) - .5, minor=True)
-        self.canvas.ax.grid(which="minor", color="w", linestyle='-', linewidth=3)
-        self.canvas.ax.tick_params(which="minor", bottom=False, left=False)
+        # self.canvas.ax.grid(which="minor", color="w", linestyle='-', linewidth=0.5)
+        self.canvas.ax.tick_params(
+            which="minor", bottom=False, left=False, right=False, top=False
+        )
         self.canvas.draw()
 
 

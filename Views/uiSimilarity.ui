@@ -175,6 +175,9 @@
    <property name="text">
     <string>Show Heatmap</string>
    </property>
+   <property name="autoDefault">
+    <bool>true</bool>
+   </property>
   </widget>
   <widget class="QPushButton" name="uiShowSimilMapButton">
    <property name="enabled">
@@ -191,6 +194,25 @@
    <property name="text">
     <string>Show Similarity Map</string>
    </property>
+   <property name="autoDefault">
+    <bool>true</bool>
+   </property>
+  </widget>
+  <widget class="QPushButton" name="uiSaveClustersButton">
+   <property name="geometry">
+    <rect>
+     <x>870</x>
+     <y>25</y>
+     <width>191</width>
+     <height>31</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>Save clusters</string>
+   </property>
+   <property name="autoDefault">
+    <bool>true</bool>
+   </property>
   </widget>
   <zorder>scrollArea</zorder>
   <zorder>uiSimilarityTable</zorder>
@@ -200,7 +222,18 @@
   <zorder>uiSimilMetricCombo</zorder>
   <zorder>uiHeatmapButton</zorder>
   <zorder>uiShowSimilMapButton</zorder>
+  <zorder>uiSaveClustersButton</zorder>
  </widget>
+ <tabstops>
+  <tabstop>uiFPTypeCombo</tabstop>
+  <tabstop>uiSimilMetricCombo</tabstop>
+  <tabstop>uiHeatmapButton</tabstop>
+  <tabstop>uiShowSimilMapButton</tabstop>
+  <tabstop>uiSaveClustersButton</tabstop>
+  <tabstop>uiNumClustersSpin</tabstop>
+  <tabstop>uiSimilarityTable</tabstop>
+  <tabstop>scrollArea</tabstop>
+ </tabstops>
  <resources/>
  <connections>
   <connection>
@@ -267,6 +300,22 @@
     </hint>
    </hints>
   </connection>
+  <connection>
+   <sender>uiSaveClustersButton</sender>
+   <signal>clicked()</signal>
+   <receiver>Form</receiver>
+   <slot>save_clusters()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>925</x>
+     <y>40</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>885</x>
+     <y>-4</y>
+    </hint>
+   </hints>
+  </connection>
  </connections>
  <slots>
   <slot>set_fp_type()</slot>
@@ -274,5 +323,6 @@
   <slot>show_heatmap()</slot>
   <slot>show_simil_map()</slot>
   <slot>get_HCL()</slot>
+  <slot>save_clusters()</slot>
  </slots>
 </ui>

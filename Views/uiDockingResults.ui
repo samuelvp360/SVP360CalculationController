@@ -6,40 +6,25 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1615</width>
-    <height>916</height>
+    <width>1900</width>
+    <height>960</height>
    </rect>
+  </property>
+  <property name="sizePolicy">
+   <sizepolicy hsizetype="MinimumExpanding" vsizetype="Maximum">
+    <horstretch>0</horstretch>
+    <verstretch>0</verstretch>
+   </sizepolicy>
   </property>
   <property name="windowTitle">
    <string>Docking Results</string>
   </property>
-  <widget class="QWidget" name="layoutWidget">
-   <property name="geometry">
-    <rect>
-     <x>35</x>
-     <y>325</y>
-     <width>1551</width>
-     <height>576</height>
-    </rect>
-   </property>
-   <layout class="QVBoxLayout" name="verticalLayout_4" stretch="80,500">
-    <property name="spacing">
-     <number>0</number>
-    </property>
-    <item>
-     <layout class="QVBoxLayout" name="uiToolbarLayout"/>
-    </item>
-    <item>
-     <layout class="QVBoxLayout" name="uiPlotLayout"/>
-    </item>
-   </layout>
-  </widget>
   <widget class="QTableView" name="uiResultsTableView">
    <property name="geometry">
     <rect>
      <x>35</x>
      <y>56</y>
-     <width>1181</width>
+     <width>1461</width>
      <height>266</height>
     </rect>
    </property>
@@ -47,29 +32,13 @@
     <bool>true</bool>
    </property>
   </widget>
-  <widget class="QCheckBox" name="uiSortedCheck">
-   <property name="enabled">
-    <bool>false</bool>
-   </property>
-   <property name="geometry">
-    <rect>
-     <x>50</x>
-     <y>20</y>
-     <width>92</width>
-     <height>23</height>
-    </rect>
-   </property>
-   <property name="text">
-    <string>Sorted</string>
-   </property>
-  </widget>
   <widget class="QGroupBox" name="groupBox">
    <property name="geometry">
     <rect>
-     <x>1220</x>
+     <x>1505</x>
      <y>10</y>
      <width>366</width>
-     <height>316</height>
+     <height>261</height>
     </rect>
    </property>
    <property name="title">
@@ -99,7 +68,7 @@
          <x>0</x>
          <y>0</y>
          <width>354</width>
-         <height>284</height>
+         <height>229</height>
         </rect>
        </property>
        <widget class="QWidget" name="verticalLayoutWidget">
@@ -108,7 +77,7 @@
           <x>0</x>
           <y>0</y>
           <width>351</width>
-          <height>281</height>
+          <height>226</height>
          </rect>
         </property>
         <layout class="QVBoxLayout" name="uiProjectsLayout">
@@ -122,12 +91,12 @@
     </item>
    </layout>
   </widget>
-  <widget class="QWidget" name="">
+  <widget class="QWidget" name="layoutWidget">
    <property name="geometry">
     <rect>
      <x>190</x>
      <y>5</y>
-     <width>1026</width>
+     <width>1306</width>
      <height>52</height>
     </rect>
    </property>
@@ -213,6 +182,70 @@
     </item>
    </layout>
   </widget>
+  <widget class="QWidget" name="layoutWidget">
+   <property name="geometry">
+    <rect>
+     <x>35</x>
+     <y>330</y>
+     <width>1836</width>
+     <height>621</height>
+    </rect>
+   </property>
+   <layout class="QVBoxLayout" name="verticalLayout_4" stretch="80,500">
+    <property name="spacing">
+     <number>0</number>
+    </property>
+    <item>
+     <layout class="QVBoxLayout" name="uiToolbarLayout"/>
+    </item>
+    <item>
+     <layout class="QVBoxLayout" name="uiPlotLayout"/>
+    </item>
+   </layout>
+  </widget>
+  <widget class="QWidget" name="layoutWidget">
+   <property name="geometry">
+    <rect>
+     <x>1510</x>
+     <y>273</y>
+     <width>356</width>
+     <height>51</height>
+    </rect>
+   </property>
+   <layout class="QHBoxLayout" name="horizontalLayout_2">
+    <item>
+     <widget class="QLabel" name="uiMinValueLabel">
+      <property name="text">
+       <string/>
+      </property>
+     </widget>
+    </item>
+    <item>
+     <widget class="QLabel" name="uiMaxValueLabel">
+      <property name="text">
+       <string/>
+      </property>
+     </widget>
+    </item>
+    <item>
+     <widget class="QLabel" name="uiAvgValueLabel">
+      <property name="text">
+       <string/>
+      </property>
+     </widget>
+    </item>
+   </layout>
+  </widget>
+  <widget class="QComboBox" name="uiSortedCombo">
+   <property name="geometry">
+    <rect>
+     <x>35</x>
+     <y>5</y>
+     <width>151</width>
+     <height>46</height>
+    </rect>
+   </property>
+  </widget>
  </widget>
  <resources/>
  <connections>
@@ -239,8 +272,8 @@
    <slot>export_to_excel()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>1019</x>
-     <y>27</y>
+     <x>1494</x>
+     <y>28</y>
     </hint>
     <hint type="destinationlabel">
      <x>839</x>
@@ -255,8 +288,8 @@
    <slot>import_from_excel()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>825</x>
-     <y>34</y>
+     <x>1236</x>
+     <y>35</y>
     </hint>
     <hint type="destinationlabel">
      <x>640</x>
@@ -277,22 +310,6 @@
     <hint type="destinationlabel">
      <x>118</x>
      <y>-7</y>
-    </hint>
-   </hints>
-  </connection>
-  <connection>
-   <sender>uiSortedCheck</sender>
-   <signal>stateChanged(int)</signal>
-   <receiver>uiDockingResults</receiver>
-   <slot>plot()</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>58</x>
-     <y>30</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>211</x>
-     <y>-5</y>
     </hint>
    </hints>
   </connection>
@@ -319,12 +336,28 @@
    <slot>compare_receptor()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>644</x>
-     <y>30</y>
+     <x>968</x>
+     <y>31</y>
     </hint>
     <hint type="destinationlabel">
      <x>659</x>
      <y>-1</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>uiSortedCombo</sender>
+   <signal>currentIndexChanged(int)</signal>
+   <receiver>uiDockingResults</receiver>
+   <slot>plot()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>113</x>
+     <y>30</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>15</x>
+     <y>6</y>
     </hint>
    </hints>
   </connection>

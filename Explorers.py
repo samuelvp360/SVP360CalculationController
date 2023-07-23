@@ -17,7 +17,7 @@ from Worker import GenericWorker
 from django.core.paginator import Paginator
 from rdkit import Chem
 from rdkit.Chem import Draw
-from scipy.cluster.hierarchy import dendrogram, linkage, fcluster
+from scipy.cluster.hierarchy import dendrogram, linkage, fcluster, leaves_list
 from sklearn.metrics import silhouette_samples, silhouette_score
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg, NavigationToolbar2QT as NavigationToolbar
 from loguru import logger
@@ -131,9 +131,11 @@ class DescriptorsExplorer(qtw.QWidget):
 
 class SimilarityExplorer(qtw.QWidget):
 
-    def __init__(self, project):
+    def __init__(self, parent, project):
         super().__init__()
         uic.loadUi('Views/uiSimilarity.ui', self)
+        self.parent = parent
+        self.parent.closed.connect(self.close)
         self.project = project
         self.names = [m.get_name for m in project.molecules]
         self.molecules = project.molecules
@@ -154,13 +156,14 @@ class SimilarityExplorer(qtw.QWidget):
         self.uiFPTypeCombo.addItems(fp_types)
         # self.uiFPTypeCombo.setCurrentText('Morgan2')
         self.uiShowSimilMapButton.clicked.connect(self.show_simil_map)
+        self.clusters = None
 
     def set_model(self):
         self.simil_df = self.similarity.similarity_matrix(
             self.fp_type, self.simil_metric
         )
-        self.HCL = self.get_HCL()
-        simil_model = SimilarityModel(self.simil_df)
+        new_simil_df = self.get_HCL()
+        simil_model = SimilarityModel(new_simil_df)
         self.uiSimilarityTable.setModel(simil_model)
         self.uiSimilarityTable.resizeColumnsToContents()
         self.uiSimilarityTable.resizeRowsToContents()
@@ -183,7 +186,8 @@ class SimilarityExplorer(qtw.QWidget):
         self.set_model()
 
     def show_heatmap(self):
-        self.heatmap = Heatmap(self.simil_df, self.fp_type, self.simil_metric)
+        new_simil_df = self.get_HCL()
+        self.heatmap = Heatmap(new_simil_df, self.fp_type, self.simil_metric)
         self.heatmap.plot()
         self.heatmap.show()
 
@@ -214,8 +218,11 @@ class SimilarityExplorer(qtw.QWidget):
             else:
                 threshold = 0.01
         self.canvas.ax.clear()
+        sorted_indexes = leaves_list(linked)
+        new_df = self.simil_df.iloc[sorted_indexes, sorted_indexes] # ojo aquí
+        names = self.simil_df.columns.tolist()
         dend = dendrogram(
-            linked, orientation='left', labels=self.names,
+            linked, orientation='left', labels=names,
             distance_sort='descending', show_leaf_counts=True,
             ax=self.canvas.ax, get_leaves=True, color_threshold=threshold
         )
@@ -224,14 +231,14 @@ class SimilarityExplorer(qtw.QWidget):
         silhouette_avg = silhouette_score(
             simil_matrix, cluster_labels, metric='euclidean'
         )
-        # self.project.set_clusters(
-            # 'HCL', cluster_labels, best,
-            # round(silhouette_avg, 3), threshold
-        # )
-        # for i in range(1, best + 1):
-            # print(
-                # [m.get_name for m in self.project.get_cluster(i)]
-            # )
+        self.clusters = {
+            'type': 'HCL',
+            'labels': cluster_labels,
+            'sorted_indexes': sorted_indexes,
+            'total': best,
+            'silhouette_avg': round(silhouette_avg, 3),
+            'threshold': threshold
+        }
         self.uiSilhouetteLabel.setText(
             f'Silhouette score (avg): {silhouette_avg:.3f}'
         )
@@ -244,6 +251,11 @@ class SimilarityExplorer(qtw.QWidget):
         self.canvas.ax.spines['top'].set_visible(False)
         self.canvas.ax.spines['right'].set_visible(False)
         self.canvas.draw()
+        return new_df
+
+    def save_clusters(self):
+        self.project.set_clusters(self.clusters)
+        self.parent.database.commit()
 
     def show_simil_map(self):
         indexes = self.uiSimilarityTable.selectedIndexes()

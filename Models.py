@@ -2,9 +2,9 @@
 
 from PyQt5 import QtCore as qtc
 from PyQt5 import QtGui as qtg
-from Views import resources
-from rdkit.Chem import Draw
-from loguru import logger
+# from Views import resources
+# from rdkit.Chem import Draw
+# from loguru import logger
 # from PIL import Image, ImageQt
 
 
@@ -13,7 +13,9 @@ class PandasModel(qtc.QAbstractTableModel):
 
     def __init__(self, data, chunk=1):
         super().__init__()
-        if chunk == 1:
+        if not chunk:
+            self.data = data
+        elif chunk == 1:
             self.data = data if data.shape[0] <= 100 else data[:100]
         else:
             self.data = data[(chunk - 1) * 100:] \

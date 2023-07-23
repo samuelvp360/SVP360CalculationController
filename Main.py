@@ -626,7 +626,7 @@ class MainWindow(qtw.QMainWindow):
         if kind == 'fingerprints':
             self.display = FPExplorer(self.selected_project)
         elif kind == 'similarities':
-            self.display = SimilarityExplorer(self.selected_project)
+            self.display = SimilarityExplorer(self, self.selected_project)
         elif kind == 'descriptors':
             self.display = DescriptorsExplorer(self.selected_project)
         self.display.show()
@@ -685,10 +685,6 @@ class MainWindow(qtw.QMainWindow):
                 self.activity_setup()
 
     def closeEvent(self, event):
-        # if hasattr(self, 'worker'):
-            # self.worker.pause()
-        # permite que se termine el último trabajo y luego detiene la lista,
-        # para evitar que los demás trabajos queden sin tiempo de ejecución.
         self.database.close()
         self.closed.emit()
         event.accept()
