@@ -6,11 +6,11 @@ import sys
 from Components import Molecule, Optimization, Project, Docking, Activity
 from Worker import Worker, GenericWorker #, MolWorker
 from Models import MoleculesModel, ProjectsModel, JobsModel
-from Calculations import Gaussian, MyVina
+from Calculations import Gaussian, MyVina, QSAR
 from Inputs import ActivityInput
 from Plotters import DockingPlotter, RedockingPlotter
 from Explorers import FPExplorer, SimilarityExplorer, \
-        DescriptorsExplorer, ChEMBLExplorer
+        DescriptorsExplorer, ChEMBLExplorer, ActivitiesExplorer
 from PyQt5 import QtCore as qtc
 from PyQt5 import QtWidgets as qtw
 from PyQt5 import uic
@@ -221,11 +221,11 @@ class MainWindow(qtw.QMainWindow):
 
     def send_to_worker(
         self, function, sequence, workflow, *,
-        mapping=False, kwargs=[]
+        mapping=False, unpack=False, kwargs=[]
     ):
         self.worker = GenericWorker(
             function, kwargs, sequence=sequence,
-            mapping=mapping
+            mapping=mapping, unpack=unpack
         )
         self.thread = qtc.QThread()
         self.worker.moveToThread(self.thread)
@@ -531,6 +531,15 @@ class MainWindow(qtw.QMainWindow):
         )
         self.activity_controller.submitted.connect(self.activity_manager)
 
+    def QSAR_setup(self):
+        if self.selected_project:
+            self.qsar = QSAR(
+                self, self.selected_project,
+                [p for p in self.projects_list if p.name == 'Docking'][0],
+                self.jobs_list
+            )
+            self.qsar.show()
+
     @qtc.pyqtSlot(dict, str)
     def set_group_calc(self, calculation, project_name):
         self.selected_project.add_calculation(calculation)
@@ -610,13 +619,13 @@ class MainWindow(qtw.QMainWindow):
             projects = [
                 p for p in self.projects_list if p.calculations
             ]
-            self.docking_plotter = DockingPlotter(projects, self.jobs_list)
+            self.docking_plotter = DockingPlotter(self, projects, self.jobs_list)
         elif dock_type == 'redocking':
             projects = [
                 p for p in self.projects_list if p.calculations \
                 and any([i.get('redocking') for i in p.calculations])
             ]
-            self.docking_plotter = RedockingPlotter(projects, self.jobs_list)
+            self.docking_plotter = RedockingPlotter(self, projects, self.jobs_list)
 
     def ChEMBL_explorer(self):
         self.chembl_explorer = ChEMBLExplorer(self)
@@ -629,6 +638,8 @@ class MainWindow(qtw.QMainWindow):
             self.display = SimilarityExplorer(self, self.selected_project)
         elif kind == 'descriptors':
             self.display = DescriptorsExplorer(self.selected_project)
+        elif kind == 'activities':
+            self.display = ActivitiesExplorer(self, self.selected_project)
         self.display.show()
 
     def projects_right_click(self, position):
@@ -641,11 +652,13 @@ class MainWindow(qtw.QMainWindow):
             gauss = calculation.addAction('Gaussian')
             vina = calculation.addAction('Vina')
             local_react = calculation.addAction('Local reactivity')
+            QSAR = calculation.addAction('QSAR')
             docking_results = visualize.addAction('Docking results')
             redocking_results = visualize.addAction('Redocking results')
             descriptors = visualize.addAction('Descriptors')
             fingerprints = visualize.addAction('Fingerprints')
             similarities = visualize.addAction('Similarities')
+            activities = visualize.addAction('Activities')
             action = menu.exec_(self.uiProjectsTreeView.mapToGlobal(position))
             if action == gauss and self.selected_project is not None:
                 self.gaussian_setup(group=True)
@@ -653,6 +666,8 @@ class MainWindow(qtw.QMainWindow):
                 self.vina_setup(group=True)
             elif action == local_react:
                 pass
+            elif action == QSAR:
+                self.QSAR_setup()
             elif action == docking_results:
                 self.plot_docking_results('docking')
             elif action == redocking_results:
@@ -663,6 +678,8 @@ class MainWindow(qtw.QMainWindow):
                 self.display_data('descriptors')
             elif action == similarities:
                 self.display_data('similarities')
+            elif action == activities:
+                self.display_data('activities')
 
     def molecules_right_click(self, position):
         if self.selected_mol:

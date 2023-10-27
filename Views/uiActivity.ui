@@ -90,6 +90,9 @@
     </item>
     <item row="1" column="1" colspan="3">
      <widget class="QDoubleSpinBox" name="uiValueSpin">
+      <property name="locale">
+       <locale language="English" country="UnitedStates"/>
+      </property>
       <property name="alignment">
        <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
       </property>
@@ -98,6 +101,9 @@
       </property>
       <property name="suffix">
        <string extracomment="value"/>
+      </property>
+      <property name="minimum">
+       <double>-9999999.000000000000000</double>
       </property>
       <property name="maximum">
        <double>9999999.000000000000000</double>

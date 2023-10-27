@@ -8,7 +8,10 @@ import shutil
 import copy
 from glob import glob
 import multiprocessing
+import pandas as pd
 import numpy as np
+from Explorers import ActivitiesExplorer, FPExplorer
+from Models import PandasModel
 from os import listdir
 from PyQt5 import QtWidgets as qtw
 from PyQt5 import QtCore as qtc
@@ -1460,4 +1463,55 @@ class MyVina(qtw.QWidget):
         self.submitted.emit(calculation, self.project.name)
         self.close()
 
+
+class QSAR(qtw.QWidget):
+
+    def __init__(
+        self, parent, project,
+        docking_project, jobs
+    ):
+        super().__init__()
+        uic.loadUi('Views/uiDisplayDescriptors.ui', self)
+        self.parent = parent
+        self.parent.closed.connect(self.close)
+        # self.project = project
+        self.data = self.create_data(project, docking_project, jobs)
+        self.set_model()
+
+    def create_data(self, project, docking_project, jobs):
+        names = [m.get_name for m in project.molecules]
+        data = pd.DataFrame()
+        descriptors = project.descriptors
+        descriptors.reset_index(inplace=True)
+        fps = FPExplorer.create_df('Morgan2', project)
+        fps.reset_index(inplace=True)
+        activities = ActivitiesExplorer.create_df(project)
+        activities.reset_index(inplace=True)
+        activities = activities.loc[:, ['value']]
+        docking_jobs = []
+        energies = []
+        for job in jobs:
+            if job.id in docking_project.job_ids and job.type == 'Docking':
+                docking_jobs.append(job)
+        for name in names:
+            for job in docking_jobs:
+                if job.molecule == name and 'PHAVU' in job.receptor_name: # ojo aquí
+                    energy = np.mean(job.energies)
+                    energies.append(energy)
+                    print(f'name: {name}, energy: {energy}')
+        binding_energies = pd.DataFrame({
+            'binding energy': energies
+        })
+        data = pd.concat(
+            [fps, descriptors, binding_energies, activities], axis=1
+        )
+        data.drop(labels=['inchi_key', 'index'], axis=1, inplace=True)
+        data.to_csv('data_for_qsar.csv', index=False)
+        return data
+
+    def set_model(self):
+        model = PandasModel(self.data)
+        self.uiDescriptorsTable.setModel(model)
+        self.uiDescriptorsTable.resizeColumnsToContents()
+        self.uiDescriptorsTable.resizeRowsToContents()
 

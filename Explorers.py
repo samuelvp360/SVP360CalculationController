@@ -36,14 +36,15 @@ class FPExplorer(qtw.QWidget):
     def change_fp_type(self, fp_type):
         if fp_type:
             self.fp_type = fp_type
-            self.df = self.create_df(fp_type)
+            self.df = self.create_df(fp_type, self.project)
             self.set_model()
 
-    def create_df(self, fp_type):
-        fps = pd.DataFrame([fp.get(fp_type) for fp in self.project.fps])
+    @classmethod
+    def create_df(self, fp_type, project):
+        fps = pd.DataFrame([fp.get(fp_type) for fp in project.fps])
         fps.set_axis([str(i) for i in range(2048)], axis=1, inplace=True)
         fps.set_axis(
-            [m.get_name for m in self.project.molecules], axis=0, inplace=True
+            [m.get_name for m in project.molecules], axis=0, inplace=True
         )
         fps.replace(0, np.nan, inplace=True)
         fps.dropna(how='all', axis=1, inplace=True)
@@ -192,11 +193,12 @@ class SimilarityExplorer(qtw.QWidget):
         self.heatmap.show()
 
     def get_HCL(self, clus_num=0):
-        if self.simil_df.shape[0] < 4:
+        size = self.simil_df.shape[0]
+        if size < 4:
             return
         simil_matrix = self.simil_df.to_numpy()
         linked = linkage(simil_matrix, 'single')
-        n_cluster_to_test = range(2, 11)
+        n_cluster_to_test = range(2, size + 1)
         silhouette_avg = 0
         best = clus_num
         if not clus_num:
@@ -257,16 +259,20 @@ class SimilarityExplorer(qtw.QWidget):
         self.project.set_clusters(self.clusters)
         self.parent.database.commit()
 
+    # @logger.catch
     def show_simil_map(self):
         indexes = self.uiSimilarityTable.selectedIndexes()
         if not indexes:
             return
         i = indexes[0].row()
         j = indexes[0].column()
-        ref = self.molecules[i].get_2d_mol
-        ref_name = self.molecules[i].get_name
-        prob = self.molecules[j].get_2d_mol
-        prob_name = self.molecules[j].get_name
+        data = self.uiSimilarityTable.model().data
+        ref_name = data.columns[i]
+        prob_name = data.columns[j]
+        ref = [m for m in self.molecules if m.get_name == ref_name][0]
+        prob = [m for m in self.molecules if m.get_name == prob_name][0]
+        ref = ref.get_2d_mol
+        prob = prob.get_2d_mol
         setattr(
             self, f'simil_map_{self.fp_type}_{i}_{j}',
             SimilMap(ref, prob, self.fp_type, ref_name, prob_name)
@@ -630,6 +636,30 @@ class ChEMBLExplorer(qtw.QWidget):
     def send_molecules(self):
         pass
 
+class ActivitiesExplorer(qtw.QWidget):
+
+    def __init__(self, parent, project):
+        super().__init__()
+        uic.loadUi('Views/uiDisplayDescriptors.ui', self)
+        self.parent = parent
+        self.parent.closed.connect(self.close)
+        # self.project = project
+        self.df = self.create_df(project)
+        self.set_model()
+
+    @classmethod
+    def create_df(self, project):
+        activities = []
+        for m in project.molecules:
+            m.activities[0]['molecule'] = m.get_name
+            activities.append(pd.DataFrame(m.activities))
+        return pd.concat(activities)
+
+    def set_model(self):
+        model = PandasModel(self.df)
+        self.uiDescriptorsTable.setModel(model)
+        self.uiDescriptorsTable.resizeColumnsToContents()
+        self.uiDescriptorsTable.resizeRowsToContents()
 
 # TODO
 # 1. preguntar si quiero conservar la molécula de referencia creada,

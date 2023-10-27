@@ -94,9 +94,9 @@
   <widget class="QWidget" name="layoutWidget">
    <property name="geometry">
     <rect>
-     <x>190</x>
+     <x>455</x>
      <y>5</y>
-     <width>1306</width>
+     <width>1041</width>
      <height>52</height>
     </rect>
    </property>
@@ -240,10 +240,39 @@
    <property name="geometry">
     <rect>
      <x>35</x>
-     <y>5</y>
+     <y>25</y>
      <width>151</width>
-     <height>46</height>
+     <height>26</height>
     </rect>
+   </property>
+  </widget>
+  <widget class="QLabel" name="label">
+   <property name="geometry">
+    <rect>
+     <x>40</x>
+     <y>5</y>
+     <width>141</width>
+     <height>17</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>Sorted by:</string>
+   </property>
+  </widget>
+  <widget class="QCheckBox" name="uiSigDiffCheck">
+   <property name="enabled">
+    <bool>false</bool>
+   </property>
+   <property name="geometry">
+    <rect>
+     <x>210</x>
+     <y>20</y>
+     <width>231</width>
+     <height>23</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>Significant different</string>
    </property>
   </widget>
  </widget>
@@ -304,8 +333,8 @@
    <slot>create_df()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>239</x>
-     <y>20</y>
+     <x>456</x>
+     <y>21</y>
     </hint>
     <hint type="destinationlabel">
      <x>118</x>
@@ -320,8 +349,8 @@
    <slot>compare_project()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>527</x>
-     <y>18</y>
+     <x>742</x>
+     <y>19</y>
     </hint>
     <hint type="destinationlabel">
      <x>439</x>
@@ -349,15 +378,31 @@
    <sender>uiSortedCombo</sender>
    <signal>currentIndexChanged(int)</signal>
    <receiver>uiDockingResults</receiver>
-   <slot>plot()</slot>
+   <slot>sel_to_plot()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>113</x>
-     <y>30</y>
+     <x>110</x>
+     <y>29</y>
     </hint>
     <hint type="destinationlabel">
-     <x>15</x>
+     <x>16</x>
      <y>6</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>uiSigDiffCheck</sender>
+   <signal>stateChanged(int)</signal>
+   <receiver>uiDockingResults</receiver>
+   <slot>set_sig_diff()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>231</x>
+     <y>22</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>195</x>
+     <y>11</y>
     </hint>
    </hints>
   </connection>
@@ -367,9 +412,10 @@
   <slot>export_to_excel()</slot>
   <slot>import_from_excel()</slot>
   <slot>set_model()</slot>
-  <slot>plot()</slot>
+  <slot>sel_to_plot()</slot>
   <slot>create_df()</slot>
   <slot>compare_project()</slot>
   <slot>compare_receptor()</slot>
+  <slot>set_sig_diff()</slot>
  </slots>
 </ui>

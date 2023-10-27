@@ -5,6 +5,7 @@ import io
 import matplotlib
 from PyQt5 import QtWidgets as qtw
 from PyQt5 import QtGui as qtg
+from PyQt5 import QtCore as qtc
 from PyQt5 import uic
 from PIL import Image, ImageQt
 import pandas as pd
@@ -16,7 +17,11 @@ from matplotlib.figure import Figure
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg, NavigationToolbar2QT as NavigationToolbar
 from Models import PandasModel
 from sklearn.metrics import r2_score
-from loguru import logger
+# from loguru import logger
+from scipy.stats import tukey_hsd
+from string import ascii_letters as letters
+from Worker import GenericWorker
+from threading import active_count
 matplotlib.use('Qt5Agg')
 
 
@@ -36,9 +41,11 @@ class PlotCanvas(FigureCanvasQTAgg):
 class DockingPlotter(qtw.QWidget):
 
     # @logger.catch
-    def __init__(self, projects, jobs):
+    def __init__(self, parent, projects, jobs):
         super().__init__()
         uic.loadUi('Views/uiDockingResults.ui', self)
+        self.parent = parent
+        self.parent.closed.connect(self.close)
         self.projects = projects
         self.jobs = jobs
         self.canvas = PlotCanvas(self)
@@ -48,11 +55,13 @@ class DockingPlotter(qtw.QWidget):
         self.selected_jobs = []
         self.selected_projects = []
         self.clusters = {}
+        self.to_plot = pd.DataFrame({})
+        self.sig_diff_letters = False
         items = [
             '',
             'min to max',
             'max to min',
-            'by clusters'
+            'clusters'
         ]
         self.uiSortedCombo.addItems(items)
         self.create_checks()
@@ -74,7 +83,7 @@ class DockingPlotter(qtw.QWidget):
         self.uiResultsTableView.setModel(model)
         self.uiResultsTableView.resizeColumnsToContents()
         self.uiResultsTableView.resizeRowsToContents()
-        self.plot()
+        self.sel_to_plot()
 
     def select_project(self):
         indexes = [p.isChecked() for p in self.checks]
@@ -87,7 +96,7 @@ class DockingPlotter(qtw.QWidget):
         indexes = self.uiResultsTableView.selectedIndexes()
         if indexes:
             self.selected_jobs = [i.row() for i in indexes]
-            self.plot()
+            self.sel_to_plot()
         else:
             self.selected_jobs = []
 
@@ -130,65 +139,95 @@ class DockingPlotter(qtw.QWidget):
         self.clusters = clusters
         self.set_model()
 
-    def plot(self):
-        self.canvas.ax.clear()
+    def sel_to_plot(self):
         if not self.selected_jobs or not self.df.shape[0]:
             self.uiCompareProjectButton.setEnabled(False)
             self.uiCompareReceptorButton.setEnabled(False)
             return
         self.sorted = self.uiSortedCombo.currentIndex()
-        self.canvas.ax.set_title('Docking')
-        self.canvas.ax.tick_params(axis='x', labelrotation=90)
-        to_plot_both = self.df.iloc[self.selected_jobs]
-        min_value = min([min(i) for i in to_plot_both['Binding energies']])
-        max_value = max([max(i) for i in to_plot_both['Binding energies']])
-        avg_value = (min_value + max_value) / 2
-        self.uiMinValueLabel.setText(f'Min: {min_value:.2f}')
-        self.uiMaxValueLabel.setText(f'Max: {max_value:.2f}')
-        self.uiAvgValueLabel.setText(f'Avg: {avg_value:.2f}')
-        self.canvas.ax.axhline(min_value, linewidth=.5, color='green')
-        self.canvas.ax.axhline(avg_value, linewidth=.5, color='blue', linestyle='--')
-        self.canvas.ax.axhline(max_value, linewidth=.5, color='red')
-        receptors = pd.unique(to_plot_both['Receptor'])
+        self.to_plot = self.df.iloc[self.selected_jobs]
+        receptors = pd.unique(self.to_plot['Receptor'])
         if len(receptors) > 1:
             self.uiCompareReceptorButton.setEnabled(True)
         else:
             self.uiCompareReceptorButton.setEnabled(False)
-        projects = pd.unique(to_plot_both['Project'])
+        projects = pd.unique(self.to_plot['Project'])
         if len(projects) > 1:
             self.uiCompareProjectButton.setEnabled(True)
         else:
             self.uiCompareProjectButton.setEnabled(False)
-        total = to_plot_both.shape[0]
         if self.sorted == 1:
-            to_plot_both.loc[:, 'Medians'] = to_plot_both.loc[:, 'Binding energies'].apply(np.median)
-            to_plot_both.sort_values(by='Medians', inplace=True)
+            self.to_plot.loc[:, 'Medians'] = self.to_plot.loc[:, 'Binding energies'].apply(np.median)
+            self.to_plot.sort_values(by='Medians', inplace=True)
         elif self.sorted == 2:
-            to_plot_both.loc[:, 'Medians'] = to_plot_both.loc[:, 'Binding energies'].apply(np.median)
-            to_plot_both.sort_values(by='Medians', ascending=False, inplace=True)
+            self.to_plot.loc[:, 'Medians'] = self.to_plot.loc[:, 'Binding energies'].apply(np.median)
+            self.to_plot.sort_values(by='Medians', ascending=False, inplace=True)
         elif self.sorted == 3:
-            to_plot_both.loc[:, 'Medians'] = to_plot_both.loc[:, 'Binding energies'].apply(np.median)
+            self.to_plot.loc[:, 'Medians'] = self.to_plot.loc[:, 'Binding energies'].apply(np.median)
             if len(projects) == 1:
                 clusters = self.clusters[projects[0]]
                 sorted_indexes = clusters.get('sorted_indexes')
-                if len(sorted_indexes) == len(to_plot_both):
-                    to_plot_both = to_plot_both.iloc[sorted_indexes]
+                if len(sorted_indexes) == len(self.to_plot):
+                    self.to_plot = self.to_plot.iloc[sorted_indexes]
+        if self.to_plot.shape[0] > 1:
+            self.parent.send_to_worker(
+                tukey_hsd,
+                sequence=self.to_plot.loc[:, 'Binding energies'].tolist(),
+                workflow=self.workflow,
+                mapping=False,
+                unpack=True
+            )
+        self.uiSigDiffCheck.setEnabled(False)
+        self.plot()
+
+    @qtc.pyqtSlot(object, float)
+    def workflow(self, results, process):
+        diff_array = [i for i in map(self.diff_tukey, results.pvalue)]
+        diff_matrix = np.asmatrix(diff_array)
+        diff_matrix_tril = np.tril(diff_matrix)
+        self.sig_diff_letters = self.sig_diff(diff_matrix_tril)
+        print(process)
+        self.uiSigDiffCheck.setEnabled(True)
+
+    def set_sig_diff(self, checked):
+        if self.to_plot.shape[0] == len(self.sig_diff_letters) and checked:
+            self.plot(self.sig_diff_letters)
+        else:
+            self.plot()
+
+    def plot(self, sig_diff_letters=False):
+        self.canvas.ax.clear()
+        self.canvas.ax.set_title('Docking')
+        total = self.to_plot.shape[0]
+        min_value = min([min(i) for i in self.to_plot['Binding energies']])
+        max_value = max([max(i) for i in self.to_plot['Binding energies']])
+        avg_value = sum([sum(i) / len(i) for i in self.to_plot['Binding energies']]) / len(self.to_plot['Binding energies'])
+        self.uiMinValueLabel.setText(f'Min: {min_value:.2f}')
+        self.uiMaxValueLabel.setText(f'Max: {max_value:.2f}')
+        self.uiAvgValueLabel.setText(f'Avg: {avg_value:.2f}')
+        self.canvas.ax.tick_params(axis='x', labelrotation=90)
+        self.canvas.ax.axhline(min_value, linewidth=.5, color='green')
+        self.canvas.ax.axhline(avg_value, linewidth=.5, color='blue', linestyle='--')
+        self.canvas.ax.axhline(max_value, linewidth=.5, color='red')
         positions = np.arange(total)
         box_patches = self.canvas.ax.boxplot(
             positions=positions,
-            x=to_plot_both['Binding energies'],
-            labels=to_plot_both['Molecule'],
+            x=self.to_plot['Binding energies'],
+            labels=self.to_plot['Molecule'],
             patch_artist=True,
             notch=True
         )
-        self.customize_boxes(box_patches, self.canvas.ax, max_value, color='blue')
+        self.customize_boxes(
+            box_patches, self.canvas.ax,
+            max_value, sig_diff_letters, color='blue'
+        )
         self.canvas.ax.set_xlim(left=-2, right=positions[-1] + 2)
         self.canvas.ax.set_ylim(bottom=min_value - 2, top=max_value + 2)
         self.canvas.ax.set_xlabel('Molecule')
         self.canvas.ax.set_ylabel('Binding Energy (kcal/mol)')
         self.canvas.draw()
 
-    def customize_boxes(self, patches, ax, max_val, color='black'):
+    def customize_boxes(self, patches, ax, max_val, sig_diff_letters, color='black'):
         for box in patches['boxes']:
             box.set(
                 facecolor='white',
@@ -206,6 +245,17 @@ class DockingPlotter(qtw.QWidget):
                 horizontalalignment='center',
                 rotation=90
             )
+        if sig_diff_letters:
+            for i, whisker in enumerate(patches['whiskers']):
+                if i % 2:
+                    bottom, top = whisker.get_xydata()
+                    offset = (top[1] - bottom[1])
+                    ax.text(
+                        top[0], top[1] + offset, sig_diff_letters[(i - 1) // 2],
+                        fontsize=15, color=color,
+                        verticalalignment='bottom',
+                        horizontalalignment='center',
+                    )
 
     def compare_project(self):
         self.canvas.ax.clear()
@@ -293,6 +343,7 @@ class DockingPlotter(qtw.QWidget):
             return  # avisar que no están en el mismo orden
         max_values = []
         min_values = []
+        avg_values = []
         patches = []
         for i, receptor in enumerate(receptors):
             total = both_df[i].shape[0]
@@ -310,14 +361,20 @@ class DockingPlotter(qtw.QWidget):
             self.canvas.ax.set_xticks(np.arange(total) * 2)
             max_values.append(max([max(i) for i in both_df[i]['Binding energies']]))
             min_values.append(min([min(i) for i in both_df[i]['Binding energies']]))
+            avg_values.append(
+                sum([sum(i) / len(i) for i in both_df[i]['Binding energies']]) / len(both_df[i]['Binding energies'])
+            )
         min_value = min(min_values)
         max_value = max(max_values)
-        avg_value = (max_value + min_value) / 2
+        avg_value = sum(avg_values) / len(avg_values)
         self.uiMinValueLabel.setText(f'Min: {min_value:.2f}')
         self.uiMaxValueLabel.setText(f'Max: {max_value:.2f}')
         self.uiAvgValueLabel.setText(f'Avg: {avg_value:.2f}')
         for i, receptor in enumerate(receptors):
-            self.customize_boxes(patches[i], self.canvas.ax, max_value, color=colors[i])
+            self.customize_boxes(
+                patches[i], self.canvas.ax, max_value,
+                self.sig_diff_letters, color=colors[i]
+            )
         self.canvas.ax.set_ylim(bottom=min_value - 2, top=max_value + 2)
         self.canvas.ax.legend()
         self.canvas.draw()
@@ -375,12 +432,49 @@ class DockingPlotter(qtw.QWidget):
             self.df = pd.concat([self.df, new_df], ignore_index=True)
             self.set_model()
 
+    def diff_tukey(self, arr):
+        '''
+        arr:
+            numpy range.
+        return:
+            a binary list. 1 if there are significative differences, 0 if not.
+        '''
+        return [i for i in map(lambda x: 1 if abs(x) < 0.05 else 0, arr)]
+
+    def sig_diff(self, diff_matrix):
+        sig_diff_letters = []
+        last = ''
+        for i, row in enumerate(diff_matrix):
+            if i == 0:
+                sig_diff_letters.append(letters[i])
+                last = letters[i]
+                continue
+            this_row = []
+            for j, col in enumerate(row):
+                if j < i:
+                    to_add = sig_diff_letters[j]
+                    if col == 0 and len(to_add) == 1:
+                        this_row.append(to_add)
+                    else:
+                        continue
+                else:
+                    break
+            if not this_row:
+                idx_last_letter = letters.index(last[-1])
+                last = letters[idx_last_letter + 1]
+                this_row.append(last)
+            this_row = ''.join(sorted(set(this_row)))
+            sig_diff_letters.append(this_row)
+        return sig_diff_letters
+
 
 class RedockingPlotter(qtw.QWidget):
 
-    def __init__(self, projects, jobs):
+    def __init__(self, parent, projects, jobs):
         super().__init__()
         uic.loadUi('Views/uiRedockingResults.ui', self)
+        self.parent = parent
+        self.parent.closed.connect(self.close)
         self.projects = projects
         self.jobs = jobs
         self.canvas = PlotCanvas(self)
@@ -463,7 +557,8 @@ class RedockingPlotter(qtw.QWidget):
         to_plot = self.df.iloc[self.selected_jobs]
         min_value_energy = min([min(i) for i in to_plot['Binding energies']])
         max_value_energy = max([max(i) for i in to_plot['Binding energies']])
-        avg_value_energy = (min_value_energy + max_value_energy) / 2
+        avg_value_energy = sum([sum(i) / len(i) for i in to_plot['Binding energies']]) / len(to_plot['Binding energies'])
+        # avg_value_energy = (min_value_energy + max_value_energy) / 2
         min_value_rmsd = min([min(i) for i in to_plot['RMSD']])
         max_value_rmsd = max([max(i) for i in to_plot['RMSD']])
         total = to_plot.shape[0]

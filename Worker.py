@@ -11,6 +11,7 @@ from loguru import logger
 from scipy.optimize import curve_fit
 from numpy import exp, sqrt
 import pandas as pd
+from threading import active_count
 import copy
 
 
@@ -275,20 +276,28 @@ class GenericWorker(qtc.QObject):
     finished = qtc.pyqtSignal()
     workflow = qtc.pyqtSignal(object, float)
 
-    def __init__(self, function, kwargs, sequence=[], mapping=False):
+    def __init__(
+        self, function, kwargs=[], sequence=[],
+        mapping=False, unpack=False
+    ):
         super().__init__(parent=None)
-        self.function = function
+        self.function = copy.deepcopy(function)
         self.kwargs = copy.deepcopy(kwargs)
         self.sequence = copy.deepcopy(sequence)
         self.paused = False
         self.mapping = mapping
+        self.unpack = unpack
 
     @qtc.pyqtSlot()
     def run(self):
+        print(active_count())
         if self.mapping:
             with ProcessPoolExecutor() as executor:
                 results = [r for r in executor.map(self.function, self.sequence)]
-            self.workflow.emit(results, 100)
+            self.workflow.emit(results, 100.)
+        elif self.unpack:
+            results = self.function(*self.sequence)
+            self.workflow.emit(results, 100.)
         else:
             for i, item in enumerate(self.sequence):
                 if self.paused:
